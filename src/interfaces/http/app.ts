@@ -23,7 +23,10 @@ export type AppDependencies = {
 const requestStartedAt = new WeakMap<object, bigint>();
 
 function jsonSchema(schema: unknown, name: string) {
-  return zodToJsonSchema(schema as never, name);
+  // Emit a self-contained OpenAPI schema so Swagger UI does not depend on
+  // separately registered component schemas.
+  void name;
+  return zodToJsonSchema(schema as never, { $refStrategy: 'none' });
 }
 
 function errorPayload(error: CatalogError, correlationId: string) {
