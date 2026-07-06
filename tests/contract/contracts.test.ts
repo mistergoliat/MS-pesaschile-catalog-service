@@ -35,6 +35,7 @@ describe('contracts', () => {
             active: true,
           },
           selectedVariant: { combinationId: 0, sku: 'BUMPER', label: null, attributes: [] },
+          attributes: [],
           variants: [],
           pricing: null,
           stock: null,

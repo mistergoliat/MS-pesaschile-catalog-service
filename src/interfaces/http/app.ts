@@ -60,10 +60,22 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
           description: 'Read-only PrestaShop catalog API',
           version: '1.0.0',
         },
+        components: {
+          securitySchemes: {
+            apiKeyAuth: {
+              type: 'apiKey',
+              name: 'x-api-key',
+              in: 'header',
+            },
+          },
+        },
       },
     });
     await app.register(swaggerUi, {
       routePrefix: '/docs',
+      uiConfig: {
+        persistAuthorization: true,
+      },
     });
     app.get('/openapi.json', async (_request, reply) => {
       reply.type('application/json');
@@ -140,7 +152,7 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
 
   app.addHook('preHandler', async (request) => {
     const path = request.routeOptions.url ?? '';
-    if (path.startsWith('/health')) {
+    if (path.startsWith('/health') || path.startsWith('/docs') || path === '/openapi.json') {
       return;
     }
     if (path === '/metrics' && !config.observability.metricsRequireApiKey) {
@@ -159,6 +171,7 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
 
   app.get('/v1/products/search', {
     schema: {
+      security: [{ apiKeyAuth: [] }],
       querystring: {
         type: 'object',
         properties: {
@@ -192,6 +205,7 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
 
   app.get('/v1/products/:productId', {
     schema: {
+      security: [{ apiKeyAuth: [] }],
       params: {
         type: 'object',
         properties: {
@@ -246,6 +260,7 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
 
   app.post('/v1/products/batch', {
     schema: {
+      security: [{ apiKeyAuth: [] }],
       body: {
         type: 'object',
         properties: {

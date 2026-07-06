@@ -45,6 +45,7 @@ export type SearchItem = {
 export type ProductDetail = {
   product: ProductCore;
   selectedVariant: Pick<VariantSummary, 'combinationId' | 'sku' | 'label' | 'attributes'> | null;
+  attributes: AttributeValue[];
   variants: VariantSummary[];
   pricing: ProductPricing | null;
   stock: ProductStock | null;

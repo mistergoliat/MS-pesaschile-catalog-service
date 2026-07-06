@@ -161,6 +161,7 @@ export class CatalogApplicationService {
         const response: ProductDetail = {
           product,
           selectedVariant: null,
+          attributes: [],
           variants: variantList,
           pricing: null,
           stock: null,
@@ -222,6 +223,7 @@ export class CatalogApplicationService {
       const response: ProductDetail = {
         product,
         selectedVariant,
+        attributes: selectedVariant.attributes,
         variants: variantList,
         pricing: resolvedPricing,
         stock: resolvedStock,

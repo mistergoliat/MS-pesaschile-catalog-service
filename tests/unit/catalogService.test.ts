@@ -71,6 +71,7 @@ describe('CatalogApplicationService', () => {
     const result = await service.getProduct({ productId: 1, combinationId: 0, quantity: 2 });
 
     expect(result.selectedVariant?.combinationId).toBe(0);
+    expect(result.attributes).toEqual([]);
     expect(result.stock?.physicalQuantity).toBe(8);
     expect(result.pricing?.quantity).toBe(2);
     expect(stockProvider.getStock).toHaveBeenCalledWith(1, 0);
@@ -99,6 +100,7 @@ describe('CatalogApplicationService', () => {
     const result = await service.getProduct({ productId: 1, combinationId: 0, quantity: 1 });
     expect(result.selectedVariant?.combinationId).toBe(20);
     expect(result.selectedVariant?.sku).toBe('BUMPER');
+    expect(result.attributes).toEqual([{ group: 'Peso', value: '20 kg' }]);
   });
 
   it('leaves price and stock null when a variant product has no default selection', async () => {
@@ -120,6 +122,7 @@ describe('CatalogApplicationService', () => {
 
     const result = await service.getProduct({ productId: 1, combinationId: 0, quantity: 1 });
     expect(result.selectedVariant).toBeNull();
+    expect(result.attributes).toEqual([]);
     expect(result.pricing).toBeNull();
     expect(result.stock).toBeNull();
     expect(result.variants).toHaveLength(1);
@@ -173,13 +176,14 @@ describe('CatalogApplicationService', () => {
           name: 'Disco bumper',
           sku: 'BUMPER',
           shortDescription: 'Corto',
-        longDescription: 'Largo',
-        active: true,
-      },
-      selectedVariant: { combinationId: 0, sku: 'BUMPER', label: null, attributes: [] },
-      variants: [],
-      pricing: null,
-      stock: null,
+          longDescription: 'Largo',
+          active: true,
+        },
+        selectedVariant: { combinationId: 0, sku: 'BUMPER', label: null, attributes: [] },
+        attributes: [],
+        variants: [],
+        pricing: null,
+        stock: null,
         freshness: { productCheckedAt: '2026-01-01T00:00:00.000Z', priceCalculatedAt: null, stockCheckedAt: null, cached: false },
       },
       900,
@@ -205,15 +209,15 @@ describe('CatalogApplicationService', () => {
     const repository = createRepositoryStub({
       getProductCore: vi.fn(async (productId: number) =>
         productId === 999
-          ? null
-          : {
-              productId,
-              name: 'Disco bumper',
-              sku: 'BUMPER',
-              shortDescription: 'Corto',
-              longDescription: 'Largo',
-              active: true,
-            },
+            ? null
+            : {
+                productId,
+                name: 'Disco bumper',
+                sku: 'BUMPER',
+                shortDescription: 'Corto',
+                longDescription: 'Largo',
+                active: true,
+              },
       ),
     });
     const service = new CatalogApplicationService({

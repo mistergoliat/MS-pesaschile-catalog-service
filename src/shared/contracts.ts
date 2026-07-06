@@ -98,6 +98,7 @@ export const productResponseSchema = z
   .object({
     product: productCoreSchema,
     selectedVariant: selectedVariantSchema.nullable(),
+    attributes: z.array(attributeSchema),
     variants: z.array(variantSchema),
     pricing: pricingSchema.nullable(),
     stock: stockSchema.nullable(),
