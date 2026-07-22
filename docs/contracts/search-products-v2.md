@@ -1,10 +1,26 @@
 # search-products-v2
 
+## Estado
+
+Este documento conserva el contrato historico offline de `src/domain/recommendation/contracts.ts`.
+
+El endpoint HTTP implementado por T11 usa el contrato de aplicacion documentado en:
+
+```text
+docs/recommendation/search-products-v2.md
+```
+
+Ruta HTTP vigente:
+
+```http
+POST /api/v2/recommendations/search-products
+```
+
 ## Proposito
 
-`search-products-v2` define la frontera publica agent-facing del futuro Product Recommendation Service de PesasChile.
+`search-products-v2` define una frontera publica agent-facing historica del Product Recommendation Service de PesasChile.
 
-El Sales Agent consumira:
+La frontera se diseno para que un consumidor interno, como un Sales Agent futuro, pudiera consumir:
 
 ```text
 SearchProductsInput -> Product Recommendation Service -> SearchProductsResult
@@ -12,7 +28,7 @@ SearchProductsInput -> Product Recommendation Service -> SearchProductsResult
 
 El agente no debe conocer contratos internos del Product Relationship Engine, snapshots, publicaciones, metricas internas, persistencia analitica ni detalles de hidratacion.
 
-Esta tarea solo congela contratos, fixtures e invariantes. No crea endpoint, runtime, bootstrap, ranking, persistencia, cliente nuevo ni integracion CRM.
+La tarea original solo congelo contratos, fixtures e invariantes. El endpoint HTTP vigente fue agregado posteriormente en T11 y no reutiliza este payload historico como contrato de transporte.
 
 ## Ubicacion
 
@@ -303,10 +319,16 @@ Resultado vacio:
 
 ## Versionado
 
-La version contractual queda determinada por el futuro endpoint:
+La version contractual historica quedaba determinada por el endpoint previsto entonces:
 
 ```text
 POST /v2/products/search
 ```
 
-No se agrega `contractVersion` al payload en T01A para evitar duplicar la version del endpoint. Para validacion offline, fixtures o adapters, podria agregarse posteriormente como metadata fuera del payload o como campo explicito si el endpoint no basta.
+Ese endpoint no es la ruta T11 vigente. La ruta implementada para SearchProducts V2 es:
+
+```text
+POST /api/v2/recommendations/search-products
+```
+
+No se agrega `contractVersion` al payload historico en T01A para evitar duplicar la version del endpoint. Para validacion offline, fixtures o adapters, podria agregarse posteriormente como metadata fuera del payload o como campo explicito si el endpoint no basta.

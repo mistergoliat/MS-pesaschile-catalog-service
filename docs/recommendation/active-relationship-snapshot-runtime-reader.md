@@ -10,7 +10,7 @@ T07 no calcula nuevas relaciones.
 
 T07 no decide que producto debe recomendarse comercialmente.
 
-T08 consumira T07 para construir recomendaciones comerciales.
+T08 consumes T07 to build commercial recommendations.
 
 ## Snapshot vs Runtime Index
 
@@ -172,7 +172,7 @@ T07 preserves the canonical order delivered by T06.
 
 It does not sort by reliability, support, confidence, lift, joint count, price, stock, margin, or commercial score.
 
-Commercial ranking belongs to T08 or a later service.
+Commercial ranking belongs to T08, and personalized ranking belongs to T10.
 
 ## Excluded Scope
 

@@ -4,7 +4,7 @@
 
 T06 convierte relaciones validadas en una publicacion versionada.
 
-El snapshot es la unidad canonica que consumira T07.
+El snapshot es la unidad canonica que consume T07.
 
 T06 receives `ValidatedProductRelationship[]` from T05 and builds an immutable `ProductRelationshipSnapshot`.
 

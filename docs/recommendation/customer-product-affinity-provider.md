@@ -8,7 +8,7 @@ Customer affinity is not the final recommendation.
 
 T09 does not decide what product should be recommended.
 
-Its output is intended for T10, where customer affinity can be combined with commercial recommendations in a separate personalized recommendation layer.
+Its output is consumed by T10, where customer affinity is combined with commercial recommendations in a separate personalized recommendation layer.
 
 ## Architectural Boundary
 
@@ -147,7 +147,7 @@ T09 consumes already-resolved, already-permitted, structured evidence. It does n
 
 ## T10 Integration
 
-T10 will consume T08 commercial candidates and T09 customer affinity signals to build final personalized recommendations. T09 intentionally does not perform reranking, 1:1 personalization, commercial selection, campaign logic, cart mutation, order creation, or copy generation.
+T10 consumes T08 commercial candidates and T09 customer affinity signals to build final personalized recommendations. T09 intentionally does not perform reranking, 1:1 personalization, commercial selection, campaign logic, cart mutation, order creation, or copy generation.
 
 ## V1 Limits
 
