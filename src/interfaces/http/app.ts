@@ -11,11 +11,14 @@ import { logger } from '../../shared/logger.js';
 import { batchRequestSchema, errorResponseSchema, healthResponseSchema, productParamsSchema, productQuerySchema, productResponseSchema, searchQuerySchema, searchResponseSchema, batchResponseSchema } from '../../shared/contracts.js';
 import { readCommercialContext } from '../../shared/requestContext.js';
 import type { CatalogApplicationService } from '../../application/catalogService.js';
+import type { SearchProductsV2Service } from '../../application/recommendation/search-products-v2/index.js';
 import type { CatalogRepository } from '../../domain/catalog/ports.js';
 import type { BatchGetInput } from '../../domain/catalog/types.js';
+import { registerSearchProductsV2Route } from './routes/searchProductsV2Route.js';
 
 export type AppDependencies = {
   service: CatalogApplicationService;
+  searchProductsV2Service?: SearchProductsV2Service;
   repository: CatalogRepository;
   readyCheck: () => Promise<{ database: 'ok' | 'unavailable'; redis?: 'ok' | 'unavailable' }>;
 };
@@ -307,6 +310,8 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
 
     return reply.send(result);
   });
+
+  await registerSearchProductsV2Route(app as unknown as FastifyInstance, deps.searchProductsV2Service);
 
   return app as unknown as FastifyInstance;
 }
