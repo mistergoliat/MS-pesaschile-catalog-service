@@ -180,14 +180,14 @@ T10 only consumes structured affinity summaries from T09. It does not read raw c
 
 ## T11 Integration
 
-T11 can later call T08 and T09 application layers, then pass their outputs to T10. T10 intentionally does not implement `search-products-v2`, endpoints, controllers, routing, agent responses, cart operations, checkout, orders, or E2E integration.
+T11 calls the commercial recommendation layer and customer affinity layer, then passes their outputs to T10. T10 intentionally does not implement `search-products-v2`, endpoints, controllers, routing, agent responses, cart operations, checkout, orders, or E2E integration.
 
 ## V1 Limits
 
 T10 V1 does not implement:
 
 - product discovery;
-- final endpoint integration;
+- endpoint implementation;
 - T07 snapshot lookup;
 - provider execution;
 - SQL, migrations, Redis, cache, events, or infrastructure;
