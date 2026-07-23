@@ -59,6 +59,7 @@ export async function createRecommendationRuntime(input: {
     new DefaultProductRecommendationScorer(),
     new DefaultProductRecommendationRanker(),
   );
+  const catalogProductBatchReader = new CatalogRecommendationCommercialDataProvider(input.catalogService);
   const customerAffinityProvider = new DefaultCustomerProductAffinityProvider(
     input.customerAffinityEvidenceProvider,
     new DefaultCustomerAffinityEvaluator(),
@@ -69,6 +70,7 @@ export async function createRecommendationRuntime(input: {
     relationshipSnapshotReader,
     searchProductsV2Service: new DefaultSearchProductsV2Service({
       commercialRecommendationService,
+      catalogProductBatchReader,
       customerAffinityProvider,
       personalizedRecommendationService: new DefaultPersonalizedRecommendationService(new DefaultPersonalizedRecommendationScorer()),
       correlationIdProvider: {

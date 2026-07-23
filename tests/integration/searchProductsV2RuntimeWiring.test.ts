@@ -244,7 +244,7 @@ describe('SearchProducts V2 production runtime wiring', () => {
     const response = await app.inject({ method: 'GET', url: '/openapi.json' });
     const route = response.json().paths['/api/v2/recommendations/search-products'].post;
     expect(route.security).toEqual([{ apiKeyAuth: [] }]);
-    expect(route.description).toContain('"sourceProduct":{"productId":"123"}');
+    expect(route.description).toContain('"sourceProduct":{"productId":"173"}');
     expect(route.responses).toHaveProperty('503');
     await app.close();
   });

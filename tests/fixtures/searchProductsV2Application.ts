@@ -19,6 +19,8 @@ import {
   DefaultPersonalizedRecommendationService,
 } from '../../src/domain/recommendation/personalized-recommendation/index.js';
 import type {
+  CatalogProductBatchReader,
+  CatalogProductSummary,
   CorrelationIdProvider,
   SearchProductsV2Logger,
   SearchProductsV2Request,
@@ -32,6 +34,7 @@ import {
   affinityResultFor,
   commercialRecommendationFor,
   commercialResultFor,
+  sourceProduct,
   productB,
   productC,
   productD,
@@ -39,6 +42,8 @@ import {
   signal,
 } from './personalizedRecommendation.js';
 import { customer } from './customerProductAffinity.js';
+import { createProductRuntimeIdentity } from '../../src/domain/recommendation/relationship-engine/runtime/index.js';
+import type { ProductRelationshipProductReference } from '../../src/domain/recommendation/relationship-engine/contracts.js';
 
 export function clone<T>(value: T): T {
   if (value === undefined) return value;
@@ -137,6 +142,65 @@ export class FakePersonalizedRecommendationService implements PersonalizedRecomm
   }
 }
 
+export function catalogSummaryFor(
+  product: ProductRelationshipProductReference,
+  patch: Partial<CatalogProductSummary> = {},
+): CatalogProductSummary {
+  return {
+    productId: product.productId,
+    ...(product.combinationId === undefined ? {} : { combinationId: product.combinationId }),
+    name: `Producto ${product.productId}`,
+    reference: `SKU-${product.productId}`,
+    description: `Descripcion ${product.productId}`,
+    active: true,
+    price: {
+      amount: 1000,
+      currency: 'CLP',
+    },
+    stock: {
+      status: 'in_stock',
+      quantity: 10,
+      available: true,
+    },
+    ...patch,
+  };
+}
+
+export class FakeCatalogProductBatchReader implements CatalogProductBatchReader {
+  calls: Array<readonly ProductRelationshipProductReference[]> = [];
+
+  private readonly products = new Map<string, CatalogProductSummary>();
+
+  constructor(products: readonly CatalogProductSummary[] = [
+    catalogSummaryFor(sourceProduct),
+    catalogSummaryFor(productB),
+    catalogSummaryFor(productC),
+    catalogSummaryFor(productD),
+    catalogSummaryFor(productE),
+  ]) {
+    for (const product of products) {
+      this.products.set(createProductRuntimeIdentity({
+        productId: product.productId,
+        ...(product.combinationId === undefined ? {} : { combinationId: product.combinationId }),
+      }), product);
+    }
+  }
+
+  async getProductsByReferences(
+    references: readonly ProductRelationshipProductReference[],
+  ): Promise<ReadonlyMap<string, CatalogProductSummary>> {
+    this.calls.push(clone(references));
+    const result = new Map<string, CatalogProductSummary>();
+    for (const reference of references) {
+      const product = this.products.get(createProductRuntimeIdentity(reference));
+      if (product) {
+        result.set(createProductRuntimeIdentity(reference), clone(product));
+      }
+    }
+    return result;
+  }
+}
+
 export function retryableAffinityFailure(): CustomerAffinityError {
   return new CustomerAffinityError('EVIDENCE_PROVIDER_FAILED', 'timeout', { retryable: true });
 }
@@ -149,16 +213,19 @@ export function buildSearchProductsV2Harness(options: {
   commercialResult?: ProductRecommendationResult;
   affinityResult?: CustomerProductAffinityResult;
   customerReference?: CustomerAffinityCustomerReference;
+  catalogProducts?: readonly CatalogProductSummary[];
   callOrder?: string[];
 } = {}) {
   const callOrder = options.callOrder ?? [];
   const commercial = new FakeCommercialRecommendationService(options.commercialResult, callOrder);
   const affinity = new FakeCustomerProductAffinityProvider(options.affinityResult, callOrder);
   const personalization = new FakePersonalizedRecommendationService(callOrder);
+  const catalog = new FakeCatalogProductBatchReader(options.catalogProducts);
   const correlation = new FakeCorrelationIdProvider();
   const logger = new FakeSearchProductsV2Logger();
   const service = new DefaultSearchProductsV2Service({
     commercialRecommendationService: commercial,
+    catalogProductBatchReader: catalog,
     customerAffinityProvider: affinity,
     personalizedRecommendationService: personalization,
     correlationIdProvider: correlation,
@@ -167,6 +234,7 @@ export function buildSearchProductsV2Harness(options: {
   return {
     service,
     commercial,
+    catalog,
     affinity,
     personalization,
     correlation,

@@ -23,10 +23,12 @@ import {
   productD,
   productE,
   signal,
+  sourceProduct,
 } from '../fixtures/personalizedRecommendation.js';
 import {
   baseSearchProductsV2Request,
   buildSearchProductsV2Harness,
+  catalogSummaryFor,
   clone,
   retryableAffinityFailure,
   searchProductsV2UnknownAffinityResult,
@@ -44,7 +46,7 @@ async function expectSearchError(action: () => Promise<unknown>, code: SearchPro
 
 describe('SearchProducts V2 contracts', () => {
   it('accepts a minimal valid request', () => {
-    expect(searchProductsV2RequestSchema.safeParse({ query: 'rack', sourceProduct: { productId: 'A' } }).success).toBe(true);
+    expect(searchProductsV2RequestSchema.safeParse({ sourceProduct: { productId: 'A' } }).success).toBe(true);
   });
 
   it('accepts a complete valid request', () => {
@@ -118,6 +120,146 @@ describe('SearchProducts V2 contracts', () => {
   it('accepts valid response', async () => {
     const result = await buildSearchProductsV2Harness().service.search(baseSearchProductsV2Request);
     expect(searchProductsV2ResultSchema.safeParse(result).success).toBe(true);
+  });
+
+  it('returns an enriched source product and enriched recommendations', async () => {
+    const result = await buildSearchProductsV2Harness().service.search(baseSearchProductsV2Request);
+    expect(result.sourceProduct).toMatchObject({ productId: 'A', name: 'Producto A', reference: 'SKU-A' });
+    expect(result.recommendations[0]?.product).toMatchObject({
+      productId: 'B',
+      name: 'Producto B',
+      reference: 'SKU-B',
+      price: { amount: 1000, currency: 'CLP' },
+      stock: { status: 'in_stock', available: true },
+    });
+  });
+
+  it('uses one logical catalog enrichment batch for source and candidate pool', async () => {
+    const harness = buildSearchProductsV2Harness();
+    await harness.service.search(baseSearchProductsV2Request);
+    expect(harness.catalog.calls).toHaveLength(1);
+    expect(harness.catalog.calls[0]).toEqual([sourceProduct, productB, productC, productD]);
+  });
+
+  it('fails when source product is missing from catalog enrichment', async () => {
+    const harness = buildSearchProductsV2Harness({ catalogProducts: [catalogSummaryFor(productB)] });
+    await expectSearchError(() => harness.service.search(baseSearchProductsV2Request), 'SOURCE_PRODUCT_NOT_FOUND');
+  });
+
+  it('fails when source product is inactive', async () => {
+    const harness = buildSearchProductsV2Harness({
+      catalogProducts: [
+        catalogSummaryFor(sourceProduct, { active: false }),
+        catalogSummaryFor(productB),
+        catalogSummaryFor(productC),
+        catalogSummaryFor(productD),
+      ],
+    });
+    await expectSearchError(() => harness.service.search(baseSearchProductsV2Request), 'SOURCE_PRODUCT_INACTIVE');
+  });
+
+  it('filters missing and inactive recommended products after enrichment', async () => {
+    const harness = buildSearchProductsV2Harness({
+      catalogProducts: [
+        catalogSummaryFor(sourceProduct),
+        catalogSummaryFor(productB),
+        catalogSummaryFor(productC, { active: false }),
+      ],
+    });
+    const result = await harness.service.search(baseSearchProductsV2Request);
+    expect(result.recommendations.map((item) => item.product.productId)).toEqual(['B']);
+    expect(result.excluded.map((item) => item.code)).toContain('INACTIVE_PRODUCT');
+    expect(result.excluded.map((item) => item.code)).toContain('MISSING_CATALOG_PRODUCT');
+  });
+
+  it('applies inStockOnly after enrichment', async () => {
+    const harness = buildSearchProductsV2Harness({
+      catalogProducts: [
+        catalogSummaryFor(sourceProduct),
+        catalogSummaryFor(productB),
+        catalogSummaryFor(productC, { stock: { status: 'out_of_stock', available: false } }),
+        catalogSummaryFor(productD, { stock: { status: 'unknown', available: false } }),
+      ],
+    });
+    const result = await harness.service.search({ ...baseSearchProductsV2Request, filters: { inStockOnly: true } });
+    expect(result.recommendations.map((item) => item.product.productId)).toEqual(['B']);
+    expect(result.excluded.filter((item) => item.code === 'OUT_OF_STOCK_FILTERED')).toHaveLength(2);
+  });
+
+  it('keeps out-of-stock products visible when inStockOnly is absent', async () => {
+    const harness = buildSearchProductsV2Harness({
+      catalogProducts: [
+        catalogSummaryFor(sourceProduct),
+        catalogSummaryFor(productB, { stock: { status: 'out_of_stock', available: false } }),
+        catalogSummaryFor(productC),
+        catalogSummaryFor(productD),
+      ],
+    });
+    const result = await harness.service.search(baseSearchProductsV2Request);
+    expect(result.recommendations[0]?.product.stock.status).toBe('out_of_stock');
+  });
+
+  it('does not invent missing price and emits one global warning', async () => {
+    const harness = buildSearchProductsV2Harness({
+      catalogProducts: [
+        catalogSummaryFor(sourceProduct),
+        catalogSummaryFor(productB, { price: null }),
+        catalogSummaryFor(productC, { price: null }),
+        catalogSummaryFor(productD),
+      ],
+    });
+    const result = await harness.service.search(baseSearchProductsV2Request);
+    expect(result.recommendations[0]?.product.price).toBeNull();
+    expect(result.warnings.filter((item) => item.code === 'CATALOG_PRICE_UNAVAILABLE')).toHaveLength(1);
+  });
+
+  it('keeps unknown stock explicit and emits one global warning', async () => {
+    const harness = buildSearchProductsV2Harness({
+      catalogProducts: [
+        catalogSummaryFor(sourceProduct),
+        catalogSummaryFor(productB, { stock: { status: 'unknown', available: false } }),
+        catalogSummaryFor(productC),
+        catalogSummaryFor(productD),
+      ],
+    });
+    const result = await harness.service.search(baseSearchProductsV2Request);
+    expect(result.recommendations[0]?.product.stock).toEqual({ status: 'unknown', available: false });
+    expect(result.warnings.filter((item) => item.code === 'CATALOG_STOCK_UNKNOWN')).toHaveLength(1);
+  });
+
+  it('preserves scores and statistical evidence while recalculating final rank after filtering', async () => {
+    const harness = buildSearchProductsV2Harness({
+      catalogProducts: [
+        catalogSummaryFor(sourceProduct),
+        catalogSummaryFor(productB, { active: false }),
+        catalogSummaryFor(productC),
+        catalogSummaryFor(productD),
+      ],
+    });
+    const result = await harness.service.search(baseSearchProductsV2Request);
+    expect(result.recommendations[0]).toMatchObject({
+      rank: 1,
+      ranking: { rank: 1 },
+      product: { productId: 'C' },
+      relationship: {
+        type: 'same_order',
+        reliability: 0.55,
+        evidence: { jointCount: 12, support: 0.3, confidence: 0.6, lift: 1.5 },
+      },
+    });
+    expect(result.recommendations[0]?.score).toBe(0.5215);
+  });
+
+  it('respects final limit after enrichment', async () => {
+    const result = await buildSearchProductsV2Harness().service.search({ ...baseSearchProductsV2Request, limit: 2 });
+    expect(result.recommendations).toHaveLength(2);
+    expect(result.excluded.some((item) => item.code === 'RESULT_LIMIT_TRUNCATION')).toBe(true);
+  });
+
+  it('does not let query change the source product', async () => {
+    const harness = buildSearchProductsV2Harness();
+    await harness.service.search({ ...baseSearchProductsV2Request, query: 'otro texto' });
+    expect(harness.commercial.calls[0]?.sourceProduct).toEqual(sourceProduct);
   });
 
   it('rejects inconsistent execution', () => {
@@ -236,7 +378,7 @@ describe('SearchProducts V2 orchestration', () => {
   it('maps limit to candidate pool', async () => {
     const harness = buildSearchProductsV2Harness();
     await harness.service.search({ ...baseSearchProductsV2Request, limit: 4 });
-    expect(harness.commercial.calls[0]?.limit).toBe(12);
+    expect(harness.commercial.calls[0]?.limit).toBe(20);
   });
 
   it('maps inStockOnly to includeOutOfStock false', async () => {
@@ -377,7 +519,7 @@ describe('SearchProducts V2 T09 behavior and degradation', () => {
     const request = { ...baseSearchProductsV2Request };
     delete request.customer;
     await harness.service.search(request);
-    expect(harness.personalization.calls[0]?.customerAffinities?.warnings[0]?.code).toBe('CUSTOMER_NOT_IDENTIFIED');
+    expect(harness.personalization.calls[0]?.customerAffinities?.warnings).toEqual([]);
   });
 
   it('preserves no-history affinity', async () => {
@@ -489,9 +631,14 @@ describe('SearchProducts V2 T10 mapping and result', () => {
     expect(result.statistics.personalizedRecommendations + result.statistics.excludedRecommendations).toBe(result.statistics.commercialCandidates);
   });
 
-  it('does not expose raw customer evidence summaries', async () => {
+  it('exposes relationship evidence without raw customer evidence summaries', async () => {
     const result = await buildSearchProductsV2Harness().service.search(baseSearchProductsV2Request);
-    expect(JSON.stringify(result)).not.toContain('evidence');
+    expect(result.recommendations[0]?.relationship.evidence).toMatchObject({
+      jointCount: 12,
+      confidence: 0.6,
+      lift: 1.5,
+    });
+    expect(JSON.stringify(result)).not.toContain('DIRECT_PRODUCT_PURCHASE');
   });
 
   it('maps reasons without free text', async () => {

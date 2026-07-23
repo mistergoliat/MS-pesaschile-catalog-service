@@ -51,13 +51,17 @@ export function mapSearchProductsV2ErrorToHttp(error: unknown, correlationId: st
   if (error instanceof SearchProductsV2Error) {
     const statusCode = error.code === 'INVALID_REQUEST'
       ? 400
+      : error.code === 'SOURCE_PRODUCT_NOT_FOUND'
+        ? 404
       : error.code === 'CUSTOMER_MISMATCH'
         ? 409
-        : error.code === 'COMMERCIAL_RECOMMENDATION_UNAVAILABLE'
-          ? 503
-          : error.code === 'INTERNAL_CONFIGURATION_ERROR'
-            ? 500
-            : 422;
+        : error.code === 'SOURCE_PRODUCT_INACTIVE'
+          ? 409
+          : error.code === 'COMMERCIAL_RECOMMENDATION_UNAVAILABLE'
+            ? 503
+            : error.code === 'INTERNAL_CONFIGURATION_ERROR'
+              ? 500
+              : 422;
     return {
       statusCode,
       payload: {

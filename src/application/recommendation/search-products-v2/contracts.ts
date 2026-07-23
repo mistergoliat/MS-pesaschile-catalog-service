@@ -99,7 +99,7 @@ export const searchProductsV2FiltersSchema = z
 
 export const searchProductsV2RequestSchema = z
   .object({
-    query: boundedQuerySchema,
+    query: boundedQuerySchema.optional(),
     sourceProduct: productRelationshipProductReferenceSchema,
     customer: searchProductsV2CustomerReferenceSchema.optional(),
     context: searchProductsV2ContextSchema.optional(),
@@ -148,6 +148,10 @@ export const searchProductsV2WarningCodeSchema = z.enum([
   'AFFINITY_MISSING_FOR_PRODUCT',
   'PERSONALIZATION_CONTEXT_PARTIALLY_APPLIED',
   'RESULTS_TRUNCATED',
+  'CATALOG_PRODUCT_MISSING',
+  'CATALOG_PRODUCT_INACTIVE',
+  'CATALOG_PRICE_UNAVAILABLE',
+  'CATALOG_STOCK_UNKNOWN',
   'UPSTREAM_COMMERCIAL_WARNING',
   'UPSTREAM_AFFINITY_WARNING',
   'UPSTREAM_PERSONALIZATION_WARNING',
@@ -166,6 +170,9 @@ export const searchProductsV2ExclusionCodeSchema = z.enum([
   'EXPLICIT_PRODUCT_REJECTION',
   'BELOW_MINIMUM_PERSONALIZED_SCORE',
   'RESULT_LIMIT_TRUNCATION',
+  'MISSING_CATALOG_PRODUCT',
+  'INACTIVE_PRODUCT',
+  'OUT_OF_STOCK_FILTERED',
 ]);
 
 export const searchProductsV2ExclusionSchema = z
@@ -175,14 +182,85 @@ export const searchProductsV2ExclusionSchema = z
   })
   .strict();
 
+export const searchProductsV2PriceSchema = z
+  .object({
+    amount: z.number().finite().nonnegative(),
+    currency: nonEmptyStringSchema,
+  })
+  .strict();
+
+export const searchProductsV2StockSchema = z
+  .object({
+    status: z.enum(['in_stock', 'out_of_stock', 'available_for_order', 'unknown']),
+    quantity: nonNegativeIntegerSchema.optional(),
+    available: z.boolean(),
+  })
+  .strict();
+
+export const searchProductsV2CatalogProductSummarySchema = z
+  .object({
+    productId: nonEmptyStringSchema,
+    combinationId: nonEmptyStringSchema.optional(),
+    name: nonEmptyStringSchema,
+    reference: nonEmptyStringSchema.optional(),
+    description: nonEmptyStringSchema.optional(),
+    category: nonEmptyStringSchema.optional(),
+    active: z.boolean(),
+    price: searchProductsV2PriceSchema.nullable(),
+    stock: searchProductsV2StockSchema,
+    productUrl: nonEmptyStringSchema.optional(),
+    imageUrl: nonEmptyStringSchema.optional(),
+  })
+  .strict();
+
+export const searchProductsV2RelationshipEvidenceSchema = z
+  .object({
+    jointCount: nonNegativeIntegerSchema,
+    support: z.number().finite().nonnegative(),
+    confidence: zeroToOneSchema,
+    lift: z.number().finite().nonnegative(),
+  })
+  .strict();
+
+export const searchProductsV2RecommendationRelationshipSchema = z
+  .object({
+    type: nonEmptyStringSchema,
+    reliability: zeroToOneSchema,
+    evidence: searchProductsV2RelationshipEvidenceSchema,
+  })
+  .strict();
+
+export const searchProductsV2CommercialReasonCodeSchema = z.enum([
+  'FREQUENTLY_BOUGHT_TOGETHER',
+  'RELATED_PRODUCT_FALLBACK',
+  'CUSTOMER_AFFINITY_MATCH',
+]);
+
+export const searchProductsV2CommercialReasonSchema = z
+  .object({
+    code: searchProductsV2CommercialReasonCodeSchema,
+    label: nonEmptyStringSchema,
+  })
+  .strict();
+
+export const searchProductsV2RecommendationRankingSchema = z
+  .object({
+    rank: positiveIntegerSchema,
+    score: zeroToOneSchema,
+  })
+  .strict();
+
 export const searchProductsV2RecommendationSchema = z
   .object({
-    product: productRelationshipProductReferenceSchema,
+    product: searchProductsV2CatalogProductSummarySchema,
     rank: positiveIntegerSchema,
     score: zeroToOneSchema,
     commercialScore: zeroToOneSchema,
     affinityScore: zeroToOneSchema,
     affinityConfidence: customerAffinityConfidenceSchema,
+    ranking: searchProductsV2RecommendationRankingSchema,
+    relationship: searchProductsV2RecommendationRelationshipSchema,
+    commercialReason: searchProductsV2CommercialReasonSchema,
     reasons: z.array(searchProductsV2ReasonSchema),
     warnings: z.array(searchProductsV2WarningSchema),
   })
@@ -236,12 +314,30 @@ export const searchProductsV2ExecutionSchema = z
     }
   });
 
+export const searchProductsV2PersonalizationSchema = z
+  .object({
+    applied: z.boolean(),
+    reason: z.enum(['customer_not_provided', 'customer_affinity_unavailable', 'no_customer_history']).optional(),
+    customerId: nonEmptyStringSchema.optional(),
+  })
+  .strict();
+
+export const searchProductsV2SnapshotSchema = z
+  .object({
+    id: nonEmptyStringSchema,
+    modelVersion: nonEmptyStringSchema,
+  })
+  .strict();
+
 export const searchProductsV2ResultSchema = z
   .object({
-    query: boundedQuerySchema,
+    query: boundedQuerySchema.nullable(),
+    sourceProduct: searchProductsV2CatalogProductSummarySchema,
     customer: searchProductsV2CustomerReferenceSchema.optional(),
     recommendations: z.array(searchProductsV2RecommendationSchema),
     excluded: z.array(searchProductsV2ExclusionSchema),
+    personalization: searchProductsV2PersonalizationSchema,
+    snapshot: searchProductsV2SnapshotSchema,
     warnings: z.array(searchProductsV2WarningSchema),
     statistics: searchProductsV2StatisticsSchema,
     execution: searchProductsV2ExecutionSchema,
@@ -267,10 +363,17 @@ export type SearchProductsV2Request = Omit<z.infer<typeof searchProductsV2Reques
 export type SearchProductsV2Reason = z.infer<typeof searchProductsV2ReasonSchema>;
 export type SearchProductsV2Warning = z.infer<typeof searchProductsV2WarningSchema>;
 export type SearchProductsV2Exclusion = z.infer<typeof searchProductsV2ExclusionSchema>;
+export type SearchProductsV2Price = z.infer<typeof searchProductsV2PriceSchema>;
+export type SearchProductsV2Stock = z.infer<typeof searchProductsV2StockSchema>;
+export type CatalogProductSummary = z.infer<typeof searchProductsV2CatalogProductSummarySchema>;
+export type SearchProductsV2RecommendationRelationship = z.infer<typeof searchProductsV2RecommendationRelationshipSchema>;
+export type SearchProductsV2CommercialReason = z.infer<typeof searchProductsV2CommercialReasonSchema>;
 export type SearchProductsV2Recommendation = z.infer<typeof searchProductsV2RecommendationSchema>;
 export type SearchProductsV2Statistics = z.infer<typeof searchProductsV2StatisticsSchema>;
 export type SearchProductsV2ExecutionStages = z.infer<typeof searchProductsV2ExecutionStagesSchema>;
 export type SearchProductsV2Execution = z.infer<typeof searchProductsV2ExecutionSchema>;
+export type SearchProductsV2Personalization = z.infer<typeof searchProductsV2PersonalizationSchema>;
+export type SearchProductsV2Snapshot = z.infer<typeof searchProductsV2SnapshotSchema>;
 export type SearchProductsV2Result = z.infer<typeof searchProductsV2ResultSchema>;
 
 export interface CorrelationIdProvider {
@@ -280,6 +383,12 @@ export interface CorrelationIdProvider {
 export interface SearchProductsV2Logger {
   info(event: string, fields: Readonly<Record<string, JsonValue>>): void;
   error(event: string, fields: Readonly<Record<string, JsonValue>>): void;
+}
+
+export interface CatalogProductBatchReader {
+  getProductsByReferences(
+    references: readonly ProductRelationshipProductReference[],
+  ): Promise<ReadonlyMap<string, CatalogProductSummary>>;
 }
 
 export type SearchProductsV2ServiceParameters = {
@@ -298,6 +407,7 @@ export const DEFAULT_SEARCH_PRODUCTS_V2_SERVICE_PARAMETERS = Object.freeze({
 
 export type SearchProductsV2Dependencies = {
   readonly commercialRecommendationService: CommercialProductRecommendationService;
+  readonly catalogProductBatchReader: CatalogProductBatchReader;
   readonly customerAffinityProvider: CustomerProductAffinityProvider;
   readonly personalizedRecommendationService: PersonalizedRecommendationService;
   readonly correlationIdProvider: CorrelationIdProvider;

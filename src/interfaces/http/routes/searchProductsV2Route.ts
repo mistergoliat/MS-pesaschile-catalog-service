@@ -31,19 +31,8 @@ function jsonSchema(schema: unknown) {
 }
 
 const requestExample = {
-  query: 'productos complementarios para barra olimpica',
   sourceProduct: {
-    productId: '123',
-  },
-  customer: {
-    customerId: 'customer-456',
-  },
-  context: {
-    useCase: 'home-gym',
-    budget: {
-      amount: 500000,
-      currency: 'CLP',
-    },
+    productId: '173',
   },
   filters: {
     inStockOnly: true,
@@ -61,8 +50,11 @@ export async function registerSearchProductsV2Route(
       tags: ['Recommendations'],
       summary: 'SearchProducts V2 recommendations',
       description: [
-        'Orchestrates commercial product recommendations, optional customer affinity, and personalized ranking.',
-        'The caller must provide sourceProduct; this endpoint does not infer productId from query text.',
+        'Returns enriched product recommendations for a known source product id.',
+        'The caller must provide sourceProduct.productId manually; this endpoint does not infer productId from query text.',
+        'query is optional compatibility metadata and does not identify or replace sourceProduct.',
+        'Natural-language product intent resolution is reserved for T12.',
+        'The active relationship snapshot provides statistical relationship evidence; live catalog data provides names, prices, stock, and availability.',
         'If the active relationship snapshot is unavailable, the endpoint returns 503 instead of an empty recommendation list.',
         `Copyable request example: ${JSON.stringify(requestExample)}`,
       ].join(' '),

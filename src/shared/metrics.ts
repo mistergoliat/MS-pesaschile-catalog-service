@@ -40,6 +40,31 @@ export const priceResolutionTotal = new client.Counter({
   labelNames: ['result'] as const,
 });
 
+export const recommendationEnrichmentCandidatesTotal = new client.Counter({
+  name: 'catalog_recommendation_enrichment_candidates_total',
+  help: 'Recommendation candidates requested for catalog enrichment',
+});
+
+export const recommendationEnrichmentMissingTotal = new client.Counter({
+  name: 'catalog_recommendation_enrichment_missing_total',
+  help: 'Recommendation candidates missing from catalog enrichment',
+});
+
+export const recommendationEnrichmentInactiveTotal = new client.Counter({
+  name: 'catalog_recommendation_enrichment_inactive_total',
+  help: 'Recommendation candidates discarded because the catalog product is inactive',
+});
+
+export const recommendationEnrichmentOutOfStockTotal = new client.Counter({
+  name: 'catalog_recommendation_enrichment_out_of_stock_total',
+  help: 'Recommendation candidates discarded by in-stock filtering',
+});
+
+export const recommendationEnrichmentReturnedTotal = new client.Counter({
+  name: 'catalog_recommendation_enrichment_returned_total',
+  help: 'Enriched recommendations returned',
+});
+
 export const errorsTotal = new client.Counter({
   name: 'catalog_errors_total',
   help: 'Catalog errors',

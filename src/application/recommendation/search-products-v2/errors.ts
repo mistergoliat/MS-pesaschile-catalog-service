@@ -2,6 +2,7 @@ import type { JsonValue } from '../../../domain/recommendation/relationship-engi
 
 export type SearchProductsV2ErrorStage =
   | 'request'
+  | 'catalog'
   | 'commercial'
   | 'affinity'
   | 'personalization'
@@ -10,6 +11,8 @@ export type SearchProductsV2ErrorStage =
 export type SearchProductsV2ErrorCode =
   | 'INVALID_REQUEST'
   | 'CUSTOMER_MISMATCH'
+  | 'SOURCE_PRODUCT_NOT_FOUND'
+  | 'SOURCE_PRODUCT_INACTIVE'
   | 'COMMERCIAL_RECOMMENDATION_UNAVAILABLE'
   | 'INVALID_COMMERCIAL_RESULT'
   | 'INVALID_AFFINITY_RESULT'
