@@ -52,6 +52,8 @@ const envSchema = z.object({
   METRICS_REQUIRE_API_KEY: z.string().optional(),
   TAX_RATE: z.coerce.number().min(0).max(1).default(0.19),
   ENABLE_DOCS: z.string().optional(),
+  RELATIONSHIP_SNAPSHOT_DIR: z.string().trim().min(1).default('data/relationship-snapshots'),
+  CUSTOMER_AFFINITY_PROVIDER_MODE: z.enum(['unavailable', 'empty']).default('unavailable'),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -127,5 +129,9 @@ export const config = {
   },
   pricing: {
     taxRate: raw.TAX_RATE,
+  },
+  recommendation: {
+    relationshipSnapshotDir: raw.RELATIONSHIP_SNAPSHOT_DIR,
+    customerAffinityProviderMode: raw.CUSTOMER_AFFINITY_PROVIDER_MODE,
   },
 } as const;

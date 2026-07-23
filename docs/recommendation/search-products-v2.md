@@ -144,7 +144,7 @@ T11 does not expose raw customer evidence or provider payloads.
 - `400`: invalid request.
 - `409`: customer mismatch.
 - `422`: invalid upstream/result contract.
-- `503`: mandatory commercial recommendation unavailable or T11 not configured.
+- `503`: mandatory commercial recommendation knowledge is unavailable, for example because no active relationship snapshot is loaded.
 - `500`: unexpected internal error.
 
 Responses do not serialize `cause`, stack traces, SQL messages, provider payloads, or infrastructure internals.

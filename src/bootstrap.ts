@@ -8,6 +8,13 @@ import { MySqlSearchProvider } from './infrastructure/search/mysqlSearchProvider
 import { SqlPricingProvider } from './infrastructure/pricing/sqlPricingProvider.js';
 import { PrestaShopPhysicalStockProvider } from './infrastructure/stock/prestashopPhysicalStockProvider.js';
 import { CatalogApplicationService } from './application/catalogService.js';
+import { FileProductRelationshipSnapshotStore } from './infrastructure/recommendation/fileProductRelationshipSnapshotStore.js';
+import {
+  EmptyCustomerAffinityEvidenceProvider,
+  UnavailableCustomerAffinityEvidenceProvider,
+} from './infrastructure/recommendation/customerAffinityEvidenceProviders.js';
+import { createRecommendationRuntime } from './recommendationRuntime.js';
+import { logger } from './shared/logger.js';
 
 export async function createRuntime() {
   const pool = createPool();
@@ -34,11 +41,33 @@ export async function createRuntime() {
     pricingProvider,
     cache,
   });
+  const customerAffinityEvidenceProvider = config.recommendation.customerAffinityProviderMode === 'empty'
+    ? new EmptyCustomerAffinityEvidenceProvider()
+    : new UnavailableCustomerAffinityEvidenceProvider();
+  const recommendationRuntime = await createRecommendationRuntime({
+    catalogService: service,
+    snapshotStore: new FileProductRelationshipSnapshotStore(config.recommendation.relationshipSnapshotDir),
+    customerAffinityEvidenceProvider,
+    logger: {
+      info: (event, fields) => logger.info({ event, ...fields }, event),
+      error: (event, fields) => logger.error({ event, ...fields }, event),
+    },
+  });
+  if (recommendationRuntime.initialRefreshError) {
+    logger.warn(
+      { error: recommendationRuntime.initialRefreshError },
+      'Relationship snapshot could not be loaded at startup',
+    );
+  }
 
   return {
     pool,
     cache,
     repository,
     service,
+    relationshipSnapshotReader: recommendationRuntime.relationshipSnapshotReader,
+    searchProductsV2Service: recommendationRuntime.searchProductsV2Service,
+    relationshipSnapshotInitialRefresh: recommendationRuntime.initialRefreshResult,
+    relationshipSnapshotInitialRefreshError: recommendationRuntime.initialRefreshError,
   };
 }

@@ -15,7 +15,7 @@ const errorResponseSchema = {
     error: {
       type: 'object',
       additionalProperties: false,
-      required: ['code', 'message', 'retryable', 'correlationId'],
+      required: ['code', 'message', 'correlationId'],
       properties: {
         code: { type: 'string' },
         message: { type: 'string' },
@@ -30,6 +30,27 @@ function jsonSchema(schema: unknown) {
   return zodToJsonSchema(schema as never, { $refStrategy: 'none' });
 }
 
+const requestExample = {
+  query: 'productos complementarios para barra olimpica',
+  sourceProduct: {
+    productId: '123',
+  },
+  customer: {
+    customerId: 'customer-456',
+  },
+  context: {
+    useCase: 'home-gym',
+    budget: {
+      amount: 500000,
+      currency: 'CLP',
+    },
+  },
+  filters: {
+    inStockOnly: true,
+  },
+  limit: 5,
+} as const;
+
 export async function registerSearchProductsV2Route(
   app: FastifyInstance,
   service?: SearchProductsV2Service,
@@ -37,6 +58,14 @@ export async function registerSearchProductsV2Route(
   app.post('/api/v2/recommendations/search-products', {
     attachValidation: true,
     schema: {
+      tags: ['Recommendations'],
+      summary: 'SearchProducts V2 recommendations',
+      description: [
+        'Orchestrates commercial product recommendations, optional customer affinity, and personalized ranking.',
+        'The caller must provide sourceProduct; this endpoint does not infer productId from query text.',
+        'If the active relationship snapshot is unavailable, the endpoint returns 503 instead of an empty recommendation list.',
+        `Copyable request example: ${JSON.stringify(requestExample)}`,
+      ].join(' '),
       security: [{ apiKeyAuth: [] }],
       headers: {
         type: 'object',
@@ -47,12 +76,16 @@ export async function registerSearchProductsV2Route(
       },
       body: jsonSchema(searchProductsV2RequestSchema),
       response: {
-        200: jsonSchema(searchProductsV2ResultSchema),
-        400: errorResponseSchema,
-        409: errorResponseSchema,
-        422: errorResponseSchema,
-        500: errorResponseSchema,
-        503: errorResponseSchema,
+        200: {
+          ...jsonSchema(searchProductsV2ResultSchema),
+          description: 'Recommendations were evaluated successfully. The result may be empty when the source product has no relationships.',
+        },
+        400: { ...errorResponseSchema, description: 'Invalid request body, headers, filters, or correlation id.' },
+        401: { ...errorResponseSchema, description: 'Missing or invalid x-api-key.' },
+        409: { ...errorResponseSchema, description: 'Customer identity mismatch.' },
+        422: { ...errorResponseSchema, description: 'Upstream or response contract mismatch.' },
+        500: { ...errorResponseSchema, description: 'Unexpected internal error.' },
+        503: { ...errorResponseSchema, description: 'Commercial recommendation knowledge or service dependency is unavailable.' },
       },
     },
   }, createSearchProductsV2Controller({ service }));

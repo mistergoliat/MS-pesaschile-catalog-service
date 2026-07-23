@@ -29,4 +29,4 @@ process.env.RATE_LIMIT_TIME_WINDOW_MS = process.env.RATE_LIMIT_TIME_WINDOW_MS ??
 process.env.ENABLE_METRICS = process.env.ENABLE_METRICS ?? 'true';
 process.env.METRICS_REQUIRE_API_KEY = process.env.METRICS_REQUIRE_API_KEY ?? 'true';
 process.env.TAX_RATE = process.env.TAX_RATE ?? '0.19';
-process.env.ENABLE_DOCS = process.env.ENABLE_DOCS ?? 'false';
+process.env.ENABLE_DOCS = process.env.ENABLE_DOCS ?? 'true';

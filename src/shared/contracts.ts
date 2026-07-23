@@ -164,6 +164,7 @@ export const healthResponseSchema = z
       .object({
         database: z.enum(['ok', 'unavailable']).optional(),
         redis: z.enum(['ok', 'unavailable']).optional(),
+        relationshipSnapshot: z.enum(['ok', 'unavailable']).optional(),
       })
       .strict(),
   })

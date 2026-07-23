@@ -20,7 +20,11 @@ export type AppDependencies = {
   service: CatalogApplicationService;
   searchProductsV2Service?: SearchProductsV2Service;
   repository: CatalogRepository;
-  readyCheck: () => Promise<{ database: 'ok' | 'unavailable'; redis?: 'ok' | 'unavailable' }>;
+  readyCheck: () => Promise<{
+    database: 'ok' | 'unavailable';
+    redis?: 'ok' | 'unavailable';
+    relationshipSnapshot?: 'ok' | 'unavailable';
+  }>;
 };
 
 const requestStartedAt = new WeakMap<object, bigint>();
@@ -150,7 +154,8 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
     const checks = await deps.readyCheck();
     const databaseUnavailable = checks.database !== 'ok';
     const redisUnavailable = checks.redis === 'unavailable';
-    if (databaseUnavailable || redisUnavailable) {
+    const relationshipSnapshotUnavailable = checks.relationshipSnapshot === 'unavailable';
+    if (databaseUnavailable || redisUnavailable || relationshipSnapshotUnavailable) {
       return reply.code(503).send({ status: 'degraded', checks });
     }
     return reply.send({ status: 'ok', checks });

@@ -56,7 +56,7 @@ All non-health endpoints require `x-api-key`. Rate limiting is global and config
 
 SearchProducts V2 V1 requires both `query` and `sourceProduct`. The `query` is preserved as the user's explicit commercial need, but it is not transformed by an LLM or lexical heuristic into a source product. The caller must provide the canonical `sourceProduct` used by the relationship-based recommendation layer.
 
-In the current composition root, the route is registered but `server.ts` does not inject a production `SearchProductsV2Service`; a valid request returns the documented `503` until the application is wired with concrete T08/T09/T10 dependencies.
+In the current composition root, `server.ts` injects SearchProducts V2 with T07, T08, T09, and T10 dependencies. The endpoint requires an active relationship snapshot loaded from `RELATIONSHIP_SNAPSHOT_DIR`; without one, readiness is degraded and valid recommendation requests return an operational `503` instead of a silent empty list.
 
 ## SearchProducts V2 Example
 
@@ -215,8 +215,10 @@ Use `.env.example` as the local template. Do not commit `.env` or real credentia
 | `METRICS_REQUIRE_API_KEY` | Optional | Require API key on `/metrics`. | `true` |
 | `TAX_RATE` | Optional | Tax rate for commercial price calculations. | `0.19` |
 | `ENABLE_DOCS` | Optional | Enable OpenAPI and Swagger UI in non-production. | `true` |
+| `RELATIONSHIP_SNAPSHOT_DIR` | Optional | Directory containing T06 snapshot files and the active snapshot pointer for T07 runtime loading. | `data/relationship-snapshots` |
+| `CUSTOMER_AFFINITY_PROVIDER_MODE` | Optional | T09 evidence source mode: `unavailable` degrades retryably; `empty` returns neutral no-history evidence. | `unavailable` |
 
-No snapshot, recommendation, affinity, personalization, or SearchProducts V2 environment variables are currently read by `src/shared/config.ts`.
+Snapshots are stored outside Git under `data/relationship-snapshots` by default. Publish a T06 snapshot to the configured store before expecting SearchProducts V2 to return related products.
 
 ## Security
 
@@ -227,6 +229,7 @@ No snapshot, recommendation, affinity, personalization, or SearchProducts V2 env
 - Error responses avoid stack traces, SQL details, provider payloads, and internal causes.
 - The service is read-only: it does not create carts, quotes, orders, customers, opportunities, or recommendation records.
 - Payload size and recommendation limits are bounded.
+- Relationship snapshot files and customer affinity sources are runtime dependencies; missing recommendation knowledge is reported explicitly.
 
 ## Testing
 
@@ -264,7 +267,8 @@ npm run smoke
 - The service does not create carts, quotes, orders, checkouts, customers, or CRM records.
 - The service does not query CRM or Customer 360 directly.
 - Cart-level multi-product recommendation is not implemented.
-- SearchProducts V2 is registered in HTTP, but the production composition root does not yet inject concrete T08/T09/T10 dependencies.
+- SearchProducts V2 still requires a caller-provided `sourceProduct`; Swagger does not infer it from free text.
+- T09 currently supports neutral or retryable-unavailable affinity evidence modes; concrete CRM/Customer 360 evidence adapters are still outside this repository.
 - Redis is optional and used only when `CACHE_DRIVER=redis`.
 
 ## Additional Documentation
