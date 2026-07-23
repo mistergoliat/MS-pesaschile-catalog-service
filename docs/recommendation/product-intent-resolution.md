@@ -115,6 +115,74 @@ No N+1 enrichment is introduced by T12.
 
 The ranker is deterministic and normalized between `0` and `1`.
 
+T12.1 adds explicit constraint calibration. General lexical evidence and explicit constraints are different signals:
+
+- general evidence helps retrieval and ordering;
+- explicit constraints decide whether a candidate is plausible.
+
+Examples of explicit constraints:
+
+```text
+product type
+weight
+diameter
+length
+reference
+brand
+variant
+```
+
+Supported product types in the first calibrated version:
+
+```text
+olympic_bar
+straight_bar
+curl_bar
+hex_bar
+kettlebell
+bumper_plate
+iron_plate
+barbell_collar
+leg_extension_machine
+leg_curl_machine
+```
+
+Measurement extraction recognizes:
+
+- weight: `15kg`, `15 kg`, `15 kilos`, `15 kilogramos`;
+- diameter: `50mm`, `50 mm`, `2 pulgadas`;
+- length: `220cm`, `220 cm`, `2.2 m`.
+
+Meters are converted to centimeters deterministically. Inches are kept as inches; T12.1 does not compare incompatible measurement units as if they were equivalent.
+
+Each candidate receives an internal constraint evaluation:
+
+```text
+matched
+not_available
+contradicted
+```
+
+`matched` means the catalog evidence agrees with the explicit query constraint.
+
+`not_available` means the catalog does not expose enough information to verify the constraint. This is not automatically treated as a contradiction.
+
+`contradicted` means the catalog evidence conflicts with the explicit query constraint. For example:
+
+```text
+query: barra olimpica 15 kg
+candidate: barra olimpica 20 kg
+-> weight contradicted
+```
+
+```text
+query: barra olimpica 15 kg
+candidate: kettlebell 15 kg
+-> product_type contradicted
+```
+
+A lexical match cannot compensate for an explicit contradiction of type, weight, diameter, or length.
+
 Priority:
 
 ```text
@@ -139,9 +207,16 @@ DESCRIPTION_MATCH
 ATTRIBUTE_MATCH
 INTENDED_USE_MATCH
 SYNONYM_MATCH
+EXPLICIT_TYPE_MATCH
+EXPLICIT_WEIGHT_MATCH
+EXPLICIT_DIAMETER_MATCH
+EXPLICIT_LENGTH_MATCH
+EXPLICIT_REFERENCE_MATCH
 ```
 
 Description matches have low weight so long descriptions cannot dominate product names.
+
+Contradictions receive a severe internal penalty and mark the candidate as not plausible. Candidates that contradict explicit type or essential measurements are not used as equivalent options for clarification.
 
 ## Resolution Policy
 
@@ -159,6 +234,41 @@ clarification_required:
 no_match:
   no eligible candidates
   or topScore < 0.45
+```
+
+T12.1 updates the policy so explicit constraints have authority:
+
+```text
+if explicit constraints exist
+  and exactly one plausible candidate satisfies all explicit constraints
+  and its score is high enough
+then resolved
+```
+
+If two or more candidates satisfy all explicit constraints, T12 returns `clarification_required`.
+
+If every candidate contradicts explicit constraints, T12 returns `no_match`.
+
+Examples:
+
+```text
+barra
+-> clarification_required
+```
+
+```text
+barra olimpica
+-> clarification_required when multiple olympic bars are plausible
+```
+
+```text
+barra olimpica 15 kg
+-> resolved when exactly one eligible olympic bar of 15 kg exists
+```
+
+```text
+kettlebell 99 kg
+-> no_match when all retrieved kettlebells contradict the requested weight
 ```
 
 The policy is conservative: when candidates are plausible but close, T12 returns `clarification_required` instead of guessing.
@@ -181,6 +291,18 @@ unspecified
 ```
 
 Options are grouped, so multiple products with the same relevant characteristic can share one option.
+
+T12.1 avoids redundant clarification. It does not ask again for a dimension the customer already specified.
+
+Example:
+
+```text
+query: barra olimpica 15 kg
+```
+
+The clarification builder must not ask whether the customer wants `15 kg` or `20 kg`; `20 kg` contradicts the query. If multiple full matches remain, it should ask about another unresolved dimension such as length, variant, brand, or category.
+
+Clarifications are built only from plausible candidates.
 
 ## Stock And Price
 
