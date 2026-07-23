@@ -114,6 +114,11 @@ export const productMatchReasonSchema = z.enum([
   'ATTRIBUTE_MATCH',
   'INTENDED_USE_MATCH',
   'SYNONYM_MATCH',
+  'EXPLICIT_TYPE_MATCH',
+  'EXPLICIT_WEIGHT_MATCH',
+  'EXPLICIT_DIAMETER_MATCH',
+  'EXPLICIT_LENGTH_MATCH',
+  'EXPLICIT_REFERENCE_MATCH',
 ]);
 
 export const productIntentCandidateSchema = z
@@ -250,12 +255,78 @@ export type ProductIntentSearchHit = {
   readonly matchType?: string;
 };
 
+export type ProductTypeConstraint =
+  | 'olympic_bar'
+  | 'straight_bar'
+  | 'curl_bar'
+  | 'hex_bar'
+  | 'kettlebell'
+  | 'bumper_plate'
+  | 'iron_plate'
+  | 'barbell_collar'
+  | 'leg_extension_machine'
+  | 'leg_curl_machine';
+
+export type MeasurementConstraint = {
+  readonly value: number;
+  readonly unit: string;
+  readonly normalizedValue: number;
+  readonly normalizedUnit: 'kg' | 'mm' | 'cm' | 'm' | 'in';
+};
+
+export type ExplicitProductConstraints = {
+  readonly productType?: ProductTypeConstraint;
+  readonly weight?: MeasurementConstraint;
+  readonly diameter?: MeasurementConstraint;
+  readonly length?: MeasurementConstraint;
+  readonly brand?: string;
+  readonly reference?: string;
+  readonly variant?: string;
+};
+
+export type ProductConstraintType =
+  | 'product_type'
+  | 'weight'
+  | 'diameter'
+  | 'length'
+  | 'brand'
+  | 'reference'
+  | 'variant';
+
+export type ConstraintMatchStatus = 'matched' | 'not_available' | 'contradicted';
+
+export type CandidateConstraintMatch = {
+  readonly type: ProductConstraintType;
+  readonly status: ConstraintMatchStatus;
+  readonly queryValue?: string | number;
+  readonly candidateValue?: string | number;
+};
+
+export type CandidateConstraintEvaluation = {
+  readonly satisfiesAllExplicitConstraints: boolean;
+  readonly hasContradiction: boolean;
+  readonly explicitConstraintCount: number;
+  readonly matchedConstraintCount: number;
+  readonly constraints: readonly CandidateConstraintMatch[];
+};
+
 export interface ProductQueryNormalizer {
   normalize(query: string): NormalizedProductQuery;
 }
 
 export interface ProductSearchSynonymProvider {
   expand(query: NormalizedProductQuery): NormalizedProductQuery;
+}
+
+export interface ProductExplicitConstraintExtractor {
+  extract(query: NormalizedProductQuery): ExplicitProductConstraints;
+}
+
+export interface ProductConstraintEvaluator {
+  evaluate(
+    constraints: ExplicitProductConstraints,
+    product: ProductIntentCatalogProduct,
+  ): CandidateConstraintEvaluation;
 }
 
 export interface CatalogProductIntentSearcher {
@@ -277,11 +348,14 @@ export type RankedProductIntentCandidate = {
   readonly product: ProductIntentCatalogProduct;
   readonly score: number;
   readonly reasons: readonly ProductMatchReason[];
+  readonly constraintEvaluation: CandidateConstraintEvaluation;
+  readonly plausible: boolean;
 };
 
 export interface ProductIntentCandidateRanker {
   rank(
     query: NormalizedProductQuery,
+    constraints: ExplicitProductConstraints,
     candidates: readonly ProductIntentCatalogProduct[],
     context?: ProductIntentContext,
   ): readonly RankedProductIntentCandidate[];
@@ -294,11 +368,17 @@ export type ProductIntentResolutionDecision = {
 };
 
 export interface ProductIntentResolutionPolicy {
-  resolve(candidates: readonly RankedProductIntentCandidate[]): ProductIntentResolutionDecision;
+  resolve(
+    candidates: readonly RankedProductIntentCandidate[],
+    constraints: ExplicitProductConstraints,
+  ): ProductIntentResolutionDecision;
 }
 
 export interface ProductClarificationBuilder {
-  build(candidates: readonly RankedProductIntentCandidate[]): ProductClarification;
+  build(
+    candidates: readonly RankedProductIntentCandidate[],
+    constraints: ExplicitProductConstraints,
+  ): ProductClarification;
 }
 
 export interface ProductIntentCorrelationIdProvider {
@@ -327,6 +407,7 @@ export const DEFAULT_PRODUCT_INTENT_RESOLUTION_PARAMETERS = Object.freeze({
 export type ProductIntentResolutionServiceDependencies = {
   readonly normalizer: ProductQueryNormalizer;
   readonly synonymProvider: ProductSearchSynonymProvider;
+  readonly constraintExtractor: ProductExplicitConstraintExtractor;
   readonly searcher: CatalogProductIntentSearcher;
   readonly catalogReader: CatalogProductIntentBatchReader;
   readonly ranker: ProductIntentCandidateRanker;

@@ -80,6 +80,26 @@ function isAvailable(product: ProductIntentCatalogProduct): boolean {
   return product.stock.available && (product.stock.status === 'in_stock' || product.stock.status === 'available_for_order');
 }
 
+function explicitConstraintCount(constraints: {
+  readonly productType?: unknown;
+  readonly weight?: unknown;
+  readonly diameter?: unknown;
+  readonly length?: unknown;
+  readonly brand?: unknown;
+  readonly reference?: unknown;
+  readonly variant?: unknown;
+}): number {
+  return [
+    constraints.productType,
+    constraints.weight,
+    constraints.diameter,
+    constraints.length,
+    constraints.brand,
+    constraints.reference,
+    constraints.variant,
+  ].filter((value) => value !== undefined).length;
+}
+
 export class DefaultProductIntentResolutionService implements ProductIntentResolutionService {
   private readonly parameters: ProductIntentResolutionParameters;
 
@@ -110,6 +130,7 @@ export class DefaultProductIntentResolutionService implements ProductIntentResol
     const limit = parsed.data.limit ?? this.parameters.defaultLimit;
     const includeOutOfStock = parsed.data.filters?.inStockOnly !== true;
     const normalized = this.dependencies.synonymProvider.expand(this.dependencies.normalizer.normalize(parsed.data.query));
+    const constraints = this.dependencies.constraintExtractor.extract(normalized);
     const warnings: ProductIntentWarning[] = [];
     if (normalized.normalized !== parsed.data.query) {
       warnings.push(warning('QUERY_NORMALIZED'));
@@ -122,6 +143,7 @@ export class DefaultProductIntentResolutionService implements ProductIntentResol
     this.dependencies.logger?.info('product_intent_query_normalized', {
       correlationId,
       tokenCount: normalized.tokens.length,
+      explicitConstraintCount: explicitConstraintCount(constraints),
     });
 
     let searchHits;
@@ -180,7 +202,7 @@ export class DefaultProductIntentResolutionService implements ProductIntentResol
       candidatesEligible: eligible.length,
     });
 
-    const ranked = this.dependencies.ranker.rank(normalized, eligible, parsed.data.context);
+    const ranked = this.dependencies.ranker.rank(normalized, constraints, eligible, parsed.data.context);
     this.dependencies.logger?.info('product_intent_candidates_ranked', {
       correlationId,
       candidatesRanked: ranked.length,
@@ -188,7 +210,7 @@ export class DefaultProductIntentResolutionService implements ProductIntentResol
       topGap: ranked[1] ? ranked[0]!.score - ranked[1].score : 1,
     });
 
-    const decision = this.dependencies.resolutionPolicy.resolve(ranked);
+    const decision = this.dependencies.resolutionPolicy.resolve(ranked, constraints);
     if (decision.status === 'resolved') {
       this.dependencies.logger?.info('product_intent_resolved', {
         correlationId,
@@ -205,7 +227,12 @@ export class DefaultProductIntentResolutionService implements ProductIntentResol
       });
     }
 
-    const visibleRanked = decision.status === 'no_match' ? [] : ranked;
+    const plausibleRanked = ranked.filter((candidate) => candidate.plausible);
+    const visibleRanked = decision.status === 'no_match'
+      ? []
+      : explicitConstraintCount(constraints) > 0
+        ? plausibleRanked
+        : ranked;
     const publicCandidates = visibleRanked.slice(0, limit).map((candidate, index) => ({
       product: publicProduct(candidate.product),
       match: {
@@ -233,11 +260,11 @@ export class DefaultProductIntentResolutionService implements ProductIntentResol
       },
       candidates: publicCandidates,
       ...(decision.status === 'clarification_required'
-        ? { clarification: this.dependencies.clarificationBuilder.build(ranked) }
+        ? { clarification: this.dependencies.clarificationBuilder.build(ranked, constraints) }
         : {}),
       statistics: {
         retrieved: searchHits.length,
-        eligible: ranked.length,
+        eligible: explicitConstraintCount(constraints) > 0 ? plausibleRanked.length : ranked.length,
         returned: publicCandidates.length,
       },
       warnings: deduplicateWarnings(warnings),

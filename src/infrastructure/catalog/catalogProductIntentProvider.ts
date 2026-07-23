@@ -10,6 +10,7 @@ import type {
   ProductIntentSearchHit,
 } from '../../application/catalog/product-intent/index.js';
 import { createProductIntentIdentity } from '../../application/catalog/product-intent/index.js';
+import { normalizeCatalogText } from '../../application/catalog/product-intent/normalizer.js';
 
 function parseCatalogId(value: string | undefined, fallback: number): number | null {
   if (value === undefined) return fallback;
@@ -64,13 +65,17 @@ function summaryFromDetail(reference: ProductIntentReference, detail: ProductDet
 }
 
 function searchTerms(query: NormalizedProductQuery): string[] {
+  const broadGenericTerms = new Set(['barra']);
+  const includeNormalizedTerm = !(broadGenericTerms.has(query.normalized) && query.synonymTerms.length > 0);
   const compactUnits = [
-    query.normalized.replace(/\b(\d+(?:[.,]\d+)?)\s+(kg|mm|cm|m)\b/gu, '$1$2'),
+    ...(includeNormalizedTerm ? [query.normalized.replace(/\b(\d+(?:[.,]\d+)?)\s+(kg|mm|cm|m)\b/gu, '$1$2')] : []),
     ...query.synonymTerms.map((term) => term.replace(/\b(\d+(?:[.,]\d+)?)\s+(kg|mm|cm|m)\b/gu, '$1$2')),
   ];
+  const baseTerms = broadGenericTerms.has(query.normalized) && query.synonymTerms.length > 0
+    ? query.synonymTerms
+    : [query.normalized, ...query.synonymTerms];
   return [...new Set([
-    query.normalized,
-    ...query.synonymTerms,
+    ...baseTerms,
     ...compactUnits,
   ].filter((term) => term.trim().length >= 2))].slice(0, 8);
 }
@@ -84,9 +89,15 @@ export class CatalogProductIntentProvider implements CatalogProductIntentSearche
     readonly includeOutOfStock: boolean;
   }): Promise<readonly ProductIntentSearchHit[]> {
     const hits = new Map<string, ProductIntentSearchHit>();
-    for (const term of searchTerms(input.query)) {
+    const terms = searchTerms(input.query);
+    const perTermLimit = Math.max(5, Math.ceil(input.limit / Math.max(terms.length, 1)));
+    for (const term of terms) {
       const result = await this.catalogService.searchProducts(term, input.limit, input.includeOutOfStock);
+      let acceptedForTerm = 0;
       for (const item of result.items) {
+        if (input.query.normalized === 'barra' && !normalizeCatalogText(item.name).includes(normalizeCatalogText(term))) {
+          continue;
+        }
         const product = referenceFromSearchItem(item);
         const key = createProductIntentIdentity(product);
         if (!hits.has(key)) {
@@ -95,6 +106,8 @@ export class CatalogProductIntentProvider implements CatalogProductIntentSearche
             query: term,
             matchType: item.matchType,
           });
+          acceptedForTerm += 1;
+          if (acceptedForTerm >= perTermLimit) break;
         }
       }
     }

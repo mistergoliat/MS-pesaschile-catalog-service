@@ -1,4 +1,5 @@
 import type {
+  ExplicitProductConstraints,
   ProductClarification,
   ProductClarificationBuilder,
   ProductIntentCatalogProduct,
@@ -58,12 +59,16 @@ function groupBy(
 }
 
 export class DefaultProductClarificationBuilder implements ProductClarificationBuilder {
-  build(candidates: readonly RankedProductIntentCandidate[]): ProductClarification {
-    const plausible = candidates.slice(0, MAX_OPTIONS);
+  build(
+    candidates: readonly RankedProductIntentCandidate[],
+    constraints: ExplicitProductConstraints,
+  ): ProductClarification {
+    const plausible = candidates.filter((candidate) => candidate.plausible).slice(0, MAX_OPTIONS);
     return (
-      groupBy(plausible, 'product_type', (product) => productType(text(product))) ??
-      groupBy(plausible, 'weight', (product) => firstMatch(text(product), /\b\d+(?:[.,]\d+)? kg\b/u)) ??
-      groupBy(plausible, 'diameter', (product) => firstMatch(text(product), /\b\d+(?:[.,]\d+)? mm\b/u)) ??
+      (constraints.productType === undefined ? groupBy(plausible, 'product_type', (product) => productType(text(product))) : null) ??
+      (constraints.weight === undefined ? groupBy(plausible, 'weight', (product) => firstMatch(text(product), /\b\d+(?:[.,]\d+)? kg\b/u)) : null) ??
+      (constraints.diameter === undefined ? groupBy(plausible, 'diameter', (product) => firstMatch(text(product), /\b\d+(?:[.,]\d+)? mm\b/u)) : null) ??
+      (constraints.length === undefined ? groupBy(plausible, 'length', (product) => firstMatch(text(product), /\b\d+(?:[.,]\d+)? (?:cm|m)\b/u)) : null) ??
       groupBy(plausible, 'category', (product) => product.category ?? null) ??
       {
         dimension: 'unspecified',

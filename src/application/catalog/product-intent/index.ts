@@ -3,6 +3,7 @@ export * from './errors.js';
 export * from './productIntentIdentity.js';
 export * from './normalizer.js';
 export * from './synonyms.js';
+export * from './constraints.js';
 export * from './ranker.js';
 export * from './resolutionPolicy.js';
 export * from './clarification.js';

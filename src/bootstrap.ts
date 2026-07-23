@@ -10,6 +10,7 @@ import { PrestaShopPhysicalStockProvider } from './infrastructure/stock/prestash
 import { CatalogApplicationService } from './application/catalogService.js';
 import {
   DefaultProductClarificationBuilder,
+  DefaultProductExplicitConstraintExtractor,
   DefaultProductIntentCandidateRanker,
   DefaultProductIntentResolutionPolicy,
   DefaultProductIntentResolutionService,
@@ -58,6 +59,7 @@ export async function createRuntime() {
   const productIntentResolutionService = new DefaultProductIntentResolutionService({
     normalizer: new DefaultProductQueryNormalizer(),
     synonymProvider: new StaticProductSearchSynonymProvider(),
+    constraintExtractor: new DefaultProductExplicitConstraintExtractor(),
     searcher: productIntentCatalogProvider,
     catalogReader: productIntentCatalogProvider,
     ranker: new DefaultProductIntentCandidateRanker(),
