@@ -52,6 +52,13 @@ const envSchema = z.object({
   METRICS_REQUIRE_API_KEY: z.string().optional(),
   TAX_RATE: z.coerce.number().min(0).max(1).default(0.19),
   ENABLE_DOCS: z.string().optional(),
+  RELATIONSHIP_SNAPSHOT_DIR: z.string().trim().min(1).default('data/relationship-snapshots'),
+  RELATIONSHIP_SOURCE_FROM_DATE: z.string().trim().optional(),
+  RELATIONSHIP_SOURCE_TO_DATE: z.string().trim().optional(),
+  RELATIONSHIP_SOURCE_ORDER_STATES: z.string().optional(),
+  RELATIONSHIP_SOURCE_EXCLUDED_PRODUCT_IDS: z.string().optional(),
+  RELATIONSHIP_SOURCE_MAX_PRODUCTS_PER_ORDER: z.coerce.number().int().min(2).max(500).default(50),
+  CUSTOMER_AFFINITY_PROVIDER_MODE: z.enum(['unavailable', 'empty']).default('unavailable'),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -65,6 +72,13 @@ const apiKeys = (raw.CATALOG_API_KEYS ?? raw.API_KEY ?? '')
   .split(',')
   .map((value) => value.trim())
   .filter(Boolean);
+
+function parseCsv(value: string | undefined): string[] {
+  return (value ?? '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
 
 if (apiKeys.length === 0) {
   throw new Error('At least one API key must be configured through API_KEY or CATALOG_API_KEYS');
@@ -127,5 +141,16 @@ export const config = {
   },
   pricing: {
     taxRate: raw.TAX_RATE,
+  },
+  recommendation: {
+    relationshipSnapshotDir: raw.RELATIONSHIP_SNAPSHOT_DIR,
+    relationshipSource: {
+      fromDate: raw.RELATIONSHIP_SOURCE_FROM_DATE || null,
+      toDate: raw.RELATIONSHIP_SOURCE_TO_DATE || null,
+      orderStates: parseCsv(raw.RELATIONSHIP_SOURCE_ORDER_STATES),
+      excludedProductIds: parseCsv(raw.RELATIONSHIP_SOURCE_EXCLUDED_PRODUCT_IDS),
+      maxProductsPerOrder: raw.RELATIONSHIP_SOURCE_MAX_PRODUCTS_PER_ORDER,
+    },
+    customerAffinityProviderMode: raw.CUSTOMER_AFFINITY_PROVIDER_MODE,
   },
 } as const;

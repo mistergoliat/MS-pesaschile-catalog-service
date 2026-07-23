@@ -12,7 +12,8 @@
     "test": "vitest run --config vitest.config.ts",
     "test:integration": "vitest run --config vitest.config.ts tests/integration",
     "smoke": "tsx scripts/smoke-test.ts",
-    "validate:prices": "tsx scripts/validate-price-parity.ts"
+    "validate:prices": "tsx scripts/validate-price-parity.ts",
+    "relationship:snapshot:build": "tsx src/cli/buildRelationshipSnapshot.ts"
   },
   "dependencies": {
     "@fastify/rate-limit": "^10.3.0",

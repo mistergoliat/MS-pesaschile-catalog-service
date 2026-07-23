@@ -330,11 +330,16 @@ describe('SearchProducts V2 HTTP endpoint', () => {
     await app.close();
   });
 
-  it('does not leak raw evidence in HTTP response', async () => {
+  it('exposes relationship evidence but not raw customer evidence in HTTP response', async () => {
     const { service, request } = validInject();
     const app = await makeApp(service);
     const response = await app.inject(request);
-    expect(JSON.stringify(response.json())).not.toContain('evidence');
+    expect(response.json().recommendations[0].relationship.evidence).toMatchObject({
+      jointCount: 12,
+      confidence: 0.6,
+      lift: 1.5,
+    });
+    expect(JSON.stringify(response.json())).not.toContain('DIRECT_PRODUCT_PURCHASE');
     await app.close();
   });
 });

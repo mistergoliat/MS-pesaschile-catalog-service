@@ -7,6 +7,8 @@ const runtime = await createRuntime();
 
 const app = await buildApp({
   service: runtime.service,
+  productIntentResolutionService: runtime.productIntentResolutionService,
+  searchProductsV2Service: runtime.searchProductsV2Service,
   repository: runtime.repository,
   readyCheck: async () => {
     try {
@@ -15,9 +17,14 @@ const app = await buildApp({
         config.cache.driver === 'redis'
           ? (await runtime.cache.ping() ? 'ok' : 'unavailable')
           : 'ok';
-      return { database: 'ok', redis };
+      const relationshipSnapshot = runtime.relationshipSnapshotReader.getStatus().state === 'ready' ? 'ok' : 'unavailable';
+      return { database: 'ok', redis, relationshipSnapshot };
     } catch {
-      return { database: 'unavailable', redis: config.cache.driver === 'redis' ? 'unavailable' : 'ok' };
+      return {
+        database: 'unavailable',
+        redis: config.cache.driver === 'redis' ? 'unavailable' : 'ok',
+        relationshipSnapshot: runtime.relationshipSnapshotReader.getStatus().state === 'ready' ? 'ok' : 'unavailable',
+      };
     }
   },
 });

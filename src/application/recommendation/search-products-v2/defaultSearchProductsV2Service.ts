@@ -1,6 +1,16 @@
 import { cloneJsonValue, deepFreeze } from '../../../domain/recommendation/relationship-engine/publication/canonicalJson.js';
 import { createProductRuntimeIdentity } from '../../../domain/recommendation/relationship-engine/runtime/index.js';
-import { ProductRecommendationError } from '../../../domain/recommendation/relationship-engine/recommendation/index.js';
+import {
+  DEFAULT_PRODUCT_RECOMMENDATION_SERVICE_PARAMETERS,
+  ProductRecommendationError,
+} from '../../../domain/recommendation/relationship-engine/recommendation/index.js';
+import {
+  recommendationEnrichmentCandidatesTotal,
+  recommendationEnrichmentInactiveTotal,
+  recommendationEnrichmentMissingTotal,
+  recommendationEnrichmentOutOfStockTotal,
+  recommendationEnrichmentReturnedTotal,
+} from '../../../shared/metrics.js';
 import { CustomerAffinityError } from '../../../domain/recommendation/customer-affinity/index.js';
 import type {
   CustomerAffinityCustomerReference,
@@ -14,6 +24,7 @@ import type {
 } from '../../../domain/recommendation/personalized-recommendation/index.js';
 import {
   DEFAULT_SEARCH_PRODUCTS_V2_SERVICE_PARAMETERS,
+  type CatalogProductSummary,
   searchProductsV2RequestSchema,
   searchProductsV2ResultSchema,
   type SearchProductsV2Dependencies,
@@ -33,6 +44,10 @@ import type {
   ProductRecommendationResult,
 } from '../../../domain/recommendation/relationship-engine/recommendation/index.js';
 import type { ProductRelationshipProductReference } from '../../../domain/recommendation/relationship-engine/contracts.js';
+import type {
+  PersonalizedRecommendation,
+  PersonalizedRecommendationExclusion,
+} from '../../../domain/recommendation/personalized-recommendation/index.js';
 
 type StageStatus = SearchProductsV2Execution['stages'];
 
@@ -104,7 +119,8 @@ function deduplicateWarnings(warnings: readonly WarningWithSource[]): SearchProd
 function candidatePoolSize(limit: number, parameters: SearchProductsV2ServiceParameters): number {
   return Math.min(
     parameters.maximumCandidatePoolSize,
-    Math.max(limit, limit * parameters.candidatePoolFactor),
+    DEFAULT_PRODUCT_RECOMMENDATION_SERVICE_PARAMETERS.maximumLimit,
+    Math.max(20, limit * parameters.candidatePoolFactor),
   );
 }
 
@@ -181,7 +197,7 @@ function validateCommercialResult(result: ProductRecommendationResult): void {
 function createNeutralCustomerAffinityResult(
   customer: CustomerAffinityCustomerReference | undefined,
   products: readonly ProductRelationshipProductReference[],
-  reason: 'customer_not_identified' | 'technical_degradation',
+  _reason: 'customer_not_identified' | 'technical_degradation',
 ): CustomerProductAffinityResult {
   const affinities: CustomerProductAffinity[] = products.map((product) => ({
     product: cloneJsonValue(product),
@@ -190,13 +206,12 @@ function createNeutralCustomerAffinityResult(
     scoringVersion: 'customer-affinity-v1',
     signals: deepFreeze([]),
     evidence: deepFreeze([]),
-    warnings: deepFreeze(reason === 'customer_not_identified' ? [{ code: 'CUSTOMER_NOT_IDENTIFIED' as const }] : []),
+    warnings: deepFreeze([]),
   }));
-  const productWarnings = affinities.reduce((count, item) => count + item.warnings.length, 0);
   return deepFreeze({
     ...(customer === undefined ? {} : { customer: cloneJsonValue(customer) }),
     affinities: deepFreeze(affinities),
-    warnings: deepFreeze(reason === 'customer_not_identified' ? [{ code: 'CUSTOMER_NOT_IDENTIFIED' as const }] : []),
+    warnings: deepFreeze([]),
     statistics: {
       requestedProducts: products.length,
       deduplicatedProducts: products.length,
@@ -205,7 +220,7 @@ function createNeutralCustomerAffinityResult(
       productsWithoutEvidence: products.length,
       positiveSignalsGenerated: 0,
       negativeSignalsGenerated: 0,
-      warningsGenerated: reason === 'customer_not_identified' ? productWarnings + 1 : 0,
+      warningsGenerated: 0,
       providerCalls: 0,
     },
   });
@@ -228,32 +243,39 @@ function mapPersonalizationWarningCode(code: PersonalizedRecommendationWarning['
   return 'UPSTREAM_PERSONALIZATION_WARNING';
 }
 
-function productByIdentity(products: readonly ProductRelationshipProductReference[]): ReadonlyMap<string, ProductRelationshipProductReference> {
-  return new Map(products.map((product) => [createProductRuntimeIdentity(product), product]));
+function deduplicateProductReferences(
+  products: readonly ProductRelationshipProductReference[],
+): ProductRelationshipProductReference[] {
+  const deduplicated = new Map<string, ProductRelationshipProductReference>();
+  for (const product of products) {
+    const identity = createProductRuntimeIdentity(product);
+    if (!deduplicated.has(identity)) {
+      deduplicated.set(identity, cloneJsonValue(product));
+    }
+  }
+  return [...deduplicated.values()];
 }
 
 function collectWarnings(input: {
+  customerProvided: boolean;
   commercial: ProductRecommendationResult;
   affinity?: CustomerProductAffinityResult;
   personalization?: PersonalizedRecommendationResult;
   generated: readonly WarningWithSource[];
 }): SearchProductsV2Warning[] {
   const commercialWarnings = input.commercial.recommendations.flatMap((recommendation) => (
-    recommendation.warnings.map(() => warning('UPSTREAM_COMMERCIAL_WARNING', 'commercial', recommendation.product))
+    recommendation.warnings.map(() => warning('UPSTREAM_COMMERCIAL_WARNING', 'commercial'))
   ));
-  const products = productByIdentity(input.commercial.recommendations.map((recommendation) => recommendation.product));
   const affinityWarnings = input.affinity === undefined
     ? []
     : [
         ...input.affinity.warnings.map((item) => warning(
           mapAffinityWarningCode(item.code),
           'affinity',
-          item.productIdentity === undefined ? undefined : products.get(item.productIdentity),
         )),
         ...input.affinity.affinities.flatMap((affinity) => affinity.warnings.map((item) => warning(
           mapAffinityWarningCode(item.code),
           'affinity',
-          affinity.product,
         ))),
       ];
   const personalizationWarnings = input.personalization === undefined
@@ -263,7 +285,6 @@ function collectWarnings(input: {
         ...input.personalization.recommendations.flatMap((recommendation) => recommendation.warnings.map((item) => warning(
           mapPersonalizationWarningCode(item.code),
           'personalization',
-          recommendation.product,
         ))),
       ];
   return deduplicateWarnings([
@@ -271,49 +292,209 @@ function collectWarnings(input: {
     ...commercialWarnings,
     ...affinityWarnings,
     ...personalizationWarnings,
-  ]);
+  ].filter((item) => input.customerProvided || item.code !== 'CUSTOMER_NOT_IDENTIFIED'));
+}
+
+function stockPassesInStockFilter(product: CatalogProductSummary): boolean {
+  return product.stock.available && (product.stock.status === 'in_stock' || product.stock.status === 'available_for_order');
+}
+
+function relationshipFor(recommendation: PersonalizedRecommendation) {
+  const relationship = recommendation.commercialRecommendation.relationship;
+  if (relationship.evidence.kind !== 'co_occurrence') {
+    throw new SearchProductsV2Error('UPSTREAM_CONTRACT_MISMATCH', 'SearchProducts V2 only supports co-occurrence relationship evidence', {
+      stage: 'response',
+    });
+  }
+  return {
+    type: relationship.relationshipType,
+    reliability: relationship.reliability,
+    evidence: {
+      jointCount: relationship.evidence.jointCount,
+      support: relationship.evidence.support,
+      confidence: relationship.evidence.confidence,
+      lift: relationship.evidence.lift,
+    },
+  };
+}
+
+function commercialReasonFor(recommendation: PersonalizedRecommendation) {
+  if (recommendation.components.normalizedAffinityContribution > 0) {
+    return {
+      code: 'CUSTOMER_AFFINITY_MATCH' as const,
+      label: 'Coincide con afinidad observada del cliente',
+    };
+  }
+  if (recommendation.commercialRecommendation.relationship.relationshipType === 'same_order') {
+    return {
+      code: 'FREQUENTLY_BOUGHT_TOGETHER' as const,
+      label: 'Comprado frecuentemente junto al producto consultado',
+    };
+  }
+  return {
+    code: 'RELATED_PRODUCT_FALLBACK' as const,
+    label: 'Producto relacionado disponible para evaluación comercial',
+  };
+}
+
+function globalCatalogWarnings(input: {
+  missing: number;
+  inactive: number;
+  priceMissing: number;
+  stockUnknown: number;
+}): WarningWithSource[] {
+  const warnings: WarningWithSource[] = [];
+  if (input.missing > 0) {
+    warnings.push(warning('CATALOG_PRODUCT_MISSING', 't11', undefined, { count: input.missing }));
+  }
+  if (input.inactive > 0) {
+    warnings.push(warning('CATALOG_PRODUCT_INACTIVE', 't11', undefined, { count: input.inactive }));
+  }
+  if (input.priceMissing > 0) {
+    warnings.push(warning('CATALOG_PRICE_UNAVAILABLE', 't11', undefined, { count: input.priceMissing }));
+  }
+  if (input.stockUnknown > 0) {
+    warnings.push(warning('CATALOG_STOCK_UNKNOWN', 't11', undefined, { count: input.stockUnknown }));
+  }
+  return warnings;
+}
+
+function personalizationMetadata(input: {
+  request: SearchProductsV2Request;
+  affinityStage: StageStatus['customerAffinity'];
+  warnings: readonly SearchProductsV2Warning[];
+}) {
+  if (!input.request.customer) {
+    return {
+      applied: false,
+      reason: 'customer_not_provided' as const,
+    };
+  }
+  if (input.affinityStage === 'degraded') {
+    return {
+      applied: false,
+      reason: 'customer_affinity_unavailable' as const,
+      customerId: input.request.customer.customerId,
+    };
+  }
+  if (input.warnings.some((item) => item.code === 'NO_CUSTOMER_HISTORY')) {
+    return {
+      applied: false,
+      reason: 'no_customer_history' as const,
+      customerId: input.request.customer.customerId,
+    };
+  }
+  return {
+    applied: true,
+    customerId: input.request.customer.customerId,
+  };
 }
 
 function mapResult(input: {
   request: SearchProductsV2Request;
   correlationId: string;
   commercial: ProductRecommendationResult;
+  sourceProduct: CatalogProductSummary;
+  enrichedProducts: ReadonlyMap<string, CatalogProductSummary>;
   affinity?: CustomerProductAffinityResult;
   personalization?: PersonalizedRecommendationResult;
   generatedWarnings: readonly WarningWithSource[];
+  affinityStage: StageStatus['customerAffinity'];
   stages: StageStatus;
   degraded: boolean;
   affinityCalls: 0 | 1;
   personalizationCalls: 0 | 1;
+  requestedLimit: number;
 }): SearchProductsV2Result {
+  let missingProducts = 0;
+  let inactiveProducts = 0;
+  let outOfStockProducts = 0;
+  let priceMissing = 0;
+  let stockUnknown = 0;
+  const kept: Array<{
+    recommendation: PersonalizedRecommendation;
+    product: CatalogProductSummary;
+  }> = [];
+  const enrichmentExcluded: Array<{
+    product: ProductRelationshipProductReference;
+    code: 'MISSING_CATALOG_PRODUCT' | 'INACTIVE_PRODUCT' | 'OUT_OF_STOCK_FILTERED';
+  }> = [];
+
+  for (const recommendation of input.personalization?.recommendations ?? []) {
+    const identity = createProductRuntimeIdentity(recommendation.product);
+    const product = input.enrichedProducts.get(identity);
+    if (!product) {
+      missingProducts += 1;
+      enrichmentExcluded.push({ product: cloneJsonValue(recommendation.product), code: 'MISSING_CATALOG_PRODUCT' });
+      continue;
+    }
+    if (!product.active) {
+      inactiveProducts += 1;
+      enrichmentExcluded.push({ product: cloneJsonValue(recommendation.product), code: 'INACTIVE_PRODUCT' });
+      continue;
+    }
+    if (input.request.filters?.inStockOnly === true && !stockPassesInStockFilter(product)) {
+      outOfStockProducts += 1;
+      enrichmentExcluded.push({ product: cloneJsonValue(recommendation.product), code: 'OUT_OF_STOCK_FILTERED' });
+      continue;
+    }
+    if (product.price === null) {
+      priceMissing += 1;
+    }
+    if (product.stock.status === 'unknown') {
+      stockUnknown += 1;
+    }
+    kept.push({ recommendation, product });
+  }
+
+  const returned = kept.slice(0, input.requestedLimit);
+  const resultLimitExclusions = kept.slice(input.requestedLimit).map((item) => ({
+    product: cloneJsonValue(item.recommendation.product),
+    code: 'RESULT_LIMIT_TRUNCATION' as const,
+  }));
+  recommendationEnrichmentMissingTotal.inc(missingProducts);
+  recommendationEnrichmentInactiveTotal.inc(inactiveProducts);
+  recommendationEnrichmentOutOfStockTotal.inc(outOfStockProducts);
+  recommendationEnrichmentReturnedTotal.inc(returned.length);
+
   const warnings = collectWarnings({
+    customerProvided: input.request.customer !== undefined,
     commercial: input.commercial,
     affinity: input.affinity,
     personalization: input.personalization,
-    generated: input.generatedWarnings,
+    generated: [
+      ...input.generatedWarnings,
+      ...globalCatalogWarnings({ missing: missingProducts, inactive: inactiveProducts, priceMissing, stockUnknown }),
+    ],
   });
-  const recommendations = (input.personalization?.recommendations ?? []).map((recommendation) => ({
-    product: cloneJsonValue(recommendation.product),
-    rank: recommendation.personalizedRank,
+  const recommendations = returned.map(({ recommendation, product }, index) => ({
+    product: cloneJsonValue(product),
+    rank: index + 1,
     score: recommendation.personalizedScore,
     commercialScore: recommendation.components.commercialScore,
     affinityScore: recommendation.components.affinityScore,
     affinityConfidence: recommendation.affinityConfidence,
+    ranking: {
+      rank: index + 1,
+      score: recommendation.personalizedScore,
+    },
+    relationship: relationshipFor(recommendation),
+    commercialReason: commercialReasonFor(recommendation),
     reasons: recommendation.reasons.map((reason) => ({
       code: reason.code,
       source: reason.source,
     })),
-    warnings: deduplicateWarnings(recommendation.warnings.map((item) => warning(
-      mapPersonalizationWarningCode(item.code),
-      'personalization',
-      recommendation.product,
-    ))),
+    warnings: [],
   }));
-  const excluded = (input.personalization?.excluded ?? []).map((item) => ({
+  const personalizationExcluded = (input.personalization?.excluded ?? []).map((item: PersonalizedRecommendationExclusion) => ({
     product: cloneJsonValue(item.product),
     code: item.code,
   }));
-  const productWarnings = recommendations.reduce((count, item) => count + item.warnings.length, 0);
+  const excluded = [
+    ...personalizationExcluded,
+    ...enrichmentExcluded,
+    ...resultLimitExclusions,
+  ];
   const statistics: SearchProductsV2Statistics = {
     commercialCandidates: input.commercial.recommendations.length,
     affinityCandidates: input.affinity?.affinities.length ?? 0,
@@ -322,13 +503,23 @@ function mapResult(input: {
     customerAffinityCalls: input.affinityCalls,
     personalizationCalls: input.personalizationCalls,
     degradedStages: input.degraded ? 1 : 0,
-    warningsGenerated: warnings.length + productWarnings,
+    warningsGenerated: warnings.length,
   };
   const result: SearchProductsV2Result = {
-    query: input.request.query.trim(),
+    query: input.request.query?.trim() ?? null,
+    sourceProduct: deepFreeze(cloneJsonValue(input.sourceProduct)),
     ...(input.request.customer === undefined ? {} : { customer: cloneJsonValue(input.request.customer) }),
     recommendations: deepFreeze(recommendations),
     excluded: deepFreeze(excluded),
+    personalization: deepFreeze(personalizationMetadata({
+      request: input.request,
+      affinityStage: input.affinityStage,
+      warnings,
+    })),
+    snapshot: deepFreeze({
+      id: input.commercial.snapshot.snapshotId,
+      modelVersion: input.commercial.snapshot.modelVersion,
+    }),
     warnings: deepFreeze(warnings),
     statistics,
     execution: deepFreeze({
@@ -385,13 +576,69 @@ export class DefaultSearchProductsV2Service implements SearchProductsV2Service {
       stage: 'commercial',
       candidateCount: commercial.recommendations.length,
     });
+    this.dependencies.logger?.info('relationship_candidates_loaded', {
+      correlationId,
+      stage: 'commercial',
+      candidateCount: commercial.recommendations.length,
+      snapshotId: commercial.snapshot.snapshotId,
+    });
+
+    const enrichmentReferences = deduplicateProductReferences([
+      parsed.data.sourceProduct,
+      ...commercial.recommendations.map((recommendation) => recommendation.product),
+    ]);
+    this.dependencies.logger?.info('source_product_lookup_started', {
+      correlationId,
+      stage: 'catalog',
+      productIdentity: createProductRuntimeIdentity(parsed.data.sourceProduct),
+    });
+    this.dependencies.logger?.info('catalog_enrichment_requested', {
+      correlationId,
+      stage: 'catalog',
+      productCount: enrichmentReferences.length,
+    });
+    recommendationEnrichmentCandidatesTotal.inc(commercial.recommendations.length);
+    let enrichedProducts: ReadonlyMap<string, CatalogProductSummary>;
+    try {
+      enrichedProducts = await this.dependencies.catalogProductBatchReader.getProductsByReferences(enrichmentReferences);
+    } catch (error) {
+      this.dependencies.logger?.error('search_products_v2_failed', { correlationId, stage: 'catalog' });
+      throw new SearchProductsV2Error('COMMERCIAL_RECOMMENDATION_UNAVAILABLE', 'Catalog enrichment is unavailable', {
+        stage: 'catalog',
+        retryable: true,
+        cause: error,
+      });
+    }
+    this.dependencies.logger?.info('catalog_products_resolved', {
+      correlationId,
+      stage: 'catalog',
+      requested: enrichmentReferences.length,
+      resolved: enrichedProducts.size,
+    });
+    const sourceIdentity = createProductRuntimeIdentity(parsed.data.sourceProduct);
+    const sourceProduct = enrichedProducts.get(sourceIdentity);
+    if (!sourceProduct) {
+      throw new SearchProductsV2Error('SOURCE_PRODUCT_NOT_FOUND', 'Source product was not found in catalog', {
+        stage: 'catalog',
+        details: { productIdentity: sourceIdentity },
+      });
+    }
+    if (!sourceProduct.active) {
+      throw new SearchProductsV2Error('SOURCE_PRODUCT_INACTIVE', 'Source product is inactive in catalog', {
+        stage: 'catalog',
+        details: { productIdentity: sourceIdentity },
+      });
+    }
 
     if (commercial.recommendations.length === 0) {
       const result = mapResult({
         request: parsed.data,
         correlationId,
         commercial,
+        sourceProduct,
+        enrichedProducts,
         generatedWarnings: [warning('NO_COMMERCIAL_CANDIDATES', 't11')],
+        affinityStage: 'skipped',
         stages: {
           commercialRecommendation: 'completed',
           customerAffinity: 'skipped',
@@ -400,6 +647,7 @@ export class DefaultSearchProductsV2Service implements SearchProductsV2Service {
         degraded: false,
         affinityCalls: 0,
         personalizationCalls: 0,
+        requestedLimit,
       });
       this.dependencies.logger?.info('search_products_v2_completed', { correlationId, degraded: false, resultCount: 0 });
       return result;
@@ -451,7 +699,7 @@ export class DefaultSearchProductsV2Service implements SearchProductsV2Service {
         customerAffinities: affinity,
         context: mapPersonalizationContext(parsed.data),
         parameters: {
-          maximumResults: requestedLimit,
+          maximumResults: candidatePoolSize(requestedLimit, this.parameters),
           commercialWeight: 0.7,
           affinityWeight: 0.3,
           affinityConfidenceNoneMultiplier: 0,
@@ -482,9 +730,12 @@ export class DefaultSearchProductsV2Service implements SearchProductsV2Service {
       request: parsed.data,
       correlationId,
       commercial,
+      sourceProduct,
+      enrichedProducts,
       affinity,
       personalization,
       generatedWarnings,
+      affinityStage,
       stages: {
         commercialRecommendation: 'completed',
         customerAffinity: affinityStage,
@@ -493,6 +744,22 @@ export class DefaultSearchProductsV2Service implements SearchProductsV2Service {
       degraded,
       affinityCalls,
       personalizationCalls: 1,
+      requestedLimit,
+    });
+    this.dependencies.logger?.info('inactive_products_discarded', {
+      correlationId,
+      stage: 'catalog',
+      count: result.excluded.filter((item) => item.code === 'INACTIVE_PRODUCT').length,
+    });
+    this.dependencies.logger?.info('missing_products_discarded', {
+      correlationId,
+      stage: 'catalog',
+      count: result.excluded.filter((item) => item.code === 'MISSING_CATALOG_PRODUCT').length,
+    });
+    this.dependencies.logger?.info('out_of_stock_products_discarded', {
+      correlationId,
+      stage: 'catalog',
+      count: result.excluded.filter((item) => item.code === 'OUT_OF_STOCK_FILTERED').length,
     });
     this.dependencies.logger?.info('search_products_v2_completed', {
       correlationId,

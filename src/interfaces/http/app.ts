@@ -11,25 +11,36 @@ import { logger } from '../../shared/logger.js';
 import { batchRequestSchema, errorResponseSchema, healthResponseSchema, productParamsSchema, productQuerySchema, productResponseSchema, searchQuerySchema, searchResponseSchema, batchResponseSchema } from '../../shared/contracts.js';
 import { readCommercialContext } from '../../shared/requestContext.js';
 import type { CatalogApplicationService } from '../../application/catalogService.js';
+import type { ProductIntentResolutionService } from '../../application/catalog/product-intent/index.js';
 import type { SearchProductsV2Service } from '../../application/recommendation/search-products-v2/index.js';
 import type { CatalogRepository } from '../../domain/catalog/ports.js';
 import type { BatchGetInput } from '../../domain/catalog/types.js';
 import { registerSearchProductsV2Route } from './routes/searchProductsV2Route.js';
+import { registerResolveProductIntentRoute } from './routes/resolveProductIntentRoute.js';
 
 export type AppDependencies = {
   service: CatalogApplicationService;
+  productIntentResolutionService?: ProductIntentResolutionService;
   searchProductsV2Service?: SearchProductsV2Service;
   repository: CatalogRepository;
-  readyCheck: () => Promise<{ database: 'ok' | 'unavailable'; redis?: 'ok' | 'unavailable' }>;
+  readyCheck: () => Promise<{
+    database: 'ok' | 'unavailable';
+    redis?: 'ok' | 'unavailable';
+    relationshipSnapshot?: 'ok' | 'unavailable';
+  }>;
 };
 
 const requestStartedAt = new WeakMap<object, bigint>();
+const jsonSchemaCache = new Map<string, unknown>();
 
 function jsonSchema(schema: unknown, name: string) {
   // Emit a self-contained OpenAPI schema so Swagger UI does not depend on
   // separately registered component schemas.
-  void name;
-  return zodToJsonSchema(schema as never, { $refStrategy: 'none' });
+  const cached = jsonSchemaCache.get(name);
+  if (cached) return cached;
+  const converted = zodToJsonSchema(schema as never, { $refStrategy: 'none' });
+  jsonSchemaCache.set(name, converted);
+  return converted;
 }
 
 function errorPayload(error: CatalogError, correlationId: string) {
@@ -150,7 +161,8 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
     const checks = await deps.readyCheck();
     const databaseUnavailable = checks.database !== 'ok';
     const redisUnavailable = checks.redis === 'unavailable';
-    if (databaseUnavailable || redisUnavailable) {
+    const relationshipSnapshotUnavailable = checks.relationshipSnapshot === 'unavailable';
+    if (databaseUnavailable || redisUnavailable || relationshipSnapshotUnavailable) {
       return reply.code(503).send({ status: 'degraded', checks });
     }
     return reply.send({ status: 'ok', checks });
@@ -311,6 +323,7 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
     return reply.send(result);
   });
 
+  await registerResolveProductIntentRoute(app as unknown as FastifyInstance, deps.productIntentResolutionService);
   await registerSearchProductsV2Route(app as unknown as FastifyInstance, deps.searchProductsV2Service);
 
   return app as unknown as FastifyInstance;
