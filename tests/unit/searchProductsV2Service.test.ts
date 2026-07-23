@@ -381,6 +381,12 @@ describe('SearchProducts V2 orchestration', () => {
     expect(harness.commercial.calls[0]?.limit).toBe(20);
   });
 
+  it('caps expanded candidate pool to the T08 maximum limit', async () => {
+    const harness = buildSearchProductsV2Harness();
+    await harness.service.search({ ...baseSearchProductsV2Request, limit: 10 });
+    expect(harness.commercial.calls[0]?.limit).toBe(20);
+  });
+
   it('maps inStockOnly to includeOutOfStock false', async () => {
     const harness = buildSearchProductsV2Harness();
     await harness.service.search({ ...baseSearchProductsV2Request, filters: { inStockOnly: true } });

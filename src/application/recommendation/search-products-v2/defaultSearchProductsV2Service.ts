@@ -1,6 +1,9 @@
 import { cloneJsonValue, deepFreeze } from '../../../domain/recommendation/relationship-engine/publication/canonicalJson.js';
 import { createProductRuntimeIdentity } from '../../../domain/recommendation/relationship-engine/runtime/index.js';
-import { ProductRecommendationError } from '../../../domain/recommendation/relationship-engine/recommendation/index.js';
+import {
+  DEFAULT_PRODUCT_RECOMMENDATION_SERVICE_PARAMETERS,
+  ProductRecommendationError,
+} from '../../../domain/recommendation/relationship-engine/recommendation/index.js';
 import {
   recommendationEnrichmentCandidatesTotal,
   recommendationEnrichmentInactiveTotal,
@@ -116,6 +119,7 @@ function deduplicateWarnings(warnings: readonly WarningWithSource[]): SearchProd
 function candidatePoolSize(limit: number, parameters: SearchProductsV2ServiceParameters): number {
   return Math.min(
     parameters.maximumCandidatePoolSize,
+    DEFAULT_PRODUCT_RECOMMENDATION_SERVICE_PARAMETERS.maximumLimit,
     Math.max(20, limit * parameters.candidatePoolFactor),
   );
 }
