@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, open, readFile, rename, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import {
   productRelationshipSnapshotSchema,
@@ -159,7 +159,18 @@ export class FileProductRelationshipSnapshotStore implements ProductRelationship
   private async writeJsonAtomically(path: string, content: string): Promise<void> {
     await mkdir(dirname(path), { recursive: true });
     const temporaryPath = `${path}.${process.pid}.tmp`;
-    await writeFile(temporaryPath, content, 'utf8');
-    await rename(temporaryPath, path);
+    const file = await open(temporaryPath, 'w');
+    try {
+      await file.writeFile(content, 'utf8');
+      await file.sync();
+    } finally {
+      await file.close();
+    }
+    try {
+      await rename(temporaryPath, path);
+    } catch (error) {
+      await rm(temporaryPath, { force: true });
+      throw error;
+    }
   }
 }
