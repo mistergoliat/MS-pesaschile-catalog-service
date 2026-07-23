@@ -6,6 +6,8 @@ It exists because SearchProducts V2 recommendations require a known `sourceProdu
 
 T12 does not recommend related products. T12 does not execute T11.3. T12 does not converse. T12 does not use LLMs, embeddings, vectors, or generated commercial copy. T12 does not integrate the Sales Agent.
 
+Since T11.4, T12 enriches candidate products through the shared `CatalogCommercialTruthService`. That keeps product intent resolution aligned with SearchProducts V2 for active status, orderability, final gross price, specific-price discounts and stock availability.
+
 ## Boundary
 
 ```text

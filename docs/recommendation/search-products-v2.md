@@ -4,6 +4,8 @@
 
 T11 orchestrates T08, T09, and T10. T11.3 adds product recommendation enrichment for human-readable and commercially usable responses.
 
+T11.4 adds a shared Catalog Commercial Truth layer used by T11.3 and T12. Relationship evidence still comes from the snapshot; active status, orderability, final gross price, discounts, stock and display data come from the operational catalog through `CatalogCommercialTruthService`.
+
 T11 does not calculate commercial relevance, customer affinity, or personalized ranking.
 
 It exposes a single HTTP capability for internal consumers that need product recommendations composed from commercial candidates, optional customer affinity, and personalized ranking.
