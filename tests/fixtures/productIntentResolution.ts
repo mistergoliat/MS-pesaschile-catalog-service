@@ -9,6 +9,7 @@ import type {
 } from '../../src/application/catalog/product-intent/index.js';
 import {
   DefaultProductClarificationBuilder,
+  DefaultProductExplicitConstraintExtractor,
   DefaultProductIntentCandidateRanker,
   DefaultProductIntentResolutionPolicy,
   DefaultProductIntentResolutionService,
@@ -215,6 +216,7 @@ export function buildProductIntentHarness(options: {
   const service = new DefaultProductIntentResolutionService({
     normalizer: new DefaultProductQueryNormalizer(),
     synonymProvider: new StaticProductSearchSynonymProvider(),
+    constraintExtractor: new DefaultProductExplicitConstraintExtractor(),
     searcher,
     catalogReader: catalog,
     ranker: new DefaultProductIntentCandidateRanker(),

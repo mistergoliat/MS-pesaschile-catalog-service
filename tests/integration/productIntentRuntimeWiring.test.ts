@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { CatalogApplicationService } from '../../src/application/catalogService.js';
 import {
   DefaultProductClarificationBuilder,
+  DefaultProductExplicitConstraintExtractor,
   DefaultProductIntentCandidateRanker,
   DefaultProductIntentResolutionPolicy,
   DefaultProductIntentResolutionService,
@@ -59,6 +60,7 @@ function productIntentRuntime() {
     productIntentResolutionService: new DefaultProductIntentResolutionService({
       normalizer: new DefaultProductQueryNormalizer(),
       synonymProvider: new StaticProductSearchSynonymProvider(),
+      constraintExtractor: new DefaultProductExplicitConstraintExtractor(),
       searcher: provider,
       catalogReader: provider,
       ranker: new DefaultProductIntentCandidateRanker(),

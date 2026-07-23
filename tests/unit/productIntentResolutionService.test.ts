@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DefaultProductClarificationBuilder,
+  DefaultProductExplicitConstraintExtractor,
   DefaultProductIntentCandidateRanker,
   DefaultProductIntentResolutionService,
   DefaultProductIntentResolutionPolicy,
@@ -9,6 +10,7 @@ import {
   createProductIntentIdentity,
 } from '../../src/application/catalog/product-intent/index.js';
 import { ProductIntentResolutionError } from '../../src/application/catalog/product-intent/index.js';
+import type { ProductIntentCatalogProduct } from '../../src/application/catalog/product-intent/index.js';
 import {
   baseResolveProductIntentRequest,
   buildProductIntentHarness,
@@ -24,6 +26,33 @@ import {
   outOfStockBar,
   unknownStockBar,
 } from '../fixtures/productIntentResolution.js';
+
+function constraintsFor(query: string) {
+  const normalizer = new DefaultProductQueryNormalizer();
+  const expanded = new StaticProductSearchSynonymProvider().expand(normalizer.normalize(query));
+  return new DefaultProductExplicitConstraintExtractor().extract(expanded);
+}
+
+function rankedFor(
+  product: ProductIntentCatalogProduct,
+  score: number,
+  reasons: readonly ('EXACT_NAME_MATCH' | 'NAME_TOKEN_MATCH')[] = ['NAME_TOKEN_MATCH'],
+  plausible = true,
+) {
+  return {
+    product,
+    score,
+    reasons,
+    plausible,
+    constraintEvaluation: {
+      explicitConstraintCount: 0,
+      matchedConstraintCount: 0,
+      satisfiesAllExplicitConstraints: false,
+      hasContradiction: false,
+      constraints: [],
+    },
+  };
+}
 
 describe('Product Intent Resolution', () => {
   it('rejects empty query', async () => {
@@ -106,6 +135,7 @@ describe('Product Intent Resolution', () => {
   it('category contributes to ranking', async () => {
     const ranked = new DefaultProductIntentCandidateRanker().rank(
       new DefaultProductQueryNormalizer().normalize('barra'),
+      constraintsFor('barra'),
       [bumper20, olympicBar15],
       { category: 'Barras' },
     );
@@ -168,14 +198,16 @@ describe('Product Intent Resolution', () => {
   it('tie does not depend on provider order', () => {
     const ranker = new DefaultProductIntentCandidateRanker();
     const query = new DefaultProductQueryNormalizer().normalize('barra');
-    const first = ranker.rank(query, [hexBar, curlBar]).map((candidate) => candidate.product.productId);
-    const second = ranker.rank(query, [curlBar, hexBar]).map((candidate) => candidate.product.productId);
+    const constraints = constraintsFor('barra');
+    const first = ranker.rank(query, constraints, [hexBar, curlBar]).map((candidate) => candidate.product.productId);
+    const second = ranker.rank(query, constraints, [curlBar, hexBar]).map((candidate) => candidate.product.productId);
     expect(second).toEqual(first);
   });
 
   it('scores remain between zero and one', () => {
     const ranked = new DefaultProductIntentCandidateRanker().rank(
       new DefaultProductQueryNormalizer().normalize('barra olimpica 15 kg'),
+      constraintsFor('barra olimpica 15 kg'),
       [olympicBar15, olympicBar20, hexBar],
     );
     expect(ranked.every((candidate) => candidate.score >= 0 && candidate.score <= 1)).toBe(true);
@@ -183,18 +215,18 @@ describe('Product Intent Resolution', () => {
 
   it('top clearly superior produces resolved', () => {
     const decision = new DefaultProductIntentResolutionPolicy().resolve([
-      { product: olympicBar15, score: 0.95, reasons: ['EXACT_NAME_MATCH'] },
-      { product: olympicBar20, score: 0.6, reasons: ['NAME_TOKEN_MATCH'] },
-    ]);
+      rankedFor(olympicBar15, 0.95, ['EXACT_NAME_MATCH']),
+      rankedFor(olympicBar20, 0.6),
+    ], {});
     expect(decision.status).toBe('resolved');
     expect(decision.sourceProduct).toEqual({ productId: '29' });
   });
 
   it('close candidates produce clarification_required', () => {
     const decision = new DefaultProductIntentResolutionPolicy().resolve([
-      { product: olympicBar15, score: 0.84, reasons: ['NAME_TOKEN_MATCH'] },
-      { product: olympicBar20, score: 0.78, reasons: ['NAME_TOKEN_MATCH'] },
-    ]);
+      rankedFor(olympicBar15, 0.84),
+      rankedFor(olympicBar20, 0.78),
+    ], {});
     expect(decision.status).toBe('clarification_required');
   });
 
@@ -221,18 +253,18 @@ describe('Product Intent Resolution', () => {
 
   it('clarification distinguishes weight', () => {
     const clarification = new DefaultProductClarificationBuilder().build([
-      { product: olympicBar15, score: 0.7, reasons: ['NAME_TOKEN_MATCH'] },
-      { product: olympicBar20, score: 0.7, reasons: ['NAME_TOKEN_MATCH'] },
-    ]);
+      rankedFor(olympicBar15, 0.7),
+      rankedFor(olympicBar20, 0.7),
+    ], {});
     expect(clarification.dimension).toBe('weight');
   });
 
   it('clarification groups equivalent products', () => {
     const clarification = new DefaultProductClarificationBuilder().build([
-      { product: olympicBar15, score: 0.7, reasons: ['NAME_TOKEN_MATCH'] },
-      { product: { ...olympicBar15, productId: '31' }, score: 0.69, reasons: ['NAME_TOKEN_MATCH'] },
-      { product: olympicBar20, score: 0.68, reasons: ['NAME_TOKEN_MATCH'] },
-    ]);
+      rankedFor(olympicBar15, 0.7),
+      rankedFor({ ...olympicBar15, productId: '31' }, 0.69),
+      rankedFor(olympicBar20, 0.68),
+    ], {});
     expect(clarification.options.find((option) => option.label === '15 kg')?.productIds).toEqual(['29', '31']);
   });
 
@@ -244,7 +276,19 @@ describe('Product Intent Resolution', () => {
       curlBar,
       bumper20,
       kettlebell16,
-    ].map((product) => ({ product, score: 0.7, reasons: ['NAME_TOKEN_MATCH' as const] })));
+    ].map((product) => ({
+      product,
+      score: 0.7,
+      reasons: ['NAME_TOKEN_MATCH' as const],
+      plausible: true,
+      constraintEvaluation: {
+        explicitConstraintCount: 0,
+        matchedConstraintCount: 0,
+        satisfiesAllExplicitConstraints: false,
+        hasContradiction: false,
+        constraints: [],
+      },
+    })), {});
     expect(clarification.options.length).toBeLessThanOrEqual(5);
   });
 
@@ -362,6 +406,7 @@ describe('Product Intent Resolution', () => {
     expect(() => new DefaultProductIntentResolutionService({
       normalizer: new DefaultProductQueryNormalizer(),
       synonymProvider: new StaticProductSearchSynonymProvider(),
+      constraintExtractor: new DefaultProductExplicitConstraintExtractor(),
       searcher: harness.searcher,
       catalogReader: harness.catalog,
       ranker: new DefaultProductIntentCandidateRanker(),
