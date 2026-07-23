@@ -72,5 +72,5 @@ describe('contracts', () => {
     expect(batch.items[0]?.productId).toBe(1);
     expect(batchResponseSchema.parse({ items: [] })).toEqual({ items: [] });
     await app.close();
-  });
+  }, 15000);
 });

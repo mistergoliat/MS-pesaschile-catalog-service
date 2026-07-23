@@ -8,6 +8,15 @@ import { MySqlSearchProvider } from './infrastructure/search/mysqlSearchProvider
 import { SqlPricingProvider } from './infrastructure/pricing/sqlPricingProvider.js';
 import { PrestaShopPhysicalStockProvider } from './infrastructure/stock/prestashopPhysicalStockProvider.js';
 import { CatalogApplicationService } from './application/catalogService.js';
+import {
+  DefaultProductClarificationBuilder,
+  DefaultProductIntentCandidateRanker,
+  DefaultProductIntentResolutionPolicy,
+  DefaultProductIntentResolutionService,
+  DefaultProductQueryNormalizer,
+  StaticProductSearchSynonymProvider,
+} from './application/catalog/product-intent/index.js';
+import { CatalogProductIntentProvider } from './infrastructure/catalog/catalogProductIntentProvider.js';
 import { FileProductRelationshipSnapshotStore } from './infrastructure/recommendation/fileProductRelationshipSnapshotStore.js';
 import {
   EmptyCustomerAffinityEvidenceProvider,
@@ -15,6 +24,7 @@ import {
 } from './infrastructure/recommendation/customerAffinityEvidenceProviders.js';
 import { createRecommendationRuntime } from './recommendationRuntime.js';
 import { logger } from './shared/logger.js';
+import { createCorrelationId } from './shared/crypto.js';
 
 export async function createRuntime() {
   const pool = createPool();
@@ -44,6 +54,23 @@ export async function createRuntime() {
   const customerAffinityEvidenceProvider = config.recommendation.customerAffinityProviderMode === 'empty'
     ? new EmptyCustomerAffinityEvidenceProvider()
     : new UnavailableCustomerAffinityEvidenceProvider();
+  const productIntentCatalogProvider = new CatalogProductIntentProvider(service);
+  const productIntentResolutionService = new DefaultProductIntentResolutionService({
+    normalizer: new DefaultProductQueryNormalizer(),
+    synonymProvider: new StaticProductSearchSynonymProvider(),
+    searcher: productIntentCatalogProvider,
+    catalogReader: productIntentCatalogProvider,
+    ranker: new DefaultProductIntentCandidateRanker(),
+    resolutionPolicy: new DefaultProductIntentResolutionPolicy(),
+    clarificationBuilder: new DefaultProductClarificationBuilder(),
+    correlationIdProvider: {
+      generate: createCorrelationId,
+    },
+    logger: {
+      info: (event, fields) => logger.info({ event, ...fields }, event),
+      error: (event, fields) => logger.error({ event, ...fields }, event),
+    },
+  });
   const recommendationRuntime = await createRecommendationRuntime({
     catalogService: service,
     snapshotStore: new FileProductRelationshipSnapshotStore(config.recommendation.relationshipSnapshotDir),
@@ -65,6 +92,7 @@ export async function createRuntime() {
     cache,
     repository,
     service,
+    productIntentResolutionService,
     relationshipSnapshotReader: recommendationRuntime.relationshipSnapshotReader,
     searchProductsV2Service: recommendationRuntime.searchProductsV2Service,
     relationshipSnapshotInitialRefresh: recommendationRuntime.initialRefreshResult,

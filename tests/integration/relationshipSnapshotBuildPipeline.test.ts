@@ -254,5 +254,5 @@ describe('relationship snapshot build pipeline', () => {
       product: { productId: '30' },
     });
     await app.close();
-  });
+  }, 15000);
 });

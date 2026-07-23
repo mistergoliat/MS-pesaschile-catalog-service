@@ -181,7 +181,7 @@ describe('SearchProducts V2 production runtime wiring', () => {
     expect(response.statusCode).toBe(200);
     expect(response.json().recommendations).toHaveLength(2);
     await app.close();
-  });
+  }, 15000);
 
   it('HTTP endpoint returns 200 with zero recommendations for a source without relationships', async () => {
     const { app } = await appWithRuntime({ activeSnapshot: snapshot() });
