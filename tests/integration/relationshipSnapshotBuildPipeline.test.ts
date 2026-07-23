@@ -19,6 +19,7 @@ import {
 import { buildApp } from '../../src/interfaces/http/app.js';
 import { CatalogApplicationService } from '../../src/application/catalogService.js';
 import { createRecommendationRuntime } from '../../src/recommendationRuntime.js';
+import { CatalogCommercialTruthService } from '../../src/domain/catalog/commercial-truth/index.js';
 import { EmptyCustomerAffinityEvidenceProvider } from '../../src/infrastructure/recommendation/customerAffinityEvidenceProviders.js';
 import {
   createCacheStub,
@@ -118,6 +119,33 @@ function catalogService() {
       cache: createCacheStub(),
     }),
   };
+}
+
+function commercialTruthService() {
+  return new CatalogCommercialTruthService({
+    dataReader: {
+      async read(input) {
+        return {
+          products: input.products.map((product) => ({
+            productId: Number(product.productId),
+            combinationId: product.combinationId === undefined ? 0 : Number(product.combinationId),
+            name: `Producto ${product.productId}`,
+            productReference: `SKU-${product.productId}`,
+            combinationReference: null,
+            description: null,
+            category: null,
+            active: true,
+            availableForOrder: true,
+            productBasePriceNet: 1000,
+            combinationImpactNet: 0,
+            stockQuantity: 10,
+          })),
+          specificPrices: [],
+        };
+      },
+    },
+    clock: { now: () => new Date('2026-07-23T12:00:00.000Z') },
+  });
 }
 
 describe('relationship snapshot build pipeline', () => {
@@ -223,7 +251,7 @@ describe('relationship snapshot build pipeline', () => {
     const { store } = await buildWithRows(snapshotRows());
     const { service, repository } = catalogService();
     const runtime = await createRecommendationRuntime({
-      catalogService: service,
+      catalogCommercialTruthService: commercialTruthService(),
       snapshotStore: store,
       customerAffinityEvidenceProvider: new EmptyCustomerAffinityEvidenceProvider(),
     });

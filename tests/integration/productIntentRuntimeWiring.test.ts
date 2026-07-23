@@ -12,6 +12,7 @@ import {
 import { CatalogProductIntentProvider } from '../../src/infrastructure/catalog/catalogProductIntentProvider.js';
 import { buildApp } from '../../src/interfaces/http/app.js';
 import type { SearchItem } from '../../src/domain/catalog/types.js';
+import { CatalogCommercialTruthService } from '../../src/domain/catalog/commercial-truth/index.js';
 import {
   createCacheStub,
   createPricingProviderStub,
@@ -53,7 +54,31 @@ function productIntentRuntime() {
     pricingProvider: createPricingProviderStub(),
     cache: createCacheStub(),
   });
-  const provider = new CatalogProductIntentProvider(service);
+  const commercialTruthService = new CatalogCommercialTruthService({
+    dataReader: {
+      async read(input) {
+        return {
+          products: input.products.map((product) => ({
+            productId: Number(product.productId),
+            combinationId: product.combinationId === undefined ? 0 : Number(product.combinationId),
+            name: 'Barra olimpica 15 kg',
+            productReference: 'BAR-15',
+            combinationReference: null,
+            description: 'Barra recta para sentadillas',
+            category: 'Barras',
+            active: true,
+            availableForOrder: true,
+            productBasePriceNet: 1000,
+            combinationImpactNet: 0,
+            stockQuantity: 8,
+          })),
+          specificPrices: [],
+        };
+      },
+    },
+    clock: { now: () => new Date('2026-07-23T12:00:00.000Z') },
+  });
+  const provider = new CatalogProductIntentProvider(service, commercialTruthService);
   return {
     repository,
     service,

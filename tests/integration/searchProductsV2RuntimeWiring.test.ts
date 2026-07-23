@@ -10,6 +10,7 @@ import {
   UnavailableCustomerAffinityEvidenceProvider,
 } from '../../src/infrastructure/recommendation/customerAffinityEvidenceProviders.js';
 import { createRecommendationRuntime } from '../../src/recommendationRuntime.js';
+import { CatalogCommercialTruthService } from '../../src/domain/catalog/commercial-truth/index.js';
 import { DefaultProductRelationshipSnapshotBuilder } from '../../src/domain/recommendation/relationship-engine/publication/index.js';
 import type { CalculatedProductRelationship } from '../../src/domain/recommendation/relationship-engine/contracts.js';
 import type { ProductRelationshipProductReference } from '../../src/domain/recommendation/relationship-engine/contracts.js';
@@ -80,18 +81,45 @@ function catalogService() {
   };
 }
 
+function commercialTruthService() {
+  return new CatalogCommercialTruthService({
+    dataReader: {
+      async read(input) {
+        return {
+          products: input.products.map((product) => ({
+            productId: Number(product.productId),
+            combinationId: product.combinationId === undefined ? 0 : Number(product.combinationId),
+            name: `Producto ${product.productId}`,
+            productReference: `SKU-${product.productId}`,
+            combinationReference: null,
+            description: null,
+            category: null,
+            active: true,
+            availableForOrder: true,
+            productBasePriceNet: 1000,
+            combinationImpactNet: 0,
+            stockQuantity: 10,
+          })),
+          specificPrices: [],
+        };
+      },
+    },
+    clock: { now: () => new Date('2026-07-23T12:00:00.000Z') },
+  });
+}
+
 async function runtimeWithSnapshot(options: {
   activeSnapshot?: ReturnType<typeof snapshot>;
   affinityUnavailable?: boolean;
 } = {}) {
-  const { service, repository } = catalogService();
+  const { repository } = catalogService();
   const store = new FileProductRelationshipSnapshotStore(await mkdtemp(join(tmpdir(), 'relationship-runtime-')));
   if (options.activeSnapshot) {
     await store.save(options.activeSnapshot);
     await store.activate(options.activeSnapshot.snapshotId);
   }
   const runtime = await createRecommendationRuntime({
-    catalogService: service,
+    catalogCommercialTruthService: commercialTruthService(),
     snapshotStore: store,
     customerAffinityEvidenceProvider: options.affinityUnavailable
       ? new UnavailableCustomerAffinityEvidenceProvider()
