@@ -197,6 +197,33 @@ export const searchProductsV2StockSchema = z
   })
   .strict();
 
+export const searchProductsV2AvailabilitySchema = z
+  .object({
+    status: z.enum(['available', 'out_of_stock', 'inactive', 'unavailable_for_order', 'unknown']),
+    purchasable: z.boolean(),
+    active: z.boolean(),
+    availableForOrder: z.boolean(),
+    stockQuantity: nonNegativeIntegerSchema.nullable(),
+    stockKnown: z.boolean(),
+    evaluatedAt: nonEmptyStringSchema,
+  })
+  .strict();
+
+export const searchProductsV2PricingSchema = z
+  .object({
+    baseGrossAmount: z.number().finite().nonnegative(),
+    finalGrossAmount: z.number().finite().nonnegative(),
+    currency: nonEmptyStringSchema,
+    taxIncluded: z.literal(true),
+    taxRate: z.number().finite().nonnegative(),
+    discountApplied: z.boolean(),
+    discountType: z.enum(['percentage', 'amount']).nullable(),
+    discountValue: z.number().finite().nonnegative().nullable(),
+    specificPriceId: nonNegativeIntegerSchema.nullable(),
+    evaluatedAt: nonEmptyStringSchema,
+  })
+  .strict();
+
 export const searchProductsV2CatalogProductSummarySchema = z
   .object({
     productId: nonEmptyStringSchema,
@@ -208,6 +235,8 @@ export const searchProductsV2CatalogProductSummarySchema = z
     active: z.boolean(),
     price: searchProductsV2PriceSchema.nullable(),
     stock: searchProductsV2StockSchema,
+    availability: searchProductsV2AvailabilitySchema.optional(),
+    pricing: searchProductsV2PricingSchema.nullable().optional(),
     productUrl: nonEmptyStringSchema.optional(),
     imageUrl: nonEmptyStringSchema.optional(),
   })
@@ -365,6 +394,8 @@ export type SearchProductsV2Warning = z.infer<typeof searchProductsV2WarningSche
 export type SearchProductsV2Exclusion = z.infer<typeof searchProductsV2ExclusionSchema>;
 export type SearchProductsV2Price = z.infer<typeof searchProductsV2PriceSchema>;
 export type SearchProductsV2Stock = z.infer<typeof searchProductsV2StockSchema>;
+export type SearchProductsV2Availability = z.infer<typeof searchProductsV2AvailabilitySchema>;
+export type SearchProductsV2Pricing = z.infer<typeof searchProductsV2PricingSchema>;
 export type CatalogProductSummary = z.infer<typeof searchProductsV2CatalogProductSummarySchema>;
 export type SearchProductsV2RecommendationRelationship = z.infer<typeof searchProductsV2RecommendationRelationshipSchema>;
 export type SearchProductsV2CommercialReason = z.infer<typeof searchProductsV2CommercialReasonSchema>;

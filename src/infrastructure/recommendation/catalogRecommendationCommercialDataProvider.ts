@@ -1,9 +1,12 @@
 import { config } from '../../shared/config.js';
-import type { CatalogApplicationService } from '../../application/catalogService.js';
 import type {
   CatalogProductBatchReader,
   CatalogProductSummary,
 } from '../../application/recommendation/search-products-v2/index.js';
+import type {
+  CatalogCommercialProduct,
+  CatalogCommercialTruthService,
+} from '../../domain/catalog/commercial-truth/index.js';
 import type {
   ProductRecommendationCommercialData as RelationshipProductRecommendationCommercialData,
   ProductRecommendationCommercialDataProvider as RelationshipProductRecommendationCommercialDataProvider,
@@ -12,7 +15,6 @@ import type {
 } from '../../domain/recommendation/relationship-engine/recommendation/index.js';
 import type { ProductRelationshipProductReference } from '../../domain/recommendation/relationship-engine/contracts.js';
 import { createProductRuntimeIdentity } from '../../domain/recommendation/relationship-engine/runtime/index.js';
-import type { ProductDetail } from '../../domain/catalog/types.js';
 
 function parseCatalogId(value: string | undefined, fallback: number): number | null {
   if (value === undefined) return fallback;
@@ -21,59 +23,54 @@ function parseCatalogId(value: string | undefined, fallback: number): number | n
   return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
 }
 
-function stockStatus(
-  physicalQuantity: number | undefined,
-  available: boolean | undefined,
+function recommendationStockStatus(
+  product: CatalogCommercialProduct,
 ): RelationshipProductRecommendationCommercialData['stockStatus'] {
-  if (physicalQuantity === undefined || available === undefined) return 'unknown';
-  if (!available || physicalQuantity <= 0) return 'out_of_stock';
-  if (physicalQuantity <= 5) return 'low_stock';
+  if (product.availability.status === 'unknown') return 'unknown';
+  if (!product.availability.purchasable) return 'out_of_stock';
+  if ((product.availability.stockQuantity ?? 0) <= 5) return 'low_stock';
   return 'in_stock';
 }
 
-function summaryStockStatus(
-  physicalQuantity: number | undefined,
-  available: boolean | undefined,
-): CatalogProductSummary['stock']['status'] {
-  if (physicalQuantity === undefined || available === undefined) return 'unknown';
-  if (!available) return 'out_of_stock';
-  if (physicalQuantity <= 0) return 'available_for_order';
-  return 'in_stock';
+function summaryStockStatus(product: CatalogCommercialProduct): CatalogProductSummary['stock']['status'] {
+  if (product.availability.status === 'available') return 'in_stock';
+  if (product.availability.status === 'out_of_stock') return 'out_of_stock';
+  return 'unknown';
 }
 
 function summaryFromDetail(
-  reference: ProductRelationshipProductReference,
-  detail: ProductDetail,
+  product: CatalogCommercialProduct,
 ): CatalogProductSummary {
-  const physicalQuantity = detail.stock?.physicalQuantity;
-  const available = detail.stock?.available ?? false;
-  const status = summaryStockStatus(physicalQuantity, detail.stock?.available);
+  const status = summaryStockStatus(product);
   return {
-    productId: reference.productId,
-    ...(reference.combinationId === undefined ? {} : { combinationId: reference.combinationId }),
-    name: detail.product.name,
-    ...(detail.selectedVariant?.sku ?? detail.product.sku
-      ? { reference: detail.selectedVariant?.sku ?? detail.product.sku ?? undefined }
-      : {}),
-    ...(detail.product.shortDescription ? { description: detail.product.shortDescription } : {}),
-    active: detail.product.active,
-    price: detail.pricing === null
+    productId: product.productId,
+    ...(product.combinationId === undefined ? {} : { combinationId: product.combinationId }),
+    name: product.name,
+    ...(product.reference === undefined ? {} : { reference: product.reference }),
+    ...(product.description === undefined ? {} : { description: product.description }),
+    ...(product.category === undefined ? {} : { category: product.category }),
+    active: product.availability.active,
+    price: product.price === null
       ? null
       : {
-          amount: detail.pricing.effectiveUnitPrice,
-          currency: detail.pricing.currency,
+          amount: product.price.finalGrossAmount,
+          currency: product.price.currency,
         },
     stock: {
       status,
-      ...(physicalQuantity === undefined ? {} : { quantity: physicalQuantity }),
-      available,
+      ...(product.availability.stockQuantity === null ? {} : { quantity: product.availability.stockQuantity }),
+      available: product.availability.purchasable,
     },
+    availability: product.availability,
+    pricing: product.price,
+    ...(product.productUrl === undefined ? {} : { productUrl: product.productUrl }),
+    ...(product.imageUrl === undefined ? {} : { imageUrl: product.imageUrl }),
   };
 }
 
 export class CatalogRecommendationCommercialDataProvider
   implements RelationshipProductRecommendationCommercialDataProvider, CatalogProductBatchReader {
-  constructor(private readonly catalogService: CatalogApplicationService) {}
+  constructor(private readonly commercialTruthService: CatalogCommercialTruthService) {}
 
   async getCommercialData(
     products: readonly RelationshipProductReference[],
@@ -85,46 +82,34 @@ export class CatalogRecommendationCommercialDataProvider
       if (productId === null || combinationId === null || productId <= 0) {
         return [];
       }
-      return [{
-        product,
-        input: {
-          productId,
-          combinationId,
-          quantity: 1,
-        },
-      }];
+      return [product];
     });
 
-    const result = await this.catalogService.batchGetProducts(
-      requests.map((request) => request.input),
-      'search-products-v2-commercial-data',
-      {
-        customerGroupId: config.prestashop.customerGroupId,
-        currencyId: config.prestashop.currencyId,
-        countryId: config.prestashop.countryId,
-      },
-    );
+    const result = await this.commercialTruthService.getCommercialTruth({
+      products: requests,
+      context: commercialContext(),
+      correlationId: 'search-products-v2-commercial-data',
+    });
 
     const data = new Map<string, RelationshipProductRecommendationCommercialData>();
-    for (const [index, item] of result.items.entries()) {
-      const requested = requests[index];
-      if (!requested || !item.ok) continue;
-
-      const detail = item.product;
-      const status = stockStatus(detail.stock?.physicalQuantity, detail.stock?.available);
-      const available = status === 'in_stock' || status === 'low_stock';
-      data.set(createProductRuntimeIdentity(requested.product), {
-        product: requested.product,
-        available,
-        sellable: detail.selectedVariant !== null,
-        active: detail.product.active,
+    for (const product of result.productsByIdentity.values()) {
+      const reference = {
+        productId: product.productId,
+        ...(product.combinationId === undefined ? {} : { combinationId: product.combinationId }),
+      };
+      const status = recommendationStockStatus(product);
+      data.set(createProductRuntimeIdentity(reference), {
+        product: reference,
+        available: product.availability.purchasable,
+        sellable: product.availability.purchasable,
+        active: product.availability.active,
         stockStatus: status,
-        ...(detail.pricing === null
+        ...(product.price === null
           ? {}
           : {
               price: {
-                currency: detail.pricing.currency,
-                amount: detail.pricing.effectiveUnitPrice,
+                currency: product.price.currency,
+                amount: product.price.finalGrossAmount,
               },
             }),
         marginSignal: 'unknown',
@@ -143,32 +128,36 @@ export class CatalogRecommendationCommercialDataProvider
       if (productId === null || combinationId === null || productId <= 0) {
         return [];
       }
-      return [{
-        reference,
-        input: {
-          productId,
-          combinationId,
-          quantity: 1,
-        },
-      }];
+      return [reference];
     });
 
-    const result = await this.catalogService.batchGetProducts(
-      requests.map((request) => request.input),
-      'search-products-v2-enrichment',
-      {
-        customerGroupId: config.prestashop.customerGroupId,
-        currencyId: config.prestashop.currencyId,
-        countryId: config.prestashop.countryId,
-      },
-    );
+    const result = await this.commercialTruthService.getCommercialTruth({
+      products: requests,
+      context: commercialContext(),
+      correlationId: 'search-products-v2-enrichment',
+    });
 
     const data = new Map<string, CatalogProductSummary>();
-    for (const [index, item] of result.items.entries()) {
-      const requested = requests[index];
-      if (!requested || !item.ok) continue;
-      data.set(createProductRuntimeIdentity(requested.reference), summaryFromDetail(requested.reference, item.product));
+    for (const product of result.productsByIdentity.values()) {
+      const reference = {
+        productId: product.productId,
+        ...(product.combinationId === undefined ? {} : { combinationId: product.combinationId }),
+      };
+      data.set(createProductRuntimeIdentity(reference), summaryFromDetail(product));
     }
     return data;
   }
+}
+
+function commercialContext() {
+  return {
+    shopId: config.prestashop.shopId,
+    currencyId: config.prestashop.currencyId,
+    currencyCode: config.prestashop.currencyCode,
+    countryId: config.prestashop.countryId,
+    customerGroupId: config.prestashop.customerGroupId,
+    customerId: 0,
+    quantity: 1,
+    taxRate: config.pricing.taxRate,
+  };
 }

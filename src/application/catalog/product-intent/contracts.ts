@@ -89,6 +89,33 @@ export const productIntentStockSchema = z
   })
   .strict();
 
+export const productIntentAvailabilitySchema = z
+  .object({
+    status: z.enum(['available', 'out_of_stock', 'inactive', 'unavailable_for_order', 'unknown']),
+    purchasable: z.boolean(),
+    active: z.boolean(),
+    availableForOrder: z.boolean(),
+    stockQuantity: nonNegativeIntegerSchema.nullable(),
+    stockKnown: z.boolean(),
+    evaluatedAt: nonEmptyStringSchema,
+  })
+  .strict();
+
+export const productIntentPricingSchema = z
+  .object({
+    baseGrossAmount: z.number().finite().nonnegative(),
+    finalGrossAmount: z.number().finite().nonnegative(),
+    currency: nonEmptyStringSchema,
+    taxIncluded: z.literal(true),
+    taxRate: z.number().finite().nonnegative(),
+    discountApplied: z.boolean(),
+    discountType: z.enum(['percentage', 'amount']).nullable(),
+    discountValue: z.number().finite().nonnegative().nullable(),
+    specificPriceId: nonNegativeIntegerSchema.nullable(),
+    evaluatedAt: nonEmptyStringSchema,
+  })
+  .strict();
+
 export const productIntentProductSummarySchema = z
   .object({
     productId: nonEmptyStringSchema,
@@ -100,6 +127,8 @@ export const productIntentProductSummarySchema = z
     active: z.boolean(),
     price: productIntentPriceSchema.nullable(),
     stock: productIntentStockSchema,
+    availability: productIntentAvailabilitySchema.optional(),
+    pricing: productIntentPricingSchema.nullable().optional(),
     productUrl: nonEmptyStringSchema.optional(),
     imageUrl: nonEmptyStringSchema.optional(),
   })
@@ -223,6 +252,8 @@ export type ProductIntentFilters = z.infer<typeof productIntentFiltersSchema>;
 export type ResolveProductIntentRequest = z.infer<typeof resolveProductIntentRequestSchema>;
 export type ProductIntentPrice = z.infer<typeof productIntentPriceSchema>;
 export type ProductIntentStock = z.infer<typeof productIntentStockSchema>;
+export type ProductIntentAvailability = z.infer<typeof productIntentAvailabilitySchema>;
+export type ProductIntentPricing = z.infer<typeof productIntentPricingSchema>;
 export type ProductIntentProductSummary = z.infer<typeof productIntentProductSummarySchema>;
 export type ProductMatchReason = z.infer<typeof productMatchReasonSchema>;
 export type ProductIntentCandidate = z.infer<typeof productIntentCandidateSchema>;

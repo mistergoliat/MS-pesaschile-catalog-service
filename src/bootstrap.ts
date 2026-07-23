@@ -8,6 +8,7 @@ import { MySqlSearchProvider } from './infrastructure/search/mysqlSearchProvider
 import { SqlPricingProvider } from './infrastructure/pricing/sqlPricingProvider.js';
 import { PrestaShopPhysicalStockProvider } from './infrastructure/stock/prestashopPhysicalStockProvider.js';
 import { CatalogApplicationService } from './application/catalogService.js';
+import { CatalogCommercialTruthService } from './domain/catalog/commercial-truth/index.js';
 import {
   DefaultProductClarificationBuilder,
   DefaultProductExplicitConstraintExtractor,
@@ -18,6 +19,7 @@ import {
   StaticProductSearchSynonymProvider,
 } from './application/catalog/product-intent/index.js';
 import { CatalogProductIntentProvider } from './infrastructure/catalog/catalogProductIntentProvider.js';
+import { MySqlCatalogCommercialDataReader } from './infrastructure/catalog/mysqlCatalogCommercialDataReader.js';
 import { FileProductRelationshipSnapshotStore } from './infrastructure/recommendation/fileProductRelationshipSnapshotStore.js';
 import {
   EmptyCustomerAffinityEvidenceProvider,
@@ -52,10 +54,13 @@ export async function createRuntime() {
     pricingProvider,
     cache,
   });
+  const catalogCommercialTruthService = new CatalogCommercialTruthService({
+    dataReader: new MySqlCatalogCommercialDataReader(pool),
+  });
   const customerAffinityEvidenceProvider = config.recommendation.customerAffinityProviderMode === 'empty'
     ? new EmptyCustomerAffinityEvidenceProvider()
     : new UnavailableCustomerAffinityEvidenceProvider();
-  const productIntentCatalogProvider = new CatalogProductIntentProvider(service);
+  const productIntentCatalogProvider = new CatalogProductIntentProvider(service, catalogCommercialTruthService);
   const productIntentResolutionService = new DefaultProductIntentResolutionService({
     normalizer: new DefaultProductQueryNormalizer(),
     synonymProvider: new StaticProductSearchSynonymProvider(),
@@ -74,7 +79,7 @@ export async function createRuntime() {
     },
   });
   const recommendationRuntime = await createRecommendationRuntime({
-    catalogService: service,
+    catalogCommercialTruthService,
     snapshotStore: new FileProductRelationshipSnapshotStore(config.recommendation.relationshipSnapshotDir),
     customerAffinityEvidenceProvider,
     logger: {

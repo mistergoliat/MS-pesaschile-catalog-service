@@ -1,6 +1,10 @@
 import { config } from '../../shared/config.js';
 import type { CatalogApplicationService } from '../../application/catalogService.js';
-import type { ProductDetail, SearchItem } from '../../domain/catalog/types.js';
+import type { SearchItem } from '../../domain/catalog/types.js';
+import type {
+  CatalogCommercialProduct,
+  CatalogCommercialTruthService,
+} from '../../domain/catalog/commercial-truth/index.js';
 import type {
   CatalogProductIntentBatchReader,
   CatalogProductIntentSearcher,
@@ -26,41 +30,35 @@ function referenceFromSearchItem(item: SearchItem): ProductIntentReference {
   };
 }
 
-function summaryStockStatus(
-  physicalQuantity: number | undefined,
-  available: boolean | undefined,
-): ProductIntentCatalogProduct['stock']['status'] {
-  if (physicalQuantity === undefined || available === undefined) return 'unknown';
-  if (!available) return 'out_of_stock';
-  if (physicalQuantity <= 0) return 'available_for_order';
-  return 'in_stock';
+function summaryStockStatus(product: CatalogCommercialProduct): ProductIntentCatalogProduct['stock']['status'] {
+  if (product.availability.status === 'available') return 'in_stock';
+  if (product.availability.status === 'out_of_stock') return 'out_of_stock';
+  return 'unknown';
 }
 
-function summaryFromDetail(reference: ProductIntentReference, detail: ProductDetail): ProductIntentCatalogProduct {
-  const physicalQuantity = detail.stock?.physicalQuantity;
-  const available = detail.stock?.available ?? false;
-  const status = summaryStockStatus(physicalQuantity, detail.stock?.available);
+function summaryFromTruth(product: CatalogCommercialProduct): ProductIntentCatalogProduct {
+  const status = summaryStockStatus(product);
   return {
-    productId: reference.productId,
-    ...(reference.combinationId === undefined ? {} : { combinationId: reference.combinationId }),
-    name: detail.product.name,
-    ...(detail.selectedVariant?.sku ?? detail.product.sku
-      ? { reference: detail.selectedVariant?.sku ?? detail.product.sku ?? undefined }
-      : {}),
-    ...(detail.product.shortDescription ? { description: detail.product.shortDescription } : {}),
-    active: detail.product.active,
-    price: detail.pricing === null
+    productId: product.productId,
+    ...(product.combinationId === undefined ? {} : { combinationId: product.combinationId }),
+    name: product.name,
+    ...(product.reference === undefined ? {} : { reference: product.reference }),
+    ...(product.description === undefined ? {} : { description: product.description }),
+    ...(product.category === undefined ? {} : { category: product.category }),
+    active: product.availability.active,
+    price: product.price === null
       ? null
       : {
-          amount: detail.pricing.effectiveUnitPrice,
-          currency: detail.pricing.currency,
+          amount: product.price.finalGrossAmount,
+          currency: product.price.currency,
         },
     stock: {
       status,
-      ...(physicalQuantity === undefined ? {} : { quantity: physicalQuantity }),
-      available,
+      ...(product.availability.stockQuantity === null ? {} : { quantity: product.availability.stockQuantity }),
+      available: product.availability.purchasable,
     },
-    attributes: detail.attributes,
+    availability: product.availability,
+    pricing: product.price,
   };
 }
 
@@ -81,7 +79,10 @@ function searchTerms(query: NormalizedProductQuery): string[] {
 }
 
 export class CatalogProductIntentProvider implements CatalogProductIntentSearcher, CatalogProductIntentBatchReader {
-  constructor(private readonly catalogService: CatalogApplicationService) {}
+  constructor(
+    private readonly catalogService: CatalogApplicationService,
+    private readonly commercialTruthService: CatalogCommercialTruthService,
+  ) {}
 
   async search(input: {
     readonly query: NormalizedProductQuery;
@@ -124,31 +125,31 @@ export class CatalogProductIntentProvider implements CatalogProductIntentSearche
       if (productId === null || combinationId === null || productId <= 0) {
         return [];
       }
-      return [{
-        reference,
-        input: {
-          productId,
-          combinationId,
-          quantity: 1,
-        },
-      }];
+      return [reference];
     });
 
-    const result = await this.catalogService.batchGetProducts(
-      requests.map((request) => request.input),
-      correlationId,
-      {
-        customerGroupId: config.prestashop.customerGroupId,
+    const result = await this.commercialTruthService.getCommercialTruth({
+      products: requests,
+      context: {
+        shopId: config.prestashop.shopId,
         currencyId: config.prestashop.currencyId,
+        currencyCode: config.prestashop.currencyCode,
         countryId: config.prestashop.countryId,
+        customerGroupId: config.prestashop.customerGroupId,
+        customerId: 0,
+        quantity: 1,
+        taxRate: config.pricing.taxRate,
       },
-    );
+      correlationId,
+    });
 
     const data = new Map<string, ProductIntentCatalogProduct>();
-    for (const [index, item] of result.items.entries()) {
-      const requested = requests[index];
-      if (!requested || !item.ok) continue;
-      data.set(createProductIntentIdentity(requested.reference), summaryFromDetail(requested.reference, item.product));
+    for (const product of result.productsByIdentity.values()) {
+      const reference = {
+        productId: product.productId,
+        ...(product.combinationId === undefined ? {} : { combinationId: product.combinationId }),
+      };
+      data.set(createProductIntentIdentity(reference), summaryFromTruth(product));
     }
     return data;
   }

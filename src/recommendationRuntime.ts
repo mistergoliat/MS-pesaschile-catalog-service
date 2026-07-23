@@ -1,5 +1,5 @@
 import { DefaultSearchProductsV2Service, type SearchProductsV2Logger, type SearchProductsV2Service } from './application/recommendation/search-products-v2/index.js';
-import type { CatalogApplicationService } from './application/catalogService.js';
+import type { CatalogCommercialTruthService } from './domain/catalog/commercial-truth/index.js';
 import {
   DefaultCustomerAffinityEvaluator,
   DefaultCustomerAffinityScorer,
@@ -34,7 +34,7 @@ export type RecommendationRuntime = {
 };
 
 export async function createRecommendationRuntime(input: {
-  catalogService: CatalogApplicationService;
+  catalogCommercialTruthService: CatalogCommercialTruthService;
   snapshotStore: ProductRelationshipSnapshotStore;
   customerAffinityEvidenceProvider: CustomerAffinityEvidenceProvider;
   logger?: SearchProductsV2Logger;
@@ -54,12 +54,12 @@ export async function createRecommendationRuntime(input: {
 
   const commercialRecommendationService = new DefaultCommercialProductRecommendationService(
     relationshipSnapshotReader,
-    new CatalogRecommendationCommercialDataProvider(input.catalogService),
+    new CatalogRecommendationCommercialDataProvider(input.catalogCommercialTruthService),
     new DefaultProductRecommendationEligibilityEvaluator(),
     new DefaultProductRecommendationScorer(),
     new DefaultProductRecommendationRanker(),
   );
-  const catalogProductBatchReader = new CatalogRecommendationCommercialDataProvider(input.catalogService);
+  const catalogProductBatchReader = new CatalogRecommendationCommercialDataProvider(input.catalogCommercialTruthService);
   const customerAffinityProvider = new DefaultCustomerProductAffinityProvider(
     input.customerAffinityEvidenceProvider,
     new DefaultCustomerAffinityEvaluator(),
