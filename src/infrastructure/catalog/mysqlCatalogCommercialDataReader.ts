@@ -12,10 +12,13 @@ import { runQuery } from '../database/queries.js';
 
 type ProductRow = RowDataPacket & {
   productId: number;
+  localizedLangId: number;
+  localizedShopId: number;
   name: string;
   productReference: string | null;
   description: string | null;
   category: string | null;
+  linkRewrite: string | null;
   active: number | null;
   availableForOrder: number | null;
   productBasePriceNet: number | null;
@@ -32,6 +35,12 @@ type StockRow = RowDataPacket & {
   productId: number;
   combinationId: number;
   stockQuantity: number | null;
+};
+
+type VariantAttributeLabelRow = RowDataPacket & {
+  productId: number;
+  attributeGroupId: number | null;
+  attributeGroupLabel: string | null;
 };
 
 type SpecificPriceRow = RowDataPacket & {
@@ -105,11 +114,12 @@ export class MySqlCatalogCommercialDataReader implements CatalogCommercialDataRe
       .sort((left, right) => left - right);
     const requestedCombinationIds = [0, ...combinationIds];
 
-    const [productRows, combinationRows, stockRows, specificPriceRows] = await Promise.all([
+    const [productRows, combinationRows, stockRows, specificPriceRows, variantAttributeLabelRows] = await Promise.all([
       this.readProducts(productIds),
       this.readCombinations(productIds, combinationIds),
       this.readStocks(productIds, requestedCombinationIds),
       this.readSpecificPrices(productIds, combinationIds, input.context),
+      this.readVariantAttributeLabels(productIds),
     ]);
 
     const productsById = new Map(productRows.map((row) => [Number(row.productId), row]));
@@ -121,6 +131,15 @@ export class MySqlCatalogCommercialDataReader implements CatalogCommercialDataRe
       referenceKey(Number(row.productId), Number(row.combinationId)),
       row,
     ]));
+    const variantsByProductId = new Map<number, string[]>();
+    for (const row of variantAttributeLabelRows) {
+      const productId = Number(row.productId);
+      const labels = variantsByProductId.get(productId) ?? [];
+      const label = row.attributeGroupLabel?.trim();
+      if (label && !labels.includes(label)) labels.push(label);
+      variantsByProductId.set(productId, labels);
+    }
+    const productsWithCombinations = new Set(variantAttributeLabelRows.map((row) => Number(row.productId)));
 
     const products: CatalogCommercialRawProduct[] = [];
     for (const item of parsed) {
@@ -139,6 +158,11 @@ export class MySqlCatalogCommercialDataReader implements CatalogCommercialDataRe
         combinationReference: normalizeReference(combination?.combinationReference ?? null),
         description: stripHtml(product.description),
         category: product.category?.trim() || null,
+        linkRewrite: product.linkRewrite?.trim() || null,
+        localizedLangId: Number(product.localizedLangId),
+        localizedShopId: Number(product.localizedShopId),
+        hasCombinations: productsWithCombinations.has(item.productId),
+        variantAttributeLabels: variantsByProductId.get(item.productId) ?? [],
         active: product.active === null ? null : Boolean(product.active),
         availableForOrder: product.availableForOrder === null ? null : Boolean(product.availableForOrder),
         productBasePriceNet: product.productBasePriceNet === null ? null : Number(product.productBasePriceNet),
@@ -169,6 +193,10 @@ export class MySqlCatalogCommercialDataReader implements CatalogCommercialDataRe
         from: row.from,
         to: row.to,
       })),
+      scope: {
+        shopId: this.scope.shopId,
+        langId: this.scope.langId,
+      },
     };
   }
 
@@ -179,10 +207,13 @@ export class MySqlCatalogCommercialDataReader implements CatalogCommercialDataRe
       `
         SELECT
           p.id_product AS productId,
+          pl.id_lang AS localizedLangId,
+          pl.id_shop AS localizedShopId,
           pl.name AS name,
           NULLIF(TRIM(p.reference), '') AS productReference,
           pl.description_short AS description,
           cl.name AS category,
+          NULLIF(TRIM(pl.link_rewrite), '') AS linkRewrite,
           p.active AS active,
           COALESCE(ps.available_for_order, p.available_for_order) AS availableForOrder,
           COALESCE(ps.price, p.price) AS productBasePriceNet
@@ -201,6 +232,41 @@ export class MySqlCatalogCommercialDataReader implements CatalogCommercialDataRe
         WHERE p.id_product IN (${placeholders(productIds)})
       `,
       [this.scope.shopId, this.scope.langId, this.scope.shopId, this.scope.shopId, this.scope.langId, ...productIds],
+      this.timeoutMs,
+    );
+  }
+
+  private async readVariantAttributeLabels(productIds: readonly number[]): Promise<VariantAttributeLabelRow[]> {
+    return runQuery<VariantAttributeLabelRow[]>(
+      this.pool,
+      'catalog-commercial-variant-attribute-labels',
+      `
+        SELECT
+          pa.id_product AS productId,
+          a.id_attribute_group AS attributeGroupId,
+          NULLIF(TRIM(agl.name), '') AS attributeGroupLabel
+        FROM ${table('product_attribute')} pa
+        LEFT JOIN ${table('product_attribute_combination')} pac
+          ON pac.id_product_attribute = pa.id_product_attribute
+        LEFT JOIN ${table('attribute')} a
+          ON a.id_attribute = pac.id_attribute
+        LEFT JOIN ${table('attribute_group')} ag
+          ON ag.id_attribute_group = a.id_attribute_group
+        LEFT JOIN ${table('attribute_group_lang')} agl
+          ON agl.id_attribute_group = a.id_attribute_group
+          AND agl.id_lang = ?
+        WHERE pa.id_product IN (${placeholders(productIds)})
+        GROUP BY
+          pa.id_product,
+          a.id_attribute_group,
+          ag.position,
+          agl.name
+        ORDER BY
+          pa.id_product ASC,
+          COALESCE(ag.position, a.id_attribute_group, 2147483647) ASC,
+          a.id_attribute_group ASC
+      `,
+      [this.scope.langId, ...productIds],
       this.timeoutMs,
     );
   }

@@ -66,6 +66,7 @@ function catalogService() {
       sku: `SKU-${productId}`,
       shortDescription: null,
       longDescription: null,
+      linkRewrite: `producto-${productId}`,
       active: true,
     })),
   });
@@ -94,6 +95,9 @@ function commercialTruthService() {
             combinationReference: null,
             description: null,
             category: null,
+            linkRewrite: `producto-${product.productId}`,
+            hasCombinations: false,
+            variantAttributeLabels: [],
             active: true,
             availableForOrder: true,
             productBasePriceNet: 1000,

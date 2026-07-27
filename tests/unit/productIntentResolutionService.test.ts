@@ -297,6 +297,17 @@ describe('Product Intent Resolution', () => {
     expect(result.candidates[0]?.product.productId).toBe('29');
   });
 
+  it('preserves structured product public link metadata', async () => {
+    const result = await buildProductIntentHarness({ hits: [hit(olympicBar15)] }).service.resolve(baseResolveProductIntentRequest);
+    expect(result.candidates[0]?.product.publicLink).toEqual({
+      canonicalUrl: 'https://pesaschile.cl/categories/29-barra-olimpica-15-kg.html',
+      scope: 'exact_product',
+      available: true,
+      requiresVariantSelection: false,
+      variantAttributeLabels: [],
+    });
+  });
+
   it('preserves combinationId when present', async () => {
     const result = await buildProductIntentHarness({ hits: [hit(kettlebell16)] }).service.resolve({
       query: 'kettlebell 16 kg',

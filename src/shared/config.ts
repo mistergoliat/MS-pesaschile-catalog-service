@@ -25,6 +25,7 @@ const envSchema = z.object({
   LOG_LEVEL: z.string().default('info'),
   API_KEY: z.string().min(8).optional(),
   CATALOG_API_KEYS: z.string().optional(),
+  CATALOG_PUBLIC_BASE_URL: z.string().trim().min(1).default('https://pesaschile.cl'),
   PRESTASHOP_DB_PREFIX: z.string().default('ps_'),
   PRESTASHOP_SHOP_ID: z.coerce.number().int().default(1),
   PRESTASHOP_LANG_ID: z.coerce.number().int().positive().default(1),
@@ -88,6 +89,15 @@ if (raw.PRESTASHOP_SHOP_ID !== 1) {
   throw new Error('PRESTASHOP_SHOP_ID must be 1 for this service');
 }
 
+try {
+  const publicBaseUrl = new URL(raw.CATALOG_PUBLIC_BASE_URL);
+  if (publicBaseUrl.protocol !== 'https:' && publicBaseUrl.protocol !== 'http:') {
+    throw new Error('invalid protocol');
+  }
+} catch {
+  throw new Error('CATALOG_PUBLIC_BASE_URL must be a valid http(s) URL');
+}
+
 const prefixPattern = /^[A-Za-z0-9_]+$/;
 if (!prefixPattern.test(raw.PRESTASHOP_DB_PREFIX) || !raw.PRESTASHOP_DB_PREFIX.endsWith('_')) {
   throw new Error('PRESTASHOP_DB_PREFIX must contain only alphanumerics/underscores and end with "_"');
@@ -103,6 +113,9 @@ export const config = {
   port: raw.PORT,
   logLevel: raw.LOG_LEVEL,
   apiKeys,
+  catalog: {
+    publicBaseUrl: raw.CATALOG_PUBLIC_BASE_URL,
+  },
   prestashop: {
     prefix: raw.PRESTASHOP_DB_PREFIX,
     shopId: raw.PRESTASHOP_SHOP_ID,

@@ -51,6 +51,11 @@ function publicProduct(product: ProductIntentCatalogProduct): ResolveProductInte
     active: product.active,
     price: product.price,
     stock: product.stock,
+    ...(product.availability === undefined ? {} : { availability: product.availability }),
+    ...(product.pricing === undefined ? {} : { pricing: product.pricing }),
+    ...(product.publicLink === undefined
+      ? {}
+      : { publicLink: { ...product.publicLink, variantAttributeLabels: [...product.publicLink.variantAttributeLabels] } }),
     ...(product.productUrl === undefined ? {} : { productUrl: product.productUrl }),
     ...(product.imageUrl === undefined ? {} : { imageUrl: product.imageUrl }),
   };

@@ -32,6 +32,13 @@ export const olympicBar15: ProductIntentCatalogProduct = {
   active: true,
   price: { amount: 89990, currency: 'CLP' },
   stock: { status: 'in_stock', quantity: 8, available: true },
+  publicLink: {
+    canonicalUrl: 'https://pesaschile.cl/categories/29-barra-olimpica-15-kg.html',
+    scope: 'exact_product',
+    available: true,
+    requiresVariantSelection: false,
+    variantAttributeLabels: [],
+  },
   attributes: [{ group: 'Peso', value: '15 kg' }],
 };
 

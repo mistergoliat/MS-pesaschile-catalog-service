@@ -11,7 +11,7 @@ This repository does not contain Sales Agent, cart, quote, checkout, order, CRM,
 | Capability | Purpose |
 | --- | --- |
 | Catalog Search | Search active catalog products from the read-only catalog service. |
-| Product Detail | Return product, variant, stock, and commercial price data. |
+| Product Detail | Return product, variant, stock, commercial price data, and structured public link metadata. |
 | Batch Product Lookup | Resolve multiple product references in one request. |
 | Commercial Product Data | Apply configured shop, language, currency, country, and customer group context. |
 | Product Relationship Engine | Build and publish product-product knowledge offline. |
@@ -103,7 +103,14 @@ Reduced successful response shape:
   "recommendations": [
     {
       "product": {
-        "productId": "456"
+        "productId": "456",
+        "publicLink": {
+          "canonicalUrl": "https://pesaschile.cl/categories/456-producto.html",
+          "scope": "exact_product",
+          "available": true,
+          "requiresVariantSelection": false,
+          "variantAttributeLabels": []
+        }
       },
       "rank": 1,
       "score": 0.82,
@@ -188,6 +195,7 @@ Use `.env.example` as the local template. Do not commit `.env` or real credentia
 | `LOG_LEVEL` | Optional | Logger verbosity. | `info` |
 | `API_KEY` | Required if `CATALOG_API_KEYS` absent | Single API key. | `replace-me` |
 | `CATALOG_API_KEYS` | Required if `API_KEY` absent | Comma-separated API key allowlist. | `replace-me,rotate-me` |
+| `CATALOG_PUBLIC_BASE_URL` | Optional | Public catalog base URL used to build product canonical links from `ps_product_lang.link_rewrite`; must be valid `http` or `https`. | `https://pesaschile.cl` |
 | `PRESTASHOP_DB_PREFIX` | Optional | PrestaShop table prefix, strictly validated. | `ps_` |
 | `PRESTASHOP_SHOP_ID` | Optional | Shop id; current service requires `1`. | `1` |
 | `PRESTASHOP_LANG_ID` | Optional | Catalog language id. | `1` |
@@ -270,6 +278,7 @@ npm run smoke
 - SearchProducts V2 still requires a caller-provided `sourceProduct`; Swagger does not infer it from free text.
 - T09 currently supports neutral or retryable-unavailable affinity evidence modes; concrete CRM/Customer 360 evidence adapters are still outside this repository.
 - Redis is optional and used only when `CACHE_DRIVER=redis`.
+- Product public URLs point to the parent product page when combinations exist. Variant deep links, cart building and checkout remain outside this service.
 
 ## Additional Documentation
 

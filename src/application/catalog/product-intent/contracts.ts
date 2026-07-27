@@ -116,6 +116,40 @@ export const productIntentPricingSchema = z
   })
   .strict();
 
+export const productIntentProductPublicLinkSchema = z
+  .object({
+    canonicalUrl: nonEmptyStringSchema.nullable(),
+    scope: z.enum(['exact_product', 'parent_product']),
+    available: z.boolean(),
+    unavailableReason: z.enum(['missing_link_rewrite', 'invalid_product_id', 'invalid_base_url']).optional(),
+    requiresVariantSelection: z.boolean(),
+    variantAttributeLabels: z.array(nonEmptyStringSchema),
+  })
+  .strict()
+  .superRefine((publicLink, context) => {
+    if (publicLink.available && publicLink.canonicalUrl === null) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'available public links require canonicalUrl',
+        path: ['canonicalUrl'],
+      });
+    }
+    if (!publicLink.available && publicLink.canonicalUrl !== null) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'unavailable public links must not include canonicalUrl',
+        path: ['canonicalUrl'],
+      });
+    }
+    if (!publicLink.available && publicLink.unavailableReason === undefined) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'unavailable public links require unavailableReason',
+        path: ['unavailableReason'],
+      });
+    }
+  });
+
 export const productIntentProductSummarySchema = z
   .object({
     productId: nonEmptyStringSchema,
@@ -129,6 +163,7 @@ export const productIntentProductSummarySchema = z
     stock: productIntentStockSchema,
     availability: productIntentAvailabilitySchema.optional(),
     pricing: productIntentPricingSchema.nullable().optional(),
+    publicLink: productIntentProductPublicLinkSchema.optional(),
     productUrl: nonEmptyStringSchema.optional(),
     imageUrl: nonEmptyStringSchema.optional(),
   })
@@ -254,6 +289,7 @@ export type ProductIntentPrice = z.infer<typeof productIntentPriceSchema>;
 export type ProductIntentStock = z.infer<typeof productIntentStockSchema>;
 export type ProductIntentAvailability = z.infer<typeof productIntentAvailabilitySchema>;
 export type ProductIntentPricing = z.infer<typeof productIntentPricingSchema>;
+export type ProductIntentProductPublicLink = z.infer<typeof productIntentProductPublicLinkSchema>;
 export type ProductIntentProductSummary = z.infer<typeof productIntentProductSummarySchema>;
 export type ProductMatchReason = z.infer<typeof productMatchReasonSchema>;
 export type ProductIntentCandidate = z.infer<typeof productIntentCandidateSchema>;

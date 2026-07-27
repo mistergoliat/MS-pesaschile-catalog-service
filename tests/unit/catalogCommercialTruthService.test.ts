@@ -4,6 +4,7 @@ import {
   CommercialAvailabilityResolver,
   CommercialPriceCalculator,
   SpecificPriceSelector,
+  buildProductPublicUrl,
   type CatalogCommercialContext,
   type CatalogCommercialDataReader,
   type CatalogCommercialRawProduct,
@@ -32,6 +33,11 @@ function raw(overrides: Partial<CatalogCommercialRawProduct> = {}): CatalogComme
     combinationReference: null,
     description: 'Producto de prueba',
     category: 'Barras',
+    linkRewrite: 'barra-olimpica',
+    localizedLangId: 1,
+    localizedShopId: 1,
+    hasCombinations: false,
+    variantAttributeLabels: [],
     active: true,
     availableForOrder: true,
     productBasePriceNet: 1000,
@@ -324,11 +330,59 @@ describe('CommercialPriceCalculator', () => {
   });
 });
 
+describe('buildProductPublicUrl', () => {
+  it('builds the confirmed Pesas Chile product URL', () => {
+    expect(buildProductPublicUrl({
+      baseUrl: 'https://pesaschile.cl',
+      productId: 123,
+      linkRewrite: 'abductor-de-pie-peach-builder',
+    })).toEqual({
+      available: true,
+      canonicalUrl: 'https://pesaschile.cl/categories/123-abductor-de-pie-peach-builder.html',
+    });
+  });
+
+  it('normalizes a base URL with trailing slash', () => {
+    expect(buildProductPublicUrl({
+      baseUrl: 'https://pesaschile.cl/',
+      productId: 123,
+      linkRewrite: 'abductor-de-pie-peach-builder',
+    })).toMatchObject({
+      canonicalUrl: 'https://pesaschile.cl/categories/123-abductor-de-pie-peach-builder.html',
+    });
+  });
+
+  it('does not fabricate a slug when link_rewrite is missing', () => {
+    expect(buildProductPublicUrl({
+      baseUrl: 'https://pesaschile.cl',
+      productId: 123,
+      linkRewrite: ' ',
+    })).toEqual({
+      available: false,
+      canonicalUrl: null,
+      reason: 'missing_link_rewrite',
+    });
+  });
+
+  it('rejects invalid product ids and base URLs explicitly', () => {
+    expect(buildProductPublicUrl({
+      baseUrl: 'https://pesaschile.cl',
+      productId: 0,
+      linkRewrite: 'producto',
+    })).toMatchObject({ available: false, reason: 'invalid_product_id' });
+    expect(buildProductPublicUrl({
+      baseUrl: 'ftp://pesaschile.cl',
+      productId: 123,
+      linkRewrite: 'producto',
+    })).toMatchObject({ available: false, reason: 'invalid_base_url' });
+  });
+});
+
 describe('CatalogCommercialTruthService', () => {
   function reader(rows: readonly CatalogCommercialRawProduct[], prices: readonly CatalogCommercialSpecificPrice[] = []): CatalogCommercialDataReader {
     return {
       async read() {
-        return { products: rows, specificPrices: prices };
+        return { products: rows, specificPrices: prices, scope: { shopId: 1, langId: 1 } };
       },
     };
   }
@@ -337,15 +391,24 @@ describe('CatalogCommercialTruthService', () => {
     const service = new CatalogCommercialTruthService({
       dataReader: reader([raw()]),
       clock: { now: () => evaluatedAt },
+      publicBaseUrl: 'https://pesaschile.cl',
     });
     const result = await service.getCommercialTruth({ products: [{ productId: '173' }], context });
     expect(result.productsByIdentity.get('173::<base>')?.name).toBe('Barra olimpica');
+    expect(result.productsByIdentity.get('173::<base>')?.publicLink).toEqual({
+      canonicalUrl: 'https://pesaschile.cl/categories/173-barra-olimpica.html',
+      scope: 'exact_product',
+      available: true,
+      requiresVariantSelection: false,
+      variantAttributeLabels: [],
+    });
   });
 
   it('deduplicates requested products before reading', async () => {
     const service = new CatalogCommercialTruthService({
       dataReader: reader([raw()]),
       clock: { now: () => evaluatedAt },
+      publicBaseUrl: 'https://pesaschile.cl',
     });
     const result = await service.getCommercialTruth({
       products: [{ productId: '173' }, { productId: '173' }],
@@ -358,6 +421,7 @@ describe('CatalogCommercialTruthService', () => {
     const service = new CatalogCommercialTruthService({
       dataReader: reader([]),
       clock: { now: () => evaluatedAt },
+      publicBaseUrl: 'https://pesaschile.cl',
     });
     const result = await service.getCommercialTruth({ products: [{ productId: '999' }], context });
     expect(result.statistics).toMatchObject({ requested: 1, resolved: 0, missing: 1 });
@@ -367,6 +431,7 @@ describe('CatalogCommercialTruthService', () => {
     const service = new CatalogCommercialTruthService({
       dataReader: reader([raw()]),
       clock: { now: () => evaluatedAt },
+      publicBaseUrl: 'https://pesaschile.cl',
     });
     const result = await service.getCommercialTruth({ products: [{ productId: '173' }], context });
     const product = result.productsByIdentity.get('173::<base>');
@@ -383,6 +448,7 @@ describe('CatalogCommercialTruthService', () => {
         raw({ productId: 4, productBasePriceNet: null }),
       ]),
       clock: { now: () => evaluatedAt },
+      publicBaseUrl: 'https://pesaschile.cl',
     });
     const result = await service.getCommercialTruth({
       products: [{ productId: '1' }, { productId: '2' }, { productId: '3' }, { productId: '4' }],
@@ -400,8 +466,45 @@ describe('CatalogCommercialTruthService', () => {
     const service = new CatalogCommercialTruthService({
       dataReader: reader([raw()]),
       clock: { now: () => evaluatedAt },
+      publicBaseUrl: 'https://pesaschile.cl',
     });
     const result = await service.getCommercialTruth({ products: [{ productId: '173' }], context });
     expect(Object.isFrozen(result.productsByIdentity.get('173::<base>'))).toBe(true);
+  });
+
+  it('marks products with combinations as parent links requiring variant selection', async () => {
+    const service = new CatalogCommercialTruthService({
+      dataReader: reader([raw({ hasCombinations: true, variantAttributeLabels: ['Talla', 'Color'] })]),
+      clock: { now: () => evaluatedAt },
+      publicBaseUrl: 'https://pesaschile.cl/',
+    });
+    const product = (await service.getCommercialTruth({ products: [{ productId: '173' }], context }))
+      .productsByIdentity.get('173::<base>');
+    expect(product?.publicLink).toEqual({
+      canonicalUrl: 'https://pesaschile.cl/categories/173-barra-olimpica.html',
+      scope: 'parent_product',
+      available: true,
+      requiresVariantSelection: true,
+      variantAttributeLabels: ['Talla', 'Color'],
+    });
+  });
+
+  it('returns explicit unavailable metadata for missing link_rewrite', async () => {
+    const service = new CatalogCommercialTruthService({
+      dataReader: reader([raw({ linkRewrite: null })]),
+      clock: { now: () => evaluatedAt },
+      publicBaseUrl: 'https://pesaschile.cl',
+    });
+    const product = (await service.getCommercialTruth({ products: [{ productId: '173' }], context }))
+      .productsByIdentity.get('173::<base>');
+    expect(product?.publicLink).toEqual({
+      canonicalUrl: null,
+      scope: 'exact_product',
+      available: false,
+      unavailableReason: 'missing_link_rewrite',
+      requiresVariantSelection: false,
+      variantAttributeLabels: [],
+    });
+    expect(product?.warnings.map((warning) => warning.code)).toContain('CATALOG_PUBLIC_LINK_UNAVAILABLE');
   });
 });

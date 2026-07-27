@@ -129,6 +129,13 @@ describe('SearchProducts V2 contracts', () => {
       productId: 'B',
       name: 'Producto B',
       reference: 'SKU-B',
+      publicLink: {
+        canonicalUrl: 'https://pesaschile.cl/categories/B-producto-B.html',
+        scope: 'exact_product',
+        available: true,
+        requiresVariantSelection: false,
+        variantAttributeLabels: [],
+      },
       price: { amount: 1000, currency: 'CLP' },
       stock: { status: 'in_stock', available: true },
     });

@@ -37,9 +37,12 @@ describe('MySqlCatalogCommercialDataReader', () => {
         {
           productId: 173,
           name: 'Barra',
+          localizedLangId: 1,
+          localizedShopId: 1,
           productReference: 'BAR-173',
           description: '<p>Texto</p>',
           category: 'Barras',
+          linkRewrite: 'barra',
           active: 1,
           availableForOrder: 1,
           productBasePriceNet: 1000,
@@ -47,16 +50,20 @@ describe('MySqlCatalogCommercialDataReader', () => {
       ],
       [{ productId: 173, combinationId: 0, stockQuantity: 7 }],
       [],
+      [],
     ]);
     const reader = new MySqlCatalogCommercialDataReader(fake.pool as never);
     const result = await reader.read({
       products: [{ productId: '173' }],
       context,
     });
-    expect(fake.calls).toHaveLength(3);
+    expect(fake.calls).toHaveLength(4);
     expect(result.products[0]).toMatchObject({
       productId: 173,
       name: 'Barra',
+      linkRewrite: 'barra',
+      hasCombinations: false,
+      variantAttributeLabels: [],
       description: 'Texto',
       active: true,
       availableForOrder: true,
@@ -84,9 +91,12 @@ describe('MySqlCatalogCommercialDataReader', () => {
         {
           productId: 173,
           name: 'Barra',
+          localizedLangId: 1,
+          localizedShopId: 1,
           productReference: 'BAR',
           description: null,
           category: null,
+          linkRewrite: 'barra',
           active: 1,
           availableForOrder: 1,
           productBasePriceNet: 1000,
@@ -95,6 +105,10 @@ describe('MySqlCatalogCommercialDataReader', () => {
       [{ productId: 173, combinationId: 20, combinationReference: 'BAR-20', combinationImpactNet: 250 }],
       [{ productId: 173, combinationId: 20, stockQuantity: 3 }],
       [],
+      [
+        { productId: 173, attributeGroupId: 1, attributeGroupLabel: 'Talla' },
+        { productId: 173, attributeGroupId: 2, attributeGroupLabel: 'Color' },
+      ],
     ]);
     const reader = new MySqlCatalogCommercialDataReader(fake.pool as never);
     const result = await reader.read({
@@ -107,6 +121,8 @@ describe('MySqlCatalogCommercialDataReader', () => {
       combinationReference: 'BAR-20',
       combinationImpactNet: 250,
       stockQuantity: 3,
+      hasCombinations: true,
+      variantAttributeLabels: ['Talla', 'Color'],
     });
   });
 
@@ -116,14 +132,18 @@ describe('MySqlCatalogCommercialDataReader', () => {
         {
           productId: 173,
           name: 'Barra',
+          localizedLangId: 1,
+          localizedShopId: 1,
           productReference: 'BAR',
           description: null,
           category: null,
+          linkRewrite: 'barra',
           active: 1,
           availableForOrder: 1,
           productBasePriceNet: 1000,
         },
       ],
+      [],
       [],
       [],
       [],
@@ -134,5 +154,23 @@ describe('MySqlCatalogCommercialDataReader', () => {
       context,
     });
     expect(result.products).toEqual([]);
+  });
+
+  it('uses deterministic product_lang shop and language filters for link_rewrite', async () => {
+    const fake = poolWithRows([[], [], [], []]);
+    const reader = new MySqlCatalogCommercialDataReader(fake.pool as never);
+    await reader.read({ products: [{ productId: '173' }], context });
+    expect(fake.calls[0]?.sql).toContain('pl.link_rewrite');
+    expect(fake.calls[0]?.sql).toContain('pl.id_shop = ?');
+    expect(fake.calls[0]?.sql).toContain('pl.id_lang = ?');
+    expect(fake.calls[0]?.values.slice(0, 2)).toEqual([1, 1]);
+  });
+
+  it('reads variant attribute labels in one batch query', async () => {
+    const fake = poolWithRows([[], [], [], []]);
+    const reader = new MySqlCatalogCommercialDataReader(fake.pool as never);
+    await reader.read({ products: [{ productId: '173' }, { productId: '174' }], context });
+    expect(fake.calls.at(-1)?.sql).toContain('attribute_group_lang');
+    expect(fake.calls.at(-1)?.sql).toContain('pa.id_product IN (?, ?)');
   });
 });

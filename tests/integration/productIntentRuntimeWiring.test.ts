@@ -42,6 +42,7 @@ function productIntentRuntime() {
       sku: 'BAR-15',
       shortDescription: 'Barra recta para sentadillas',
       longDescription: null,
+      linkRewrite: 'barra-olimpica-15-kg',
       active: true,
     })),
   });
@@ -66,6 +67,9 @@ function productIntentRuntime() {
             combinationReference: null,
             description: 'Barra recta para sentadillas',
             category: 'Barras',
+            linkRewrite: 'barra-olimpica-15-kg',
+            hasCombinations: false,
+            variantAttributeLabels: [],
             active: true,
             availableForOrder: true,
             productBasePriceNet: 1000,

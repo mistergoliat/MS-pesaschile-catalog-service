@@ -162,6 +162,24 @@ Missing prices are not invented. They are returned as `price: null` and summariz
 
 Unknown stock is not invented. It is returned as `stock.status = "unknown"` and summarized by one global warning.
 
+Each enriched product may include structured public URL metadata from `CatalogCommercialTruthService`:
+
+```json
+{
+  "publicLink": {
+    "canonicalUrl": "https://pesaschile.cl/categories/123-producto.html",
+    "scope": "parent_product",
+    "available": true,
+    "requiresVariantSelection": true,
+    "variantAttributeLabels": ["Talla", "Color"]
+  }
+}
+```
+
+`canonicalUrl` is built from `ps_product_lang.id_product` and `ps_product_lang.link_rewrite` using `CATALOG_PUBLIC_BASE_URL`. It is never generated from product name. If `link_rewrite` is absent, `canonicalUrl` is `null`, `available=false`, and `unavailableReason=missing_link_rewrite`.
+
+`scope=parent_product` means the product has combinations and the URL points to the parent product page. T11 does not build variant deep links. The consumer should tell the customer to select the required variant attributes before adding the product to the cart.
+
 ## Response
 
 The public response contains:
@@ -180,6 +198,7 @@ The public response contains:
 Recommendations expose:
 
 - product identity and commercial summary;
+- structured public product link metadata when available;
 - rank;
 - personalized score;
 - commercial score;

@@ -1,3 +1,5 @@
+import type { ProductPublicLink } from './commercial-truth/contracts.js';
+
 export type CatalogScope = {
   shopId: number;
   langId: number;
@@ -10,6 +12,10 @@ export type ProductCore = {
   shortDescription: string | null;
   longDescription: string | null;
   active: boolean;
+};
+
+export type ProductCoreRecord = ProductCore & {
+  linkRewrite: string | null;
 };
 
 export type AttributeValue = {
@@ -44,6 +50,7 @@ export type SearchItem = {
 
 export type ProductDetail = {
   product: ProductCore;
+  publicLink: ProductPublicLink;
   selectedVariant: Pick<VariantSummary, 'combinationId' | 'sku' | 'label' | 'attributes'> | null;
   attributes: AttributeValue[];
   variants: VariantSummary[];
