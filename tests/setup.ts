@@ -4,6 +4,7 @@ process.env.PORT = process.env.PORT ?? '4010';
 process.env.LOG_LEVEL = process.env.LOG_LEVEL ?? 'silent';
 process.env.API_KEY = process.env.API_KEY ?? 'test-api-key';
 process.env.CATALOG_API_KEYS = process.env.CATALOG_API_KEYS ?? 'test-api-key,rotated-key';
+process.env.CATALOG_PUBLIC_BASE_URL = process.env.CATALOG_PUBLIC_BASE_URL ?? 'https://pesaschile.cl';
 process.env.PRESTASHOP_DB_PREFIX = process.env.PRESTASHOP_DB_PREFIX ?? 'ps_';
 process.env.PRESTASHOP_SHOP_ID = process.env.PRESTASHOP_SHOP_ID ?? '1';
 process.env.PRESTASHOP_LANG_ID = process.env.PRESTASHOP_LANG_ID ?? '1';

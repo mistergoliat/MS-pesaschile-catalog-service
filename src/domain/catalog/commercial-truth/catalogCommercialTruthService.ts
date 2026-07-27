@@ -15,6 +15,7 @@ import type {
 } from './contracts.js';
 import { SystemClock } from './contracts.js';
 import { CommercialPriceCalculator } from './priceCalculator.js';
+import { buildProductPublicUrl } from './productPublicUrl.js';
 import { createCatalogCommercialProductIdentity } from './productIdentity.js';
 import { SpecificPriceSelector } from './specificPriceSelector.js';
 
@@ -55,6 +56,15 @@ function productSpecificPrices(
   return prices.filter((price) => price.productId === productId);
 }
 
+type CatalogCommercialTruthLogger = {
+  warn(event: string, fields: Readonly<Record<string, unknown>>): void;
+};
+
+type CatalogCommercialDataScope = {
+  readonly shopId: number;
+  readonly langId: number;
+};
+
 export class CatalogCommercialTruthService {
   constructor(
     private readonly dependencies: {
@@ -63,6 +73,8 @@ export class CatalogCommercialTruthService {
       readonly specificPriceSelector?: SpecificPriceSelector;
       readonly priceCalculator?: CommercialPriceCalculator;
       readonly clock?: Clock;
+      readonly publicBaseUrl?: string;
+      readonly logger?: CatalogCommercialTruthLogger;
     },
   ) {}
 
@@ -80,6 +92,7 @@ export class CatalogCommercialTruthService {
     const availabilityResolver = this.dependencies.availabilityResolver ?? new CommercialAvailabilityResolver();
     const specificPriceSelector = this.dependencies.specificPriceSelector ?? new SpecificPriceSelector();
     const priceCalculator = this.dependencies.priceCalculator ?? new CommercialPriceCalculator();
+    const publicBaseUrl = this.dependencies.publicBaseUrl ?? process.env.CATALOG_PUBLIC_BASE_URL ?? '';
 
     let inactive = 0;
     let unavailableForOrder = 0;
@@ -92,6 +105,7 @@ export class CatalogCommercialTruthService {
       if (!rawProduct) continue;
 
       const productWarnings: CatalogCommercialWarning[] = [];
+      this.logLocalizationInconsistencies(rawProduct, data.scope, request.context);
       const selection = specificPriceSelector.select({
         product: requested,
         combinationId: rawProduct.combinationId,
@@ -119,6 +133,37 @@ export class CatalogCommercialTruthService {
       productWarnings.push(...price.warnings);
       if (price.price === null) priceUnavailable += 1;
 
+      const publicUrl = buildProductPublicUrl({
+        baseUrl: publicBaseUrl,
+        productId: rawProduct.productId,
+        linkRewrite: rawProduct.linkRewrite,
+      });
+      const requiresVariantSelection = rawProduct.hasCombinations;
+      const publicLink = {
+        canonicalUrl: publicUrl.canonicalUrl,
+        scope: requiresVariantSelection ? 'parent_product' as const : 'exact_product' as const,
+        available: publicUrl.available,
+        ...(publicUrl.available ? {} : { unavailableReason: publicUrl.reason }),
+        requiresVariantSelection,
+        variantAttributeLabels: requiresVariantSelection ? rawProduct.variantAttributeLabels : [],
+      };
+      if (!publicUrl.available) {
+        productWarnings.push({
+          code: 'CATALOG_PUBLIC_LINK_UNAVAILABLE',
+          product: requested,
+          details: { reason: publicUrl.reason },
+        });
+        this.dependencies.logger?.warn('catalog_public_link_unavailable', {
+          productId: rawProduct.productId,
+          reason: publicUrl.reason,
+        });
+      }
+      if (requiresVariantSelection && rawProduct.variantAttributeLabels.length === 0) {
+        this.dependencies.logger?.warn('catalog_variant_attribute_labels_missing', {
+          productId: rawProduct.productId,
+        });
+      }
+
       const resolved: CatalogCommercialProduct = {
         productId: requested.productId,
         ...(requested.combinationId === undefined ? {} : { combinationId: requested.combinationId }),
@@ -128,6 +173,7 @@ export class CatalogCommercialTruthService {
           : {}),
         ...(rawProduct.description ? { description: rawProduct.description } : {}),
         ...(rawProduct.category ? { category: rawProduct.category } : {}),
+        publicLink,
         availability,
         price: price.price,
         warnings: deepFreeze(productWarnings.map((item) => cloneJsonValue(item))),
@@ -152,5 +198,32 @@ export class CatalogCommercialTruthService {
       evaluatedAt,
     };
     return deepFreeze(result);
+  }
+
+  private logLocalizationInconsistencies(
+    rawProduct: CatalogCommercialRawProduct,
+    dataScope: CatalogCommercialDataScope | undefined,
+    context: CatalogCommercialTruthRequest['context'],
+  ): void {
+    if (dataScope && rawProduct.localizedLangId !== undefined && rawProduct.localizedLangId !== dataScope.langId) {
+      this.dependencies.logger?.warn('catalog_public_link_lang_inconsistent', {
+        productId: rawProduct.productId,
+        expectedLangId: dataScope.langId,
+        actualLangId: rawProduct.localizedLangId,
+      });
+    }
+    if (dataScope && rawProduct.localizedShopId !== undefined && rawProduct.localizedShopId !== dataScope.shopId) {
+      this.dependencies.logger?.warn('catalog_public_link_shop_inconsistent', {
+        productId: rawProduct.productId,
+        expectedShopId: dataScope.shopId,
+        actualShopId: rawProduct.localizedShopId,
+      });
+    }
+    if (dataScope && dataScope.shopId !== context.shopId) {
+      this.dependencies.logger?.warn('catalog_commercial_context_shop_inconsistent', {
+        expectedShopId: dataScope.shopId,
+        actualShopId: context.shopId,
+      });
+    }
   }
 }

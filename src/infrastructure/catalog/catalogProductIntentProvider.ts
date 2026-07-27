@@ -59,6 +59,10 @@ function summaryFromTruth(product: CatalogCommercialProduct): ProductIntentCatal
     },
     availability: product.availability,
     pricing: product.price,
+    publicLink: {
+      ...product.publicLink,
+      variantAttributeLabels: [...product.publicLink.variantAttributeLabels],
+    },
   };
 }
 

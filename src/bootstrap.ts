@@ -56,6 +56,10 @@ export async function createRuntime() {
   });
   const catalogCommercialTruthService = new CatalogCommercialTruthService({
     dataReader: new MySqlCatalogCommercialDataReader(pool),
+    publicBaseUrl: config.catalog.publicBaseUrl,
+    logger: {
+      warn: (event, fields) => logger.warn({ event, ...fields }, event),
+    },
   });
   const customerAffinityEvidenceProvider = config.recommendation.customerAffinityProviderMode === 'empty'
     ? new EmptyCustomerAffinityEvidenceProvider()

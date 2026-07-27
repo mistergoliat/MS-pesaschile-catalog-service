@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { CatalogApplicationService } from '../../src/application/catalogService.js';
 import { createCacheStub, createPricingProviderStub, createRepositoryStub, createSearchProviderStub, createStockProviderStub } from '../support/fakes.js';
-import type { ProductCore, VariantSummary } from '../../src/domain/catalog/types.js';
+import type { ProductCoreRecord, VariantSummary } from '../../src/domain/catalog/types.js';
 
 function makeService(options?: {
-  product?: ProductCore | null;
+  product?: ProductCoreRecord | null;
   variants?: VariantSummary[];
   defaultCombinationId?: number | null;
   stock?: { physicalQuantity: number; available: boolean; shopId: number };
@@ -30,6 +30,7 @@ function makeService(options?: {
       sku: 'BUMPER',
       shortDescription: 'Corto',
       longDescription: 'Largo',
+      linkRewrite: 'disco-bumper',
       active: true,
     }),
     getVariants: vi.fn().mockResolvedValue(options?.variants ?? []),
@@ -71,6 +72,13 @@ describe('CatalogApplicationService', () => {
     const result = await service.getProduct({ productId: 1, combinationId: 0, quantity: 2 });
 
     expect(result.selectedVariant?.combinationId).toBe(0);
+    expect(result.publicLink).toEqual({
+      canonicalUrl: 'https://pesaschile.cl/categories/1-disco-bumper.html',
+      scope: 'exact_product',
+      available: true,
+      requiresVariantSelection: false,
+      variantAttributeLabels: [],
+    });
     expect(result.attributes).toEqual([]);
     expect(result.stock?.physicalQuantity).toBe(8);
     expect(result.pricing?.quantity).toBe(2);
@@ -99,6 +107,11 @@ describe('CatalogApplicationService', () => {
 
     const result = await service.getProduct({ productId: 1, combinationId: 0, quantity: 1 });
     expect(result.selectedVariant?.combinationId).toBe(20);
+    expect(result.publicLink).toMatchObject({
+      scope: 'parent_product',
+      requiresVariantSelection: true,
+      variantAttributeLabels: ['Peso'],
+    });
     expect(result.selectedVariant?.sku).toBe('BUMPER');
     expect(result.attributes).toEqual([{ group: 'Peso', value: '20 kg' }]);
   });
@@ -177,7 +190,15 @@ describe('CatalogApplicationService', () => {
           sku: 'BUMPER',
           shortDescription: 'Corto',
           longDescription: 'Largo',
+          linkRewrite: 'disco-bumper',
           active: true,
+        },
+        publicLink: {
+          canonicalUrl: 'https://pesaschile.cl/categories/1-disco-bumper.html',
+          scope: 'exact_product',
+          available: true,
+          requiresVariantSelection: false,
+          variantAttributeLabels: [],
         },
         selectedVariant: { combinationId: 0, sku: 'BUMPER', label: null, attributes: [] },
         attributes: [],
@@ -216,6 +237,7 @@ describe('CatalogApplicationService', () => {
                 sku: 'BUMPER',
                 shortDescription: 'Corto',
                 longDescription: 'Largo',
+                linkRewrite: 'disco-bumper',
                 active: true,
               },
       ),

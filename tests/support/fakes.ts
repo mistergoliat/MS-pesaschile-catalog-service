@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 import type { CatalogRepository, PricingProvider, SearchProvider, StockProvider } from '../../src/domain/catalog/ports.js';
 import type { CacheProvider } from '../../src/infrastructure/cache/types.js';
-import type { ProductCore, VariantSummary, SearchItem, ProductPricing, ProductStock } from '../../src/domain/catalog/types.js';
+import type { ProductCoreRecord, VariantSummary, SearchItem, ProductPricing, ProductStock } from '../../src/domain/catalog/types.js';
 import type { SpecificPriceRow } from '../../src/domain/catalog/ports.js';
 
 export function createRepositoryStub(overrides: Partial<CatalogRepository> = {}): CatalogRepository {
@@ -13,8 +13,9 @@ export function createRepositoryStub(overrides: Partial<CatalogRepository> = {})
       sku: 'BUMPER',
       shortDescription: 'Disco olímpico',
       longDescription: 'Descripción larga',
+      linkRewrite: 'disco-bumper-olimpico',
       active: true,
-    } satisfies ProductCore),
+    } satisfies ProductCoreRecord),
     getVariants: vi.fn().mockResolvedValue([] as VariantSummary[]),
     getVariant: vi.fn().mockResolvedValue(null),
     getVariantAttributes: vi.fn().mockResolvedValue([]),

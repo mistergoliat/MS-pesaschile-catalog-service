@@ -224,6 +224,28 @@ export const searchProductsV2PricingSchema = z
   })
   .strict();
 
+export const searchProductsV2ProductPublicLinkSchema = z
+  .object({
+    canonicalUrl: nonEmptyStringSchema.nullable(),
+    scope: z.enum(['exact_product', 'parent_product']),
+    available: z.boolean(),
+    unavailableReason: z.enum(['missing_link_rewrite', 'invalid_product_id', 'invalid_base_url']).optional(),
+    requiresVariantSelection: z.boolean(),
+    variantAttributeLabels: z.array(nonEmptyStringSchema),
+  })
+  .strict()
+  .superRefine((publicLink, context) => {
+    if (publicLink.available && publicLink.canonicalUrl === null) {
+      addIssue(context, ['canonicalUrl'], 'available public links require canonicalUrl');
+    }
+    if (!publicLink.available && publicLink.canonicalUrl !== null) {
+      addIssue(context, ['canonicalUrl'], 'unavailable public links must not include canonicalUrl');
+    }
+    if (!publicLink.available && publicLink.unavailableReason === undefined) {
+      addIssue(context, ['unavailableReason'], 'unavailable public links require unavailableReason');
+    }
+  });
+
 export const searchProductsV2CatalogProductSummarySchema = z
   .object({
     productId: nonEmptyStringSchema,
@@ -237,6 +259,7 @@ export const searchProductsV2CatalogProductSummarySchema = z
     stock: searchProductsV2StockSchema,
     availability: searchProductsV2AvailabilitySchema.optional(),
     pricing: searchProductsV2PricingSchema.nullable().optional(),
+    publicLink: searchProductsV2ProductPublicLinkSchema.optional(),
     productUrl: nonEmptyStringSchema.optional(),
     imageUrl: nonEmptyStringSchema.optional(),
   })
@@ -396,6 +419,7 @@ export type SearchProductsV2Price = z.infer<typeof searchProductsV2PriceSchema>;
 export type SearchProductsV2Stock = z.infer<typeof searchProductsV2StockSchema>;
 export type SearchProductsV2Availability = z.infer<typeof searchProductsV2AvailabilitySchema>;
 export type SearchProductsV2Pricing = z.infer<typeof searchProductsV2PricingSchema>;
+export type SearchProductsV2ProductPublicLink = z.infer<typeof searchProductsV2ProductPublicLinkSchema>;
 export type CatalogProductSummary = z.infer<typeof searchProductsV2CatalogProductSummarySchema>;
 export type SearchProductsV2RecommendationRelationship = z.infer<typeof searchProductsV2RecommendationRelationshipSchema>;
 export type SearchProductsV2CommercialReason = z.infer<typeof searchProductsV2CommercialReasonSchema>;

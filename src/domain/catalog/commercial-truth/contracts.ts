@@ -25,6 +25,7 @@ export type CatalogCommercialTruthRequest = {
 export type CatalogCommercialWarningCode =
   | 'CATALOG_PRICE_UNAVAILABLE'
   | 'CATALOG_INVALID_BASE_PRICE'
+  | 'CATALOG_PUBLIC_LINK_UNAVAILABLE'
   | 'CATALOG_COMMERCIAL_STATUS_UNKNOWN'
   | 'SPECIFIC_PRICE_INVALID_DATE'
   | 'SPECIFIC_PRICE_INVALID_REDUCTION'
@@ -69,6 +70,15 @@ export type CatalogCommercialPrice = {
   readonly evaluatedAt: string;
 };
 
+export type ProductPublicLink = {
+  readonly canonicalUrl: string | null;
+  readonly scope: 'exact_product' | 'parent_product';
+  readonly available: boolean;
+  readonly unavailableReason?: 'missing_link_rewrite' | 'invalid_product_id' | 'invalid_base_url';
+  readonly requiresVariantSelection: boolean;
+  readonly variantAttributeLabels: readonly string[];
+};
+
 export type CatalogCommercialProduct = {
   readonly productId: string;
   readonly combinationId?: string;
@@ -78,6 +88,7 @@ export type CatalogCommercialProduct = {
   readonly category?: string;
   readonly productUrl?: string;
   readonly imageUrl?: string;
+  readonly publicLink: ProductPublicLink;
   readonly availability: CatalogCommercialAvailability;
   readonly price: CatalogCommercialPrice | null;
   readonly warnings: readonly CatalogCommercialWarning[];
@@ -107,6 +118,11 @@ export type CatalogCommercialRawProduct = {
   readonly combinationReference: string | null;
   readonly description: string | null;
   readonly category: string | null;
+  readonly linkRewrite: string | null;
+  readonly localizedLangId?: number;
+  readonly localizedShopId?: number;
+  readonly hasCombinations: boolean;
+  readonly variantAttributeLabels: readonly string[];
   readonly active: boolean | null;
   readonly availableForOrder: boolean | null;
   readonly productBasePriceNet: number | null;
@@ -136,6 +152,10 @@ export type CatalogCommercialSpecificPrice = {
 export type CatalogCommercialData = {
   readonly products: readonly CatalogCommercialRawProduct[];
   readonly specificPrices: readonly CatalogCommercialSpecificPrice[];
+  readonly scope?: {
+    readonly shopId: number;
+    readonly langId: number;
+  };
 };
 
 export interface CatalogCommercialDataReader {

@@ -21,6 +21,7 @@ describe('agent flow', () => {
         sku: 'BUMPER',
         shortDescription: 'Disco olímpico de caucho',
         longDescription: 'Disco bumper de alta densidad',
+        linkRewrite: 'disco-bumper-olimpico-20-kg',
         active: true,
       }),
       getVariants: async () => [

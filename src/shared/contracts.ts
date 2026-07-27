@@ -94,9 +94,21 @@ export const pricingSchema = z
   })
   .strict();
 
+export const publicLinkSchema = z
+  .object({
+    canonicalUrl: z.string().min(1).nullable(),
+    scope: z.enum(['exact_product', 'parent_product']),
+    available: z.boolean(),
+    unavailableReason: z.enum(['missing_link_rewrite', 'invalid_product_id', 'invalid_base_url']).optional(),
+    requiresVariantSelection: z.boolean(),
+    variantAttributeLabels: z.array(z.string().min(1)),
+  })
+  .strict();
+
 export const productResponseSchema = z
   .object({
     product: productCoreSchema,
+    publicLink: publicLinkSchema.optional(),
     selectedVariant: selectedVariantSchema.nullable(),
     attributes: z.array(attributeSchema),
     variants: z.array(variantSchema),

@@ -4,7 +4,7 @@ import type {
   SearchCandidate,
   SpecificPriceRow,
 } from '../../domain/catalog/ports.js';
-import type { AttributeValue, CatalogScope, ProductCore, VariantSummary } from '../../domain/catalog/types.js';
+import type { AttributeValue, CatalogScope, ProductCoreRecord, VariantSummary } from '../../domain/catalog/types.js';
 import { config } from '../../shared/config.js';
 import { stripHtml } from '../../shared/html.js';
 import { runQuery } from '../database/queries.js';
@@ -15,6 +15,7 @@ type ProductCoreRow = RowDataPacket & {
   sku: string | null;
   description_short: string | null;
   description: string | null;
+  link_rewrite: string | null;
 };
 
 type VariantRow = RowDataPacket & {
@@ -56,7 +57,7 @@ export class MySqlCatalogRepository implements CatalogRepository {
     await runQuery(this.pool, 'ping', 'SELECT 1', [], this.timeoutMs);
   }
 
-  async getProductCore(productId: number): Promise<ProductCore | null> {
+  async getProductCore(productId: number): Promise<ProductCoreRecord | null> {
     const rows = await runQuery<ProductCoreRow[]>(
       this.pool,
       'product-core',
@@ -66,7 +67,8 @@ export class MySqlCatalogRepository implements CatalogRepository {
           pl.name,
           NULLIF(TRIM(p.reference), '') AS sku,
           pl.description_short,
-          pl.description
+          pl.description,
+          NULLIF(TRIM(pl.link_rewrite), '') AS link_rewrite
         FROM ${table('product')} p
         INNER JOIN ${table('product_lang')} pl
           ON pl.id_product = p.id_product
@@ -91,6 +93,7 @@ export class MySqlCatalogRepository implements CatalogRepository {
       sku: normalizeSku(row.sku, null),
       shortDescription: stripHtml(row.description_short),
       longDescription: stripHtml(row.description),
+      linkRewrite: row.link_rewrite?.trim() || null,
       active: true,
     };
   }

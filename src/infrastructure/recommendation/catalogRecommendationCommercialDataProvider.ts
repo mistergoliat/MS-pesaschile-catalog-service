@@ -63,6 +63,10 @@ function summaryFromDetail(
     },
     availability: product.availability,
     pricing: product.price,
+    publicLink: {
+      ...product.publicLink,
+      variantAttributeLabels: [...product.publicLink.variantAttributeLabels],
+    },
     ...(product.productUrl === undefined ? {} : { productUrl: product.productUrl }),
     ...(product.imageUrl === undefined ? {} : { imageUrl: product.imageUrl }),
   };

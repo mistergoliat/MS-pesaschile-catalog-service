@@ -1,4 +1,4 @@
-import type { AttributeValue, ProductCore, SearchItem, VariantSummary } from './types.js';
+import type { AttributeValue, ProductCoreRecord, SearchItem, VariantSummary } from './types.js';
 
 export type SearchProvider = {
   search(query: string, limit: number, includeOutOfStock: boolean): Promise<SearchItem[]>;
@@ -40,7 +40,7 @@ export type PricingProvider = {
 
 export type CatalogRepository = {
   ping(): Promise<void>;
-  getProductCore(productId: number): Promise<ProductCore | null>;
+  getProductCore(productId: number): Promise<ProductCoreRecord | null>;
   getVariants(productId: number): Promise<VariantSummary[]>;
   getVariant(productId: number, combinationId: number): Promise<VariantSummary | null>;
   getVariantAttributes(combinationId: number): Promise<AttributeValue[]>;

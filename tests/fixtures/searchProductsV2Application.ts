@@ -162,6 +162,13 @@ export function catalogSummaryFor(
       quantity: 10,
       available: true,
     },
+    publicLink: {
+      canonicalUrl: `https://pesaschile.cl/categories/${product.productId}-producto-${product.productId}.html`,
+      scope: product.combinationId === undefined ? 'exact_product' : 'parent_product',
+      available: true,
+      requiresVariantSelection: product.combinationId !== undefined,
+      variantAttributeLabels: product.combinationId === undefined ? [] : ['Peso'],
+    },
     ...patch,
   };
 }

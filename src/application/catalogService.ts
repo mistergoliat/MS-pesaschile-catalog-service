@@ -6,6 +6,7 @@ import {
 import { cacheHitsTotal, cacheMissesTotal, priceResolutionTotal } from '../shared/metrics.js';
 import { RequestCoalescer } from '../shared/coalescer.js';
 import { productCacheKey, priceCacheKey, searchCacheKey, stockCacheKey } from '../shared/cacheKeys.js';
+import { buildProductPublicUrl, type ProductPublicLink } from '../domain/catalog/commercial-truth/index.js';
 import type {
   BatchGetInput,
   BatchGetItemResult,
@@ -23,6 +24,38 @@ type GetProductInput = {
   combinationId: number;
   quantity: number;
 } & Partial<CommercialContext>;
+
+function variantAttributeLabels(variants: readonly { attributes: readonly { group: string }[] }[]): string[] {
+  const labels: string[] = [];
+  for (const variant of variants) {
+    for (const attribute of variant.attributes) {
+      const label = attribute.group.trim();
+      if (label && !labels.includes(label)) labels.push(label);
+    }
+  }
+  return labels;
+}
+
+function productPublicLink(input: {
+  productId: number;
+  linkRewrite: string | null;
+  hasVariants: boolean;
+  variantAttributeLabels: readonly string[];
+}): ProductPublicLink {
+  const url = buildProductPublicUrl({
+    baseUrl: config.catalog.publicBaseUrl,
+    productId: input.productId,
+    linkRewrite: input.linkRewrite,
+  });
+  return {
+    canonicalUrl: url.canonicalUrl,
+    scope: input.hasVariants ? 'parent_product' : 'exact_product',
+    available: url.available,
+    ...(url.available ? {} : { unavailableReason: url.reason }),
+    requiresVariantSelection: input.hasVariants,
+    variantAttributeLabels: input.hasVariants ? [...input.variantAttributeLabels] : [],
+  };
+}
 
 export class CatalogApplicationService {
   private readonly coalescer = new RequestCoalescer();
@@ -110,6 +143,13 @@ export class CatalogApplicationService {
 
       const variants = await this.dependencies.repository.getVariants(input.productId);
       const hasVariants = variants.length > 0;
+      const { linkRewrite, ...productCore } = product;
+      const publicLink = productPublicLink({
+        productId: product.productId,
+        linkRewrite,
+        hasVariants,
+        variantAttributeLabels: variantAttributeLabels(variants),
+      });
       const selectedCombinationId =
         input.combinationId > 0
           ? input.combinationId
@@ -159,7 +199,8 @@ export class CatalogApplicationService {
 
       if (!selectedVariant) {
         const response: ProductDetail = {
-          product,
+          product: productCore,
+          publicLink,
           selectedVariant: null,
           attributes: [],
           variants: variantList,
@@ -221,7 +262,8 @@ export class CatalogApplicationService {
       timestamps.stockCheckedAt = new Date().toISOString();
 
       const response: ProductDetail = {
-        product,
+        product: productCore,
+        publicLink,
         selectedVariant,
         attributes: selectedVariant.attributes,
         variants: variantList,

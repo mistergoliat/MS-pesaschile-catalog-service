@@ -19,6 +19,8 @@ customer phrase
 
 The catalog remains the authority for product existence, active status, name, reference, description, price, stock, and availability. Product relationship snapshots are not consulted by T12.
 
+Candidate products also expose `publicLink` when the shared commercial truth layer can build it from `ps_product_lang.link_rewrite`. The URL is structured metadata only; T12 does not write conversational copy.
+
 ## Endpoint
 
 ```http
@@ -322,6 +324,26 @@ Stock is never invented. Unknown stock is returned explicitly as:
   "available": false
 }
 ```
+
+## Public Product Link
+
+`publicLink` is copied from `CatalogCommercialTruthService`:
+
+```json
+{
+  "canonicalUrl": "https://pesaschile.cl/categories/29-barra-olimpica-15-kg.html",
+  "scope": "exact_product",
+  "available": true,
+  "requiresVariantSelection": false,
+  "variantAttributeLabels": []
+}
+```
+
+For products with combinations, `scope` is `parent_product`, `requiresVariantSelection` is `true`, and `variantAttributeLabels` contains localized group names such as `Talla`, `Color`, `Peso`, `Medida` or `Sabor` when available.
+
+La URL entregada para productos con combinaciones apunta a la ficha del producto padre. El consumidor debe indicar al cliente que seleccione la variante correspondiente antes de agregar el producto al carrito.
+
+This version does not build deep links for combinations.
 
 ## Warnings
 
