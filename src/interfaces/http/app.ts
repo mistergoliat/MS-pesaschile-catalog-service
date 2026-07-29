@@ -12,14 +12,17 @@ import { batchRequestSchema, errorResponseSchema, healthResponseSchema, productP
 import { readCommercialContext } from '../../shared/requestContext.js';
 import type { CatalogApplicationService } from '../../application/catalogService.js';
 import type { ProductIntentResolutionService } from '../../application/catalog/product-intent/index.js';
+import type { ExploreProductsService } from '../../application/catalog/explore-products/index.js';
 import type { SearchProductsV2Service } from '../../application/recommendation/search-products-v2/index.js';
 import type { CatalogRepository } from '../../domain/catalog/ports.js';
 import type { BatchGetInput } from '../../domain/catalog/types.js';
 import { registerSearchProductsV2Route } from './routes/searchProductsV2Route.js';
 import { registerResolveProductIntentRoute } from './routes/resolveProductIntentRoute.js';
+import { registerExploreProductsRoute } from './routes/exploreProductsRoute.js';
 
 export type AppDependencies = {
   service: CatalogApplicationService;
+  exploreProductsService?: ExploreProductsService;
   productIntentResolutionService?: ProductIntentResolutionService;
   searchProductsV2Service?: SearchProductsV2Service;
   repository: CatalogRepository;
@@ -325,6 +328,7 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
 
   await registerResolveProductIntentRoute(app as unknown as FastifyInstance, deps.productIntentResolutionService);
   await registerSearchProductsV2Route(app as unknown as FastifyInstance, deps.searchProductsV2Service);
+  await registerExploreProductsRoute(app as unknown as FastifyInstance, deps.exploreProductsService);
 
   return app as unknown as FastifyInstance;
 }

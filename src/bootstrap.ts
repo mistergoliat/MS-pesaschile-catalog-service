@@ -9,6 +9,7 @@ import { SqlPricingProvider } from './infrastructure/pricing/sqlPricingProvider.
 import { PrestaShopPhysicalStockProvider } from './infrastructure/stock/prestashopPhysicalStockProvider.js';
 import { CatalogApplicationService } from './application/catalogService.js';
 import { CatalogCommercialTruthService } from './domain/catalog/commercial-truth/index.js';
+import { DefaultExploreProductsService } from './application/catalog/explore-products/index.js';
 import {
   DefaultProductClarificationBuilder,
   DefaultProductExplicitConstraintExtractor,
@@ -20,6 +21,7 @@ import {
 } from './application/catalog/product-intent/index.js';
 import { CatalogProductIntentProvider } from './infrastructure/catalog/catalogProductIntentProvider.js';
 import { MySqlCatalogCommercialDataReader } from './infrastructure/catalog/mysqlCatalogCommercialDataReader.js';
+import { MySqlCatalogExploreDataReader } from './infrastructure/catalog/mysqlCatalogExploreDataReader.js';
 import { FileProductRelationshipSnapshotStore } from './infrastructure/recommendation/fileProductRelationshipSnapshotStore.js';
 import {
   EmptyCustomerAffinityEvidenceProvider,
@@ -60,6 +62,9 @@ export async function createRuntime() {
     logger: {
       warn: (event, fields) => logger.warn({ event, ...fields }, event),
     },
+  });
+  const exploreProductsService = new DefaultExploreProductsService({
+    dataReader: new MySqlCatalogExploreDataReader(pool),
   });
   const customerAffinityEvidenceProvider = config.recommendation.customerAffinityProviderMode === 'empty'
     ? new EmptyCustomerAffinityEvidenceProvider()
@@ -103,6 +108,7 @@ export async function createRuntime() {
     cache,
     repository,
     service,
+    exploreProductsService,
     productIntentResolutionService,
     relationshipSnapshotReader: recommendationRuntime.relationshipSnapshotReader,
     searchProductsV2Service: recommendationRuntime.searchProductsV2Service,

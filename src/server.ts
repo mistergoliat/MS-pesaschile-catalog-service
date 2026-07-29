@@ -7,6 +7,7 @@ const runtime = await createRuntime();
 
 const app = await buildApp({
   service: runtime.service,
+  exploreProductsService: runtime.exploreProductsService,
   productIntentResolutionService: runtime.productIntentResolutionService,
   searchProductsV2Service: runtime.searchProductsV2Service,
   repository: runtime.repository,
