@@ -179,6 +179,25 @@ describe('CatalogApplicationService', () => {
     });
   });
 
+  it('allows direct details lookup for a discovery-excluded product id', async () => {
+    const { service } = makeService({
+      product: {
+        productId: 444,
+        name: 'Servicio vendedor Pesas Chile',
+        sku: 'SERVICIO',
+        shortDescription: 'Servicio interno',
+        longDescription: 'Servicio interno',
+        linkRewrite: 'servicio-vendedor-pesas-chile',
+        active: true,
+      },
+    });
+
+    const result = await service.getProduct({ productId: 444, combinationId: 0, quantity: 1 });
+
+    expect(result.product.productId).toBe(444);
+    expect(result.product.name).toBe('Servicio vendedor Pesas Chile');
+  });
+
   it('serves cached product responses', async () => {
     const cache = createCacheStub();
     await cache.set(
@@ -261,6 +280,38 @@ describe('CatalogApplicationService', () => {
     expect(result.items[1]?.ok).toBe(false);
     if (!result.items[1]?.ok) {
       expect(result.items[1]?.error.correlationId).toBe('corr-123');
+    }
+  });
+
+  it('allows batch hydration for a discovery-excluded product id', async () => {
+    const repository = createRepositoryStub({
+      getProductCore: vi.fn(async (productId: number) => ({
+        productId,
+        name: productId === 505 ? 'Costo logistico' : 'Disco bumper',
+        sku: productId === 505 ? 'LOGISTICA' : 'BUMPER',
+        shortDescription: 'Corto',
+        longDescription: 'Largo',
+        linkRewrite: productId === 505 ? 'costo-logistico' : 'disco-bumper',
+        active: true,
+      })),
+    });
+    const service = new CatalogApplicationService({
+      repository,
+      searchProvider: createSearchProviderStub(),
+      stockProvider: createStockProviderStub(),
+      pricingProvider: createPricingProviderStub(),
+      cache: createCacheStub(),
+    });
+
+    const result = await service.batchGetProducts(
+      [{ productId: 505, combinationId: 0, quantity: 1 }],
+      'corr-505',
+    );
+
+    expect(result.items[0]?.ok).toBe(true);
+    if (result.items[0]?.ok) {
+      expect(result.items[0].product.product.productId).toBe(505);
+      expect(result.items[0].product.product.name).toBe('Costo logistico');
     }
   });
 });

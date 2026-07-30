@@ -1,6 +1,7 @@
 import { config } from '../../../shared/config.js';
 import { resolvePrice } from '../../../infrastructure/pricing/priceResolver.js';
 import type { SpecificPriceCandidate } from '../../../domain/pricing/types.js';
+import { isDiscoveryExcludedProductId } from '../../../domain/catalog/discoveryExclusionPolicy.js';
 import { normalizeCatalogText, tokenizeCatalogText } from '../product-intent/normalizer.js';
 import {
   CommercialAvailabilityResolver,
@@ -299,6 +300,7 @@ export class DefaultExploreProductsService implements ExploreProductsService {
       const classificationSources: ExploreProductsClassificationSource[] = [];
 
       for (const row of data.products) {
+        if (isDiscoveryExcludedProductId(row.productId)) continue;
         if (!matchesCategory(row, category.categoryIds)) continue;
         if (!matchesQuery(row, request.query)) continue;
 
