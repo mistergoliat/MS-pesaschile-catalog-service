@@ -5,6 +5,7 @@ import type {
   SpecificPriceRow,
 } from '../../domain/catalog/ports.js';
 import type { AttributeValue, CatalogScope, ProductCoreRecord, VariantSummary } from '../../domain/catalog/types.js';
+import { DISCOVERY_EXCLUDED_PRODUCT_IDS } from '../../domain/catalog/discoveryExclusionPolicy.js';
 import { config } from '../../shared/config.js';
 import { stripHtml } from '../../shared/html.js';
 import { runQuery } from '../database/queries.js';
@@ -37,6 +38,10 @@ type StockRow = RowDataPacket & {
 
 function table(name: string): string {
   return `${config.prestashop.prefix}${name}`;
+}
+
+function placeholders(values: readonly unknown[]): string {
+  return values.map(() => '?').join(', ');
 }
 
 function normalizeSku(primary: string | null, fallback: string | null): string | null {
@@ -293,6 +298,7 @@ export class MySqlCatalogRepository implements CatalogRepository {
             OR pl.description_short LIKE ?
             OR pl.description LIKE ?
           )
+          AND p.id_product NOT IN (${placeholders(DISCOVERY_EXCLUDED_PRODUCT_IDS)})
           ${includeOutOfStock ? '' : 'AND COALESCE(sa.physical_quantity, 0) > 0'}
         GROUP BY
           p.id_product,
@@ -308,7 +314,21 @@ export class MySqlCatalogRepository implements CatalogRepository {
         ORDER BY p.id_product ASC, pa.default_on DESC, pa.id_product_attribute ASC
         LIMIT ?
       `,
-      [this.scope.shopId, this.scope.langId, this.scope.shopId, this.scope.langId, this.scope.langId, normalized, normalized, normalized, like, like, like, Math.max(limit * 10, 50)],
+      [
+        this.scope.shopId,
+        this.scope.langId,
+        this.scope.shopId,
+        this.scope.langId,
+        this.scope.langId,
+        normalized,
+        normalized,
+        normalized,
+        like,
+        like,
+        like,
+        ...DISCOVERY_EXCLUDED_PRODUCT_IDS,
+        Math.max(limit * 10, 50),
+      ],
       this.timeoutMs,
     );
 

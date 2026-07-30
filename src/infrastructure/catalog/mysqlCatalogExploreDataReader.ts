@@ -8,6 +8,7 @@ import type {
   ExploreCatalogData,
   ExploreCatalogProductRow,
 } from '../../application/catalog/explore-products/index.js';
+import { DISCOVERY_EXCLUDED_PRODUCT_IDS } from '../../domain/catalog/discoveryExclusionPolicy.js';
 import { config } from '../../shared/config.js';
 import { stripHtml } from '../../shared/html.js';
 import { runQuery } from '../database/queries.js';
@@ -296,6 +297,7 @@ export class MySqlCatalogExploreDataReader implements CatalogExploreDataReader {
         ) stock_agg
           ON stock_agg.id_product = p.id_product
         WHERE 1 = 1
+          AND p.id_product NOT IN (${placeholders(DISCOVERY_EXCLUDED_PRODUCT_IDS)})
           ${categoryFilter}
         ORDER BY p.id_product ASC
       `,
@@ -313,6 +315,7 @@ export class MySqlCatalogExploreDataReader implements CatalogExploreDataReader {
         this.scope.langId,
         this.scope.shopId,
         this.scope.shopId,
+        ...DISCOVERY_EXCLUDED_PRODUCT_IDS,
         ...(categoryIds ?? []).map((id) => Number(id)),
       ],
       this.timeoutMs,

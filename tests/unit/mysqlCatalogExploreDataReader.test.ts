@@ -94,8 +94,9 @@ describe('MySqlCatalogExploreDataReader', () => {
 
     await reader.readProducts({ categoryIds: ['22', '23'], context });
 
+    expect(fake.calls[0]?.sql).toContain('p.id_product NOT IN (?, ?)');
+    expect(fake.calls[0]?.values.slice(-4)).toEqual([444, 505, 22, 23]);
     expect(fake.calls[0]?.sql).toContain('cpf.id_category IN (?, ?)');
-    expect(fake.calls[0]?.values.slice(-2)).toEqual([22, 23]);
   });
 
   it('reads compatible specific prices for all scoped products', async () => {

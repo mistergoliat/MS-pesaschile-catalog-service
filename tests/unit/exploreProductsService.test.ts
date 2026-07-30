@@ -334,6 +334,38 @@ describe('DefaultExploreProductsService', () => {
     expect(result.totalMatched).toBe(3);
   });
 
+  it('excludes known internal products before stock ranking, totalMatched, and limit', async () => {
+    const result = await service([
+      row({
+        productId: '444',
+        name: 'Servicio vendedor Pesas Chile',
+        productBasePriceNet: 0,
+        stockQuantity: 99999,
+      }),
+      row({
+        productId: '505',
+        name: 'Costo logistico',
+        productBasePriceNet: 0,
+        stockQuantity: 10001,
+      }),
+      row({
+        productId: '21',
+        name: 'Banca ajustable',
+        productBasePriceNet: 1000,
+        stockQuantity: 3,
+      }),
+      row({
+        productId: '22',
+        name: 'Banca plana',
+        productBasePriceNet: 1000,
+        stockQuantity: 2,
+      }),
+    ]).explore({ sort: { by: 'stock', direction: 'desc' }, limit: 1 }, context);
+
+    expect(result.products.map((product) => product.productId)).toEqual(['21']);
+    expect(result.totalMatched).toBe(2);
+  });
+
   it('uses productId ASC as the deterministic final tie break', async () => {
     const input = [
       row({ productId: '3', name: 'Alpha', productBasePriceNet: 1000 }),

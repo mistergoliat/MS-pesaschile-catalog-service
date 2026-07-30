@@ -1,5 +1,6 @@
 import type { CatalogRepository, SearchProvider } from '../../domain/catalog/ports.js';
 import type { SearchItem } from '../../domain/catalog/types.js';
+import { isDiscoveryExcludedProductId } from '../../domain/catalog/discoveryExclusionPolicy.js';
 
 function scoreMatch(item: SearchItem, query: string): number {
   const normalized = query.trim().toLowerCase();
@@ -47,6 +48,7 @@ export class MySqlSearchProvider implements SearchProvider {
   async search(query: string, limit: number, includeOutOfStock: boolean): Promise<SearchItem[]> {
     const candidates = await this.repository.getSearchCandidates(query, includeOutOfStock, limit);
     const ranked = candidates
+      .filter((candidate) => !isDiscoveryExcludedProductId(candidate.productId))
       .map((candidate) => {
         const item: SearchItem = {
           productId: candidate.productId,
