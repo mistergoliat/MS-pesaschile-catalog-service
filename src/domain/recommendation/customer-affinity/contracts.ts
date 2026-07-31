@@ -33,8 +33,9 @@ function addIssue(context: z.RefinementCtx, path: Array<string | number>, messag
   context.addIssue({ code: z.ZodIssueCode.custom, message, path });
 }
 
-export const CUSTOMER_AFFINITY_SCORING_VERSION = 'customer-affinity-v1';
+export const CUSTOMER_AFFINITY_SCORING_VERSION = 'customer-affinity-v2';
 
+// 'DIRECT_PRODUCT_PURCHASE' is deprecated since v2: kept for backward compatibility, never emitted by the evaluator or weighted by the scorer; see ProductOwnershipEvidence.
 export const customerAffinitySignalCodeSchema = z.enum([
   'DIRECT_PRODUCT_PURCHASE',
   'CATEGORY_PURCHASE',
@@ -86,7 +87,11 @@ export const customerAffinityParametersSchema = z
     recentInterestWindowDays: positiveNumberSchema,
     recentPurchaseWindowDays: positiveNumberSchema,
     rejectionWindowDays: positiveNumberSchema,
-    directProductPurchaseWeight: nonNegativeNumberSchema,
+    repeatPurchaseWindowDays: positiveNumberSchema,
+    // Deprecated since v2: accepted for backward compatibility with v1 callers, validated, never read by the
+    // scorer. DIRECT_PRODUCT_PURCHASE has no effective configurable weight; see
+    // CUSTOMER_AFFINITY_V2_RESERVED_DIRECT_PURCHASE_WEIGHT in defaultCustomerAffinityScorer.ts.
+    directProductPurchaseWeight: nonNegativeNumberSchema.optional(),
     categoryPurchaseWeight: nonNegativeNumberSchema,
     brandPurchaseWeight: nonNegativeNumberSchema,
     recentProductInterestWeight: nonNegativeNumberSchema,
@@ -105,7 +110,6 @@ export const customerAffinityParametersSchema = z
       addIssue(context, ['minimumEvidenceForHighConfidence'], 'high confidence evidence must be >= medium threshold');
     }
     const positiveWeight =
-      parameters.directProductPurchaseWeight +
       parameters.categoryPurchaseWeight +
       parameters.brandPurchaseWeight +
       parameters.recentProductInterestWeight +
@@ -114,7 +118,7 @@ export const customerAffinityParametersSchema = z
       parameters.repeatPurchasePatternWeight +
       parameters.observedSpendFitWeight;
     if (positiveWeight <= 0) {
-      addIssue(context, ['directProductPurchaseWeight'], 'at least one positive weight must be greater than zero');
+      addIssue(context, ['categoryPurchaseWeight'], 'at least one positive weight must be greater than zero');
     }
   });
 
@@ -122,7 +126,7 @@ export const DEFAULT_CUSTOMER_AFFINITY_PARAMETERS = Object.freeze({
   recentInterestWindowDays: 30,
   recentPurchaseWindowDays: 180,
   rejectionWindowDays: 180,
-  directProductPurchaseWeight: 0.2,
+  repeatPurchaseWindowDays: 365,
   categoryPurchaseWeight: 0.1,
   brandPurchaseWeight: 0.05,
   recentProductInterestWeight: 0.25,
@@ -172,9 +176,33 @@ export const repeatPurchaseEvidenceSchema = z
   })
   .strict();
 
+// Neutral historical-ownership fact. Never a weighted signal: it must not feed affinityScore or confidence.
+export const productOwnershipEvidenceSchema = z
+  .object({
+    previouslyPurchased: z.boolean(),
+    exactVariantPreviouslyPurchased: z.boolean(),
+    totalOrderCount: nonNegativeIntegerSchema.optional(),
+    firstPurchasedAt: isoDateTimeSchema.optional(),
+    lastPurchasedAt: isoDateTimeSchema.optional(),
+  })
+  .strict()
+  .superRefine((ownership, context) => {
+    if (ownership.exactVariantPreviouslyPurchased && !ownership.previouslyPurchased) {
+      addIssue(context, ['exactVariantPreviouslyPurchased'], 'exact variant ownership requires previouslyPurchased to be true');
+    }
+    if (
+      ownership.firstPurchasedAt !== undefined &&
+      ownership.lastPurchasedAt !== undefined &&
+      Date.parse(ownership.firstPurchasedAt) > Date.parse(ownership.lastPurchasedAt)
+    ) {
+      addIssue(context, ['firstPurchasedAt'], 'firstPurchasedAt must not be after lastPurchasedAt');
+    }
+  });
+
 export const customerProductEvidenceSchema = z
   .object({
     product: productRelationshipProductReferenceSchema,
+    // Deprecated since customer-affinity-v2: no longer produces a weighted signal. Kept for backward compatibility and as an ownership derivation source; prefer `ownership`.
     directPurchases: z.array(purchaseEvidenceSchema).optional(),
     categoryPurchases: z.array(categoryPurchaseEvidenceSchema).optional(),
     brandPurchases: z.array(brandPurchaseEvidenceSchema).optional(),
@@ -185,6 +213,7 @@ export const customerProductEvidenceSchema = z
     ownedCompatibleProducts: z.array(compatibleOwnershipEvidenceSchema).optional(),
     repeatPurchasePattern: repeatPurchaseEvidenceSchema.optional(),
     candidatePrice: moneyEvidenceSchema.optional(),
+    ownership: productOwnershipEvidenceSchema.optional(),
   })
   .strict();
 
@@ -262,6 +291,8 @@ export const customerProductAffinitySchema = z
     signals: z.array(customerAffinitySignalSchema),
     evidence: z.array(customerAffinityEvidenceSummarySchema),
     warnings: z.array(customerAffinityWarningSchema),
+    // Neutral pass-through fact, never derived from `signals`/`score`; absent when no ownership evidence exists.
+    ownership: productOwnershipEvidenceSchema.optional(),
   })
   .strict()
   .superRefine((affinity, context) => {
@@ -316,6 +347,7 @@ export type RejectionEvidence = z.infer<typeof rejectionEvidenceSchema>;
 export type CategoryRejectionEvidence = z.infer<typeof categoryRejectionEvidenceSchema>;
 export type CompatibleOwnershipEvidence = z.infer<typeof compatibleOwnershipEvidenceSchema>;
 export type RepeatPurchaseEvidence = z.infer<typeof repeatPurchaseEvidenceSchema>;
+export type ProductOwnershipEvidence = z.infer<typeof productOwnershipEvidenceSchema>;
 export type CustomerProductEvidence = z.infer<typeof customerProductEvidenceSchema>;
 export type CustomerCommercialProfileEvidence = z.infer<typeof customerCommercialProfileEvidenceSchema>;
 export type CustomerAffinityProviderWarning = z.infer<typeof customerAffinityProviderWarningSchema>;
@@ -344,6 +376,7 @@ export type CustomerAffinityEvaluation = {
   evidence: readonly CustomerAffinityEvidenceSummary[];
   warnings: readonly CustomerAffinityWarning[];
   validEvidenceCount: number;
+  ownership?: ProductOwnershipEvidence;
 };
 
 export type CustomerAffinityScoreResult = {

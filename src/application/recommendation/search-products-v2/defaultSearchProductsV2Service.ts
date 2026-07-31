@@ -11,7 +11,7 @@ import {
   recommendationEnrichmentOutOfStockTotal,
   recommendationEnrichmentReturnedTotal,
 } from '../../../shared/metrics.js';
-import { CustomerAffinityError } from '../../../domain/recommendation/customer-affinity/index.js';
+import { CUSTOMER_AFFINITY_SCORING_VERSION, CustomerAffinityError } from '../../../domain/recommendation/customer-affinity/index.js';
 import type {
   CustomerAffinityCustomerReference,
   CustomerProductAffinity,
@@ -203,7 +203,7 @@ function createNeutralCustomerAffinityResult(
     product: cloneJsonValue(product),
     score: 0,
     confidence: 'none',
-    scoringVersion: 'customer-affinity-v1',
+    scoringVersion: CUSTOMER_AFFINITY_SCORING_VERSION,
     signals: deepFreeze([]),
     evidence: deepFreeze([]),
     warnings: deepFreeze([]),

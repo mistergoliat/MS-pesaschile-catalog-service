@@ -105,7 +105,7 @@ export function affinityFor(
     product,
     score,
     confidence,
-    scoringVersion: 'customer-affinity-v1',
+    scoringVersion: 'customer-affinity-v2',
     signals,
     evidence: signals.map((item) => ({ code: item.code, count: 1 })),
     warnings: [],
