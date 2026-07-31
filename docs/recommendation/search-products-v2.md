@@ -48,9 +48,14 @@ Optional fields:
 - `context.budget`
 - `context.preferredProducts`
 - `context.excludedProducts`
+- `context.explicitRepurchaseProducts` (CP-R1-T10B3C)
 - `filters.inStockOnly`
 - `limit`
 - `correlationId`
+
+`context.explicitRepurchaseProducts` must not contain a product/variant identity also present in
+`context.excludedProducts` in the same request — that combination fails validation as `400 INVALID_REQUEST`
+instead of being resolved silently (see "Explicit Repurchase").
 
 `query` is compatibility metadata. It does not resolve, replace, or modify `sourceProduct.productId`.
 
@@ -110,32 +115,68 @@ If T08 returns zero candidates, T11 returns `200 OK` with empty `recommendations
 
 ## T09 Degradation
 
-A retryable technical failure in T09 may degrade to commercial ranking.
+CP-R1-T10B3C widened this from "retryable failures only" to **evidence-provider integration failures**: any
+failure attributable to talking to the customer affinity evidence provider degrades, not just network/timeout
+errors. A failure in Catalog Service's own T09 request construction still fails hard.
 
-A structural T09 failure must not be hidden.
+Degrades to commercial ranking:
 
-Retryable T09 failures create an explicit neutral affinity result inside T11:
+- `EVIDENCE_PROVIDER_FAILED` (`retryable: true` always — network, timeout, connection failure);
+- `INVALID_PROVIDER_RESPONSE` (structurally invalid provider response: customer mismatch reported by the
+  provider, products outside the requested batch, duplicated product evidence, corrupt/unparseable payload).
+
+`execution.degradationReasons` (this correction round) reports which of the two actually happened instead of a
+single hardcoded value — it is resolved explicitly from the caught `CustomerAffinityError`, never inferred after
+the fact from the `degraded: boolean` flag alone:
+
+- `CUSTOMER_AFFINITY_RETRYABLE_FAILURE` — `EVIDENCE_PROVIDER_FAILED`. Transient integration failure (network,
+  timeout, connection). Safe to retry the same request later; it may succeed once the provider recovers.
+- `CUSTOMER_AFFINITY_PROVIDER_RESPONSE_INVALID` — `INVALID_PROVIDER_RESPONSE`. The provider answered, but its
+  response is structurally wrong (customer mismatch, evidence outside the batch, duplicated evidence, corrupt
+  payload). Retrying the identical request reproduces the same failure — **consumers must not auto-retry on
+  this reason alone**; it signals a provider-side data problem worth investigating, not a transient condition.
+
+Both reasons degrade identically otherwise: commercial ranking preserved, neutral affinity, `200 OK`.
+
+Does not degrade (fails hard, `INVALID_AFFINITY_RESULT`):
+
+- `INVALID_CUSTOMER_REFERENCE`, `INVALID_PRODUCT_REFERENCE`, `INVALID_PARAMETERS`, `INVALID_REQUEST` from T09 —
+  these mean Catalog Service built an invalid request to its own T09 module, a bug worth failing loudly rather
+  than masking;
+- any error that is not a `CustomerAffinityError` at all.
+
+A structural T09 failure of this second kind must not be hidden.
+
+Degradation of either kind creates an explicit neutral affinity result inside T11:
 
 - one affinity per T08 candidate;
 - score `0`;
 - confidence `none`;
 - no signals;
 - no evidence;
+- no ownership;
 - no fake `NO_CUSTOMER_HISTORY`;
 - public warning `CUSTOMER_AFFINITY_UNAVAILABLE`;
 - `execution.degraded = true`;
 - `customerAffinity` stage `degraded`.
 
+`cause` and the raw provider payload are never serialized into the response or the warning; only the internal
+structured logger receives the error code, for observability.
+
 ## Non-Degradable Errors
 
 T11 fails instead of hiding:
 
-- invalid request;
-- customer mismatch;
+- invalid request (including the `explicitRepurchaseProducts`/`excludedProducts` conflict above);
+- customer mismatch at the request boundary (`context.customerId` vs. `customer.customerId`) — `400`;
+- an internal T10 dependency mismatch between its context customer and its affinity customer — `409`,
+  `CUSTOMER_MISMATCH`. This is a defensive path: T11's own request validation already guarantees both values
+  come from the same `request.customer`, so this is unreachable through a validated request today. It stays
+  wired so the documented `409` mapping is never a promise the code cannot keep (see the CP-R1-T10B3A/B audits'
+  finding that this was previously dead code).
 - invalid T08 result;
 - duplicated T08 products;
-- invalid T09 result;
-- `INVALID_PROVIDER_RESPONSE`;
+- invalid T09 request-construction errors (see above);
 - invalid T10 result;
 - unexpected non-retryable failures.
 
@@ -207,15 +248,72 @@ Recommendations expose:
 - relationship type, reliability, and co-occurrence evidence;
 - deterministic commercial reason;
 - structured reasons;
-- public warnings.
+- neutral ownership (CP-R1-T10B3C, optional — see "Ownership");
+- public warnings, scoped to that recommendation's own product (CP-R1-T10B3C).
 
 T11.3 exposes relationship evidence from the snapshot. T11 does not expose raw customer evidence, provider payloads, SQL rows, catalog internals, or customer history.
 
+## Ownership
+
+`recommendation.ownership?: { previouslyPurchased: boolean; exactVariantPreviouslyPurchased: boolean;
+totalOrderCount?: number; firstPurchasedAt?: string; lastPurchasedAt?: string }` is a neutral pass-through of
+T09's `ProductOwnershipEvidence` for that exact candidate, unchanged from T10's own result (see
+`docs/recommendation/personalized-recommendation-service.md`). Only booleans, an aggregate order count, and
+historical dates — never amounts, names, raw Customer Profile responses, `masterCustomerId`,
+`prestashopCustomerId`, or any other identifier.
+
+It appears **only** on the specific recommendation T09 provided ownership for:
+
+- absent on `sourceProduct` (T09 is never asked about the source product, only about T08's candidates);
+- absent on `excluded[]` entries (that schema has no `ownership` field, and exclusion happens independently of
+  ownership — an excluded product's ownership, if any, is simply not surfaced, matching how excluded items
+  already omit most detail);
+- never folded into global `warnings[]`;
+- never influences `commercialReason`, `score`, `rank`, or which `reasons` codes appear — those all come from
+  T10's scoring, which never reads `ownership` as an input (see CP-R1-T10B3B/T10B3C).
+
+Ownership does not define recommendation strategy. It is a structural fact for the caller (typically a Sales
+Agent) to phrase correctly — "you already have this" versus a generic pitch — not a signal Catalog Service
+turns into ranking on its own.
+
+## Explicit Repurchase
+
+`context.explicitRepurchaseProducts?: ProductReference[]` (CP-R1-T10B3C) represents the customer's **current**
+stated intent to buy an exact product or variant again. It is mapped 1:1 to T10's
+`context.explicitRepurchaseProductIds` (see `mapPersonalizationContext`) and produces a dedicated,
+non-substitutable score contribution (`explicitRepurchaseBoost`, default `0.15`) and reason code
+(`EXPLICIT_REPURCHASE_INTENT`), distinct from `preferredProducts` (`explicitPreferenceBoost`, `0.10`,
+`EXPLICIT_CONTEXT_PREFERENCE`).
+
+It is never derived by Catalog Service from `ownership`, legacy `directPurchases`, `REPEAT_PURCHASE_PATTERN`, or
+`preferredProducts` — populating it is entirely the caller's responsibility, sourced from what the customer said
+in the current conversation, not from history. Validated like `preferredProducts`/`excludedProducts`: optional,
+deduplicated by exact runtime product identity, `.strict()` schema.
+
+**Conflict with `excludedProducts`**: the same request must not contain the same product/variant identity in
+both `context.excludedProducts` and `context.explicitRepurchaseProducts` — that fails validation as
+`400 INVALID_REQUEST` rather than silently picking a winner. `excludedProducts` retains maximum precedence
+where no conflict is declared; explicit repurchase intent can never revert an active exclusion by itself.
+
+## Product And Variant Semantics
+
+Both `ownership.exactVariantPreviouslyPurchased` and explicit repurchase matching use the same
+`createProductRuntimeIdentity` function used everywhere else in this codebase (T07 through T11):
+`productId::combinationId`, or `productId::<base>` when there is no combination. Concretely:
+
+- repurchasing the base product (`{ productId }`, no `combinationId`) does not boost any of its variants;
+- repurchasing one variant does not boost a different variant of the same base product;
+- `ownership` for a variant candidate is only ever present when T09's evidence was matched to that exact
+  variant identity — a base-product-level fact never leaks into a variant's `ownership`, and one variant's
+  ownership never leaks into a different variant (see T09's batch-matching guarantees, unchanged by this task).
+
 ## HTTP Error Mapping
 
-- `400`: invalid request.
+- `400`: invalid request, including request-boundary customer mismatch (`context.customerId` vs.
+  `customer.customerId`) and the `explicitRepurchaseProducts`/`excludedProducts` conflict.
 - `404`: source product not found.
-- `409`: customer mismatch or inactive source product.
+- `409`: inactive source product, or an internal T10 dependency customer mismatch (`CUSTOMER_MISMATCH` — see
+  "Non-Degradable Errors"; defensive, unreachable through a validated request today).
 - `422`: invalid upstream/result contract.
 - `503`: mandatory commercial recommendation knowledge is unavailable, for example because no active relationship snapshot is loaded.
 - `500`: unexpected internal error.
@@ -242,7 +340,16 @@ Supported public warning codes:
 - `UPSTREAM_AFFINITY_WARNING`
 - `UPSTREAM_PERSONALIZATION_WARNING`
 
-Warnings are global and deduplicated. Absence of `customerId` is represented as:
+Global warnings are deduplicated by `(code, product identity or "global")`. CP-R1-T10B3C attaches the specific
+product to `UPSTREAM_COMMERCIAL_WARNING` entries derived from T08 (e.g. `ALREADY_PURCHASED`, `LOW_STOCK`)
+instead of collapsing every product's warning into one anonymous global entry — two different products with the
+same warning code now produce two distinct global entries. The same warning is also mirrored into that specific
+recommendation's own `warnings[]` (see "Response"), matching the schema's pre-existing invariant that
+`statistics.warningsGenerated` counts global warnings plus recommendation warnings, not just global ones. A
+commercial warning (including `ALREADY_PURCHASED`) never excludes a product and never becomes a boost — it is
+informational only.
+
+Absence of `customerId` is represented as:
 
 ```json
 {
@@ -326,3 +433,21 @@ natural-language customer message
 ```
 
 T12 is explicitly out of scope for T11.3.
+
+## Explicitly Out Of Scope (CP-R1-T10B3C)
+
+This task propagates ownership to the public response and adds explicit repurchase. It deliberately does not
+implement:
+
+- a Customer Profile HTTP evidence adapter or `CUSTOMER_AFFINITY_PROVIDER_MODE=http`;
+- `masterCustomerId` resolution or any CRM Customer 360 client;
+- an Agent Tool Loop or natural-language resolution of repurchase intent — `explicitRepurchaseProducts` must
+  already be a resolved product/variant reference by the time it reaches this endpoint;
+- RFM, clustering, or lifecycle segmentation (those consume full Customer Profile history; SearchProducts V2
+  remains the recommendation engine, not a second one built from that history);
+- durable-versus-consumable classification;
+- cart, quote, checkout, or order mutation.
+
+## Next Task
+
+CP-R1-T10B4 — Customer Profile Evidence Adapter.

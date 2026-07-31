@@ -149,7 +149,7 @@ describe('personalized recommendation contracts', () => {
         commercialFallbackRecommendations: 0,
         warningsGenerated: 0,
       },
-      scoringVersion: 'personalized-recommendation-v1',
+      scoringVersion: 'personalized-recommendation-v2',
     }).success).toBe(true);
   });
 
@@ -194,6 +194,27 @@ describe('DefaultPersonalizedRecommendationScorer', () => {
     expect(score(affinityFor(productB, 0, 'none'), DEFAULT_PERSONALIZED_RECOMMENDATION_PARAMETERS, { preferredProductIds: [productC] }).components.explicitPreferenceBoost).toBe(0);
   });
 
+  it('adds explicit repurchase contribution for an exact match (CP-R1-T10B3C)', () => {
+    expect(score(affinityFor(productB, 0, 'none'), DEFAULT_PERSONALIZED_RECOMMENDATION_PARAMETERS, { explicitRepurchaseProductIds: [productB] }).components.explicitRepurchaseContribution).toBe(0.15);
+  });
+
+  it('does not add explicit repurchase contribution for a different product', () => {
+    expect(score(affinityFor(productB, 0, 'none'), DEFAULT_PERSONALIZED_RECOMMENDATION_PARAMETERS, { explicitRepurchaseProductIds: [productC] }).components.explicitRepurchaseContribution).toBe(0);
+  });
+
+  it('keeps explicit repurchase and explicit preference as independent, non-substitutable contributions', () => {
+    const result = score(affinityFor(productB, 0, 'none'), DEFAULT_PERSONALIZED_RECOMMENDATION_PARAMETERS, {
+      preferredProductIds: [productB],
+      explicitRepurchaseProductIds: [productB],
+    });
+    expect(result.components.explicitPreferenceBoost).toBe(0.1);
+    expect(result.components.explicitRepurchaseContribution).toBe(0.15);
+  });
+
+  it('marks effective personalization for explicit repurchase alone', () => {
+    expect(score(affinityFor(productB, 0, 'none'), DEFAULT_PERSONALIZED_RECOMMENDATION_PARAMETERS, { explicitRepurchaseProductIds: [productB] }).effectivePersonalization).toBe(true);
+  });
+
   it('applies product rejection penalty', () => {
     expect(score(affinityFor(productB, 1, 'high', [signal('PRODUCT_REJECTION')])).components.rejectionPenalty).toBe(1);
   });
@@ -208,6 +229,20 @@ describe('DefaultPersonalizedRecommendationScorer', () => {
 
   it('flags category rejection', () => {
     expect(score(affinityFor(productB, 1, 'high', [signal('CATEGORY_REJECTION')])).categoryRejected).toBe(true);
+  });
+
+  it('nets a category rejection penalty against an explicit repurchase boost with exact values (CP-R1-T10B3C)', () => {
+    const result = score(
+      affinityFor(productB, 0, 'none', [signal('CATEGORY_REJECTION')]),
+      DEFAULT_PERSONALIZED_RECOMMENDATION_PARAMETERS,
+      { explicitRepurchaseProductIds: [productB] },
+    );
+    // commercial: 0.8 * 0.7 = 0.56; affinity: 0 (score 0, confidence none); repurchase: 0.15;
+    // category rejection: strength 1 * categoryRejectionPenalty 0.25 = 0.25 -> 0.56 + 0.15 - 0.25 = 0.46
+    expect(result.components.explicitRepurchaseContribution).toBe(0.15);
+    expect(result.components.rejectionPenalty).toBe(0.25);
+    expect(result.components.rawScore).toBeCloseTo(0.46);
+    expect(result.components.finalScore).toBeCloseTo(0.46);
   });
 
   it('clamps lower bound', () => {
@@ -232,6 +267,7 @@ describe('DefaultPersonalizedRecommendationScorer', () => {
       'affinityScore',
       'commercialScore',
       'explicitPreferenceBoost',
+      'explicitRepurchaseContribution',
       'finalScore',
       'normalizedAffinityContribution',
       'normalizedCommercialContribution',

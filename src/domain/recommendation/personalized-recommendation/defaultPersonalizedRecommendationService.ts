@@ -101,6 +101,7 @@ const reasonOrder: PersonalizedRecommendationReasonCode[] = [
   'OWNED_COMPATIBLE_PRODUCT',
   'REPEAT_PURCHASE_PATTERN',
   'OBSERVED_SPEND_COMPATIBILITY',
+  'EXPLICIT_REPURCHASE_INTENT',
   'EXPLICIT_CONTEXT_PREFERENCE',
   'GENERAL_COMMERCIAL_FALLBACK',
 ];
@@ -143,6 +144,13 @@ function buildReasons(candidate: ScoredCandidate): PersonalizedRecommendationRea
     reasons.push({
       code: 'EXPLICIT_CONTEXT_PREFERENCE',
       contribution: candidate.score.components.explicitPreferenceBoost,
+      source: 'context',
+    });
+  }
+  if (candidate.score.components.explicitRepurchaseContribution > 0) {
+    reasons.push({
+      code: 'EXPLICIT_REPURCHASE_INTENT',
+      contribution: candidate.score.components.explicitRepurchaseContribution,
       source: 'context',
     });
   }
@@ -198,11 +206,13 @@ function createStatistics(input: {
     recommendationsWithEffectivePersonalization: input.recommendations.filter((recommendation) => (
       recommendation.components.normalizedAffinityContribution > 0 ||
       recommendation.components.explicitPreferenceBoost > 0 ||
+      recommendation.components.explicitRepurchaseContribution > 0 ||
       recommendation.components.rejectionPenalty > 0
     )).length,
     commercialFallbackRecommendations: input.recommendations.filter((recommendation) => (
       recommendation.components.normalizedAffinityContribution === 0 &&
       recommendation.components.explicitPreferenceBoost === 0 &&
+      recommendation.components.explicitRepurchaseContribution === 0 &&
       recommendation.components.rejectionPenalty === 0
     )).length,
     warningsGenerated: input.warningsGenerated,
@@ -286,6 +296,7 @@ export class DefaultPersonalizedRecommendationService implements PersonalizedRec
       reasons: deepFreeze(cloneJsonValue(buildReasons(candidate))),
       commercialRecommendation: cloneJsonValue(candidate.commercialRecommendation),
       ...(candidate.customerAffinity === undefined ? {} : { customerAffinity: cloneJsonValue(candidate.customerAffinity) }),
+      ...(candidate.customerAffinity?.ownership === undefined ? {} : { ownership: cloneJsonValue(candidate.customerAffinity.ownership) }),
       originalCommercialRank: candidate.commercialRecommendation.rank,
       personalizedRank: index + 1,
       warnings: deepFreeze(cloneJsonValue(candidate.warnings)),

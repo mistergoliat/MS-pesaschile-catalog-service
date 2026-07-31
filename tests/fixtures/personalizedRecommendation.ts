@@ -8,6 +8,7 @@ import type {
   CustomerAffinitySignal,
   CustomerProductAffinity,
   CustomerProductAffinityResult,
+  ProductOwnershipEvidence,
 } from '../../src/domain/recommendation/customer-affinity/index.js';
 import { customer } from './customerProductAffinity.js';
 import { commercialDataFor, relationshipTo } from './productRecommendation.js';
@@ -16,9 +17,21 @@ import { runtimeSnapshot } from './relationshipRuntimeReader.js';
 export const sourceProduct = { productId: 'A' } as const;
 export const productB = { productId: 'B' } as const;
 export const productBCombo = { productId: 'B', combinationId: '10' } as const;
+export const productBCombo11 = { productId: 'B', combinationId: '11' } as const;
 export const productC = { productId: 'C' } as const;
 export const productD = { productId: 'D' } as const;
 export const productE = { productId: 'E' } as const;
+
+export function ownershipFor(patch: Partial<ProductOwnershipEvidence> = {}): ProductOwnershipEvidence {
+  return {
+    previouslyPurchased: true,
+    exactVariantPreviouslyPurchased: false,
+    totalOrderCount: 2,
+    firstPurchasedAt: '2026-01-01T00:00:00.000Z',
+    lastPurchasedAt: '2026-06-01T00:00:00.000Z',
+    ...patch,
+  };
+}
 
 export function clone<T>(value: T): T {
   if (value === undefined) return value;

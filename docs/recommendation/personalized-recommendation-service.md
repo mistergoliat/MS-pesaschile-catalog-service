@@ -47,7 +47,12 @@ The module defines:
 
 Public schemas validate request shape, context, parameters, score components, reasons, warnings, exclusions, statistics, and result invariants.
 
-## Scoring V1
+CP-R1-T10B3C additions, all optional/additive: `PersonalizedRecommendationContext.explicitRepurchaseProductIds`,
+`PersonalizedRecommendationParameters.explicitRepurchaseBoost`,
+`PersonalizedRecommendationScoreComponents.explicitRepurchaseContribution`, `PersonalizedRecommendation.ownership`
+(`ProductOwnershipEvidence`, re-exported from the T09 `customer-affinity` module — T10 does not redefine it).
+
+## Scoring V2
 
 T08 exposes commercial score in `0..100`; T10 normalizes it to `0..1` and does not recalculate it.
 
@@ -62,7 +67,10 @@ affinityContribution =
   effectiveAffinity * affinityWeight
 
 preferenceBoost =
-  explicit preference match ? explicitPreferenceBoost : 0
+  explicit preference match (preferredProductIds) ? explicitPreferenceBoost : 0
+
+repurchaseContribution =
+  explicit repurchase match (explicitRepurchaseProductIds, exact runtime identity) ? explicitRepurchaseBoost : 0
 
 rejectionPenalty =
   productRejection + categoryRejection
@@ -71,12 +79,18 @@ rawScore =
   commercialContribution
 + affinityContribution
 + preferenceBoost
++ repurchaseContribution
 - rejectionPenalty
 
 finalScore = clamp(rawScore, 0, 1)
 ```
 
-The personalized score is not a probability and is only comparable within `personalized-recommendation-v1`.
+`PERSONALIZED_RECOMMENDATION_SCORING_VERSION` is `personalized-recommendation-v2` (CP-R1-T10B3C, additive: a new
+term was added, none of the existing commercial/affinity/preference terms changed). The personalized score is
+not a probability and is only comparable within the same scoring version.
+
+`explicitRepurchaseBoost` (default `0.15`) is a separate parameter from `explicitPreferenceBoost` (default
+`0.1`) — see "Explicit Repurchase" below for why they must never be reused for each other.
 
 ## Confidence Multipliers
 
@@ -144,14 +158,74 @@ Reasons are enum-based and deduplicated by code:
 - `OWNED_COMPATIBLE_PRODUCT`
 - `REPEAT_PURCHASE_PATTERN`
 - `OBSERVED_SPEND_COMPATIBILITY`
+- `EXPLICIT_REPURCHASE_INTENT`
 - `EXPLICIT_CONTEXT_PREFERENCE`
 - `GENERAL_COMMERCIAL_FALLBACK`
 
+`EXPLICIT_REPURCHASE_INTENT` is added only when `components.explicitRepurchaseContribution > 0` for that exact
+candidate. It never appears because of ownership, legacy `directPurchases`, `REPEAT_PURCHASE_PATTERN`, or
+`preferredProductIds` alone — those keep producing their own existing reason codes (or none, for ownership).
+`EXPLICIT_CONTEXT_PREFERENCE`'s meaning is unchanged; a candidate can carry both reasons simultaneously
+(deduplicated by code, not merged) when the caller sends the same identity in both `preferredProductIds` and
+`explicitRepurchaseProductIds` — they represent distinct signals (general taste vs. current repurchase intent).
+
 T10 does not generate commercial copy or natural-language sales arguments.
+
+## Ownership Propagation
+
+`PersonalizedRecommendation.ownership?: ProductOwnershipEvidence` is a pass-through of
+`CustomerProductAffinity.ownership` for the exact matched candidate, added in CP-R1-T10B3C. T10:
+
+- clones it (`cloneJsonValue`) and deep-freezes it exactly like every other result field;
+- never recalculates, reinterprets, or validates its business meaning — T09 already did that;
+- never turns it into a `signal`, a `reason`, a scoring input, or an exclusion;
+- never invents `previouslyPurchased: false` when T09 did not provide ownership — **absence of ownership means
+  "no data", not "never purchased"**. A candidate with no matching T09 affinity entry, or a matching entry
+  without `ownership`, simply has `ownership: undefined` on the result.
+
+This is the T10 half of CP-R1-T10B3B's neutrality guarantee: ownership was already guaranteed not to affect
+`score`/`confidence`/`signals` inside T09; T10 now guarantees it does not affect `personalizedScore`, `reasons`,
+`personalizedRank`, or `statistics` either, all the way to the response T11 exposes.
+
+## Explicit Repurchase
+
+`PersonalizedRecommendationContext.explicitRepurchaseProductIds?: readonly ProductRuntimeReference[]` represents
+current, caller-declared intent: "the customer wants to buy this exact product or variant again, right now." It
+is structurally identical in shape to `preferredProductIds`/`excludedProductIds` (an array of product
+references matched by exact runtime identity) but semantically distinct and contractually separate:
+
+```text
+source                    | preferredProductIds        | explicitRepurchaseProductIds
+---------------------------------------------------------------------------------------
+meaning                   | general taste/preference    | current repurchase intent
+boost parameter           | explicitPreferenceBoost      | explicitRepurchaseBoost
+default value              | 0.10                        | 0.15
+reason code                | EXPLICIT_CONTEXT_PREFERENCE | EXPLICIT_REPURCHASE_INTENT
+derived from history?      | never                        | never
+```
+
+T10 never derives `explicitRepurchaseProductIds` from anything — not `ownership`, not legacy `directPurchases`,
+not `REPEAT_PURCHASE_PATTERN`, not `preferredProductIds`. It is populated exclusively by the caller (T11, from
+`context.explicitRepurchaseProducts`, itself populated exclusively by whatever declared the customer's current
+intent — a Sales Agent conversation, not an inference from Customer Profile history). The two boost parameters
+are never substituted for each other, by design: reusing `explicitPreferenceBoost` for repurchase would erase
+the audit trail this task exists to create.
+
+The match is by exact runtime product identity (`createProductRuntimeIdentity`, the same function used
+everywhere in this codebase for product/variant identity): repurchasing the base product does not boost any of
+its variants, and repurchasing one variant does not boost a different variant of the same base product. See
+"Product And Variant Semantics" in `docs/recommendation/search-products-v2.md` for the full identity model.
 
 ## Statistics
 
 Statistics track commercial candidates received, affinity entries received, candidates with/without affinity, ignored affinities, each exclusion category, returned recommendations, effective personalization, commercial fallback, and warnings.
+
+`recommendationsWithEffectivePersonalization` and `commercialFallbackRecommendations` (CP-R1-T10B3C) now also
+account for `components.explicitRepurchaseContribution`: a candidate boosted by repurchase intent alone counts
+as effectively personalized, not as a commercial fallback, keeping both counters an exact partition of
+`personalizedRecommendationsReturned`. No new statistics field was added — the task only required correcting
+this existing pair to stay consistent with the new score component (see the schema's own invariant below).
+Ownership does not participate in this counter, by design (see "Ownership Propagation").
 
 Core invariants:
 
@@ -194,3 +268,22 @@ T10 V1 does not implement:
 - CRM, Customer 360, PrestaShop, catalog, stock, or price lookups;
 - LLM, ML, embeddings, campaigns, promotions, or generated copy;
 - cart, checkout, order, quote, or E2E flows.
+
+## Explicitly Out Of Scope (CP-R1-T10B3C)
+
+This task propagates ownership neutrally and adds explicit repurchase scoring. It deliberately does not
+implement:
+
+- a Customer Profile HTTP evidence adapter or `CUSTOMER_AFFINITY_PROVIDER_MODE=http` (T09 still only has the
+  `empty`/`unavailable` stub providers; T10 has no idea whether ownership ever contains real data);
+- CRM Customer 360 integration, identity resolution, or `masterCustomerId`;
+- durable-versus-consumable product classification for `REPEAT_PURCHASE_PATTERN`;
+- RFM, clustering, or lifecycle segmentation — full customer history exists to inform those, in Customer
+  Profile, not to become a Catalog Service recommendation strategy;
+- any new ranking engine outside SearchProducts V2;
+- resolving how a Sales Agent or CRM decides *when* to populate `explicitRepurchaseProductIds` — T10 only
+  scores whatever intent it is given.
+
+## Next Task
+
+CP-R1-T10B4 — Customer Profile Evidence Adapter.

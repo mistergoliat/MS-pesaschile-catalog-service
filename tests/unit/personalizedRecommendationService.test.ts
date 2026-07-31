@@ -14,8 +14,10 @@ import {
   clone,
   commercialRecommendationFor,
   commercialResultFor,
+  ownershipFor,
   productB,
   productBCombo,
+  productBCombo11,
   productC,
   productD,
   productE,
@@ -109,6 +111,7 @@ describe('DefaultPersonalizedRecommendationService validation', () => {
           affinityConfidenceMultiplier: 0,
           normalizedAffinityContribution: 0,
           explicitPreferenceBoost: 0,
+          explicitRepurchaseContribution: 0,
           rejectionPenalty: 0,
           rawScore: 2,
           finalScore: 2,
@@ -583,6 +586,185 @@ describe('DefaultPersonalizedRecommendationService statistics and immutability',
   });
 
   it('keeps scoring version explicit', () => {
-    expect(personalize().scoringVersion).toBe('personalized-recommendation-v1');
+    expect(personalize().scoringVersion).toBe('personalized-recommendation-v2');
+  });
+});
+
+describe('DefaultPersonalizedRecommendationService ownership propagation (CP-R1-T10B3C)', () => {
+  it('is absent when T09 does not provide ownership', () => {
+    const result = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productB)]),
+      customerAffinities: affinityResultFor([affinityFor(productB, 0.8, 'high', [signal('CATEGORY_PURCHASE')])]),
+    });
+    expect(result.recommendations[0]?.ownership).toBeUndefined();
+  });
+
+  it('is present and passed through exactly when T09 provides it', () => {
+    const ownership = ownershipFor({ previouslyPurchased: true, exactVariantPreviouslyPurchased: true, totalOrderCount: 4 });
+    const result = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productB)]),
+      customerAffinities: affinityResultFor([affinityFor(productB, 0, 'none', [], { ownership })]),
+    });
+    expect(result.recommendations[0]?.ownership).toEqual(ownership);
+  });
+
+  it('does not change score when ownership is present', () => {
+    const withOwnership = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productB)]),
+      customerAffinities: affinityResultFor([affinityFor(productB, 0, 'none', [], { ownership: ownershipFor() })]),
+    });
+    const withoutOwnership = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productB)]),
+      customerAffinities: affinityResultFor([affinityFor(productB, 0, 'none', [])]),
+    });
+    expect(withOwnership.recommendations[0]?.personalizedScore).toBe(withoutOwnership.recommendations[0]?.personalizedScore);
+  });
+
+  it('does not change rank when ownership is present', () => {
+    const withOwnership = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productB), commercialRecommendationFor(productC, 2, 70)]),
+      customerAffinities: affinityResultFor([affinityFor(productB, 0, 'none', [], { ownership: ownershipFor() }), affinityFor(productC, 0, 'none', [])]),
+    });
+    expect(withOwnership.recommendations.map((item) => item.product.productId)).toEqual(['B', 'C']);
+  });
+
+  it('does not generate a reason from ownership alone', () => {
+    const result = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productB, 1, 10)]),
+      customerAffinities: affinityResultFor([affinityFor(productB, 0, 'none', [], { ownership: ownershipFor() })]),
+    });
+    expect(result.recommendations[0]?.reasons.some((reason) => reason.code === 'CUSTOMER_PRODUCT_AFFINITY')).toBe(false);
+  });
+
+  it('clones ownership: mutating the original affinity does not alter the result', () => {
+    const ownership = ownershipFor();
+    const affinities = affinityResultFor([affinityFor(productB, 0, 'none', [], { ownership })]);
+    const result = personalize({ commercialRecommendations: commercialResultFor([commercialRecommendationFor(productB)]), customerAffinities: affinities });
+    affinities.affinities[0]!.ownership!.previouslyPurchased = false;
+    expect(result.recommendations[0]?.ownership?.previouslyPurchased).toBe(true);
+  });
+
+  it('freezes ownership on the result', () => {
+    const result = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productB)]),
+      customerAffinities: affinityResultFor([affinityFor(productB, 0, 'none', [], { ownership: ownershipFor() })]),
+    });
+    expect(Object.isFrozen(result.recommendations[0]?.ownership)).toBe(true);
+  });
+});
+
+describe('DefaultPersonalizedRecommendationService explicit repurchase (CP-R1-T10B3C)', () => {
+  it('boosts the exact product', () => {
+    const result = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productB)]),
+      customerAffinities: affinityResultFor([]),
+      context: { explicitRepurchaseProductIds: [productB] },
+    });
+    expect(result.recommendations[0]?.components.explicitRepurchaseContribution).toBe(0.15);
+  });
+
+  it('boosts the exact variant', () => {
+    const result = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productBCombo)]),
+      customerAffinities: affinityResultFor([]),
+      context: { explicitRepurchaseProductIds: [productBCombo] },
+    });
+    expect(result.recommendations[0]?.components.explicitRepurchaseContribution).toBe(0.15);
+  });
+
+  it('does not let a base-product repurchase boost a variant candidate', () => {
+    const result = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productBCombo)]),
+      customerAffinities: affinityResultFor([]),
+      context: { explicitRepurchaseProductIds: [productB] },
+    });
+    expect(result.recommendations[0]?.components.explicitRepurchaseContribution).toBe(0);
+  });
+
+  it('does not let variant 10 repurchase boost variant 11', () => {
+    const result = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productBCombo11)]),
+      customerAffinities: affinityResultFor([]),
+      context: { explicitRepurchaseProductIds: [productBCombo] },
+    });
+    expect(result.recommendations[0]?.components.explicitRepurchaseContribution).toBe(0);
+  });
+
+  it('adds the EXPLICIT_REPURCHASE_INTENT reason only when the contribution is positive', () => {
+    const boosted = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productB)]),
+      customerAffinities: affinityResultFor([]),
+      context: { explicitRepurchaseProductIds: [productB] },
+    });
+    const notBoosted = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productC)]),
+      customerAffinities: affinityResultFor([]),
+      context: { explicitRepurchaseProductIds: [productB] },
+    });
+    expect(boosted.recommendations[0]?.reasons.some((reason) => reason.code === 'EXPLICIT_REPURCHASE_INTENT')).toBe(true);
+    expect(notBoosted.recommendations[0]?.reasons.some((reason) => reason.code === 'EXPLICIT_REPURCHASE_INTENT')).toBe(false);
+  });
+
+  it('computes an exact score value combining commercial contribution and the repurchase boost', () => {
+    const result = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productB, 1, 80)]),
+      customerAffinities: affinityResultFor([]),
+      context: { explicitRepurchaseProductIds: [productB] },
+    });
+    // commercial: 0.8 * 0.7 = 0.56; affinity: 0 (no T09 evidence); repurchase: 0.15 -> 0.71
+    expect(result.recommendations[0]?.personalizedScore).toBeCloseTo(0.71);
+  });
+
+  it('clamps the final score at one even with a large repurchase boost', () => {
+    const result = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productB, 1, 100)]),
+      customerAffinities: affinityResultFor([affinityFor(productB, 1, 'high')]),
+      context: { explicitRepurchaseProductIds: [productB] },
+      parameters: { ...DEFAULT_PERSONALIZED_RECOMMENDATION_PARAMETERS, explicitRepurchaseBoost: 1 },
+    });
+    expect(result.recommendations[0]?.personalizedScore).toBe(1);
+  });
+
+  it('is a separate contribution from preferredProductIds', () => {
+    const both = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productB)]),
+      customerAffinities: affinityResultFor([]),
+      context: { preferredProductIds: [productB], explicitRepurchaseProductIds: [productB] },
+    });
+    expect(both.recommendations[0]?.components.explicitPreferenceBoost).toBe(0.1);
+    expect(both.recommendations[0]?.components.explicitRepurchaseContribution).toBe(0.15);
+    expect(both.recommendations[0]?.reasons.some((reason) => reason.code === 'EXPLICIT_CONTEXT_PREFERENCE')).toBe(true);
+    expect(both.recommendations[0]?.reasons.some((reason) => reason.code === 'EXPLICIT_REPURCHASE_INTENT')).toBe(true);
+  });
+
+  it('is never activated by ownership alone', () => {
+    const result = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productB)]),
+      customerAffinities: affinityResultFor([affinityFor(productB, 0, 'none', [], { ownership: ownershipFor({ previouslyPurchased: true }) })]),
+    });
+    expect(result.recommendations[0]?.components.explicitRepurchaseContribution).toBe(0);
+    expect(result.recommendations[0]?.reasons.some((reason) => reason.code === 'EXPLICIT_REPURCHASE_INTENT')).toBe(false);
+  });
+
+  it('does not reuse explicitPreferenceBoost silently', () => {
+    const result = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productB)]),
+      customerAffinities: affinityResultFor([]),
+      context: { explicitRepurchaseProductIds: [productB] },
+      parameters: { ...DEFAULT_PERSONALIZED_RECOMMENDATION_PARAMETERS, explicitPreferenceBoost: 0 },
+    });
+    expect(result.recommendations[0]?.components.explicitRepurchaseContribution).toBe(0.15);
+  });
+
+  it('does not let explicit repurchase intent revert a PRODUCT_REJECTION exclusion (CP-R1-T10B3C)', () => {
+    const result = personalize({
+      commercialRecommendations: commercialResultFor([commercialRecommendationFor(productB)]),
+      customerAffinities: affinityResultFor([affinityFor(productB, 1, 'high', [signal('PRODUCT_REJECTION')])]),
+      context: { explicitRepurchaseProductIds: [productB] },
+    });
+    expect(result.recommendations).toHaveLength(0);
+    expect(result.excluded).toHaveLength(1);
+    expect(result.excluded[0]?.code).toBe('EXPLICIT_PRODUCT_REJECTION');
+    expect(result.excluded[0]?.product).toEqual(productB);
   });
 });
