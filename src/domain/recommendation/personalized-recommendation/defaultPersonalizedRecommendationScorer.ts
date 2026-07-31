@@ -35,6 +35,16 @@ function isPreferred(
   return context?.preferredProductIds?.some((product) => createProductRuntimeIdentity(product) === identity) ?? false;
 }
 
+// Exact runtime identity match only: repurchasing the base product must not boost its variants, and
+// repurchasing one variant must not boost a different variant of the same base product.
+function isExplicitRepurchase(
+  recommendation: CommercialRecommendation,
+  context: PersonalizedRecommendationContext | undefined,
+): boolean {
+  const identity = createProductRuntimeIdentity(recommendation.product);
+  return context?.explicitRepurchaseProductIds?.some((product) => createProductRuntimeIdentity(product) === identity) ?? false;
+}
+
 export class DefaultPersonalizedRecommendationScorer implements PersonalizedRecommendationScorer {
   score(
     commercialRecommendation: CommercialRecommendation,
@@ -49,13 +59,15 @@ export class DefaultPersonalizedRecommendationScorer implements PersonalizedReco
     const normalizedCommercialContribution = commercialScore * parameters.commercialWeight;
     const normalizedAffinityContribution = affinityScore * multiplier * parameters.affinityWeight;
     const explicitPreferenceBoost = isPreferred(commercialRecommendation, context) ? parameters.explicitPreferenceBoost : 0;
+    const explicitRepurchaseContribution = isExplicitRepurchase(commercialRecommendation, context) ? parameters.explicitRepurchaseBoost : 0;
     const productRejection = signalStrength(affinity, 'PRODUCT_REJECTION') * parameters.productRejectionPenalty;
     const categoryRejection = signalStrength(affinity, 'CATEGORY_REJECTION') * parameters.categoryRejectionPenalty;
     const rejectionPenalty = clamp(productRejection + categoryRejection);
     const rawScore =
       normalizedCommercialContribution +
       normalizedAffinityContribution +
-      explicitPreferenceBoost -
+      explicitPreferenceBoost +
+      explicitRepurchaseContribution -
       rejectionPenalty;
     const finalScore = clamp(rawScore);
 
@@ -67,12 +79,13 @@ export class DefaultPersonalizedRecommendationScorer implements PersonalizedReco
         affinityConfidenceMultiplier: multiplier,
         normalizedAffinityContribution,
         explicitPreferenceBoost,
+        explicitRepurchaseContribution,
         rejectionPenalty,
         rawScore,
         finalScore,
       },
       affinityConfidence,
-      effectivePersonalization: normalizedAffinityContribution > 0 || explicitPreferenceBoost > 0 || rejectionPenalty > 0,
+      effectivePersonalization: normalizedAffinityContribution > 0 || explicitPreferenceBoost > 0 || explicitRepurchaseContribution > 0 || rejectionPenalty > 0,
       productRejected: hasSignal(affinity, 'PRODUCT_REJECTION'),
       categoryRejected: hasSignal(affinity, 'CATEGORY_REJECTION'),
     };

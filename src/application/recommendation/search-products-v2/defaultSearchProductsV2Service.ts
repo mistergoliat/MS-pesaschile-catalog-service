@@ -28,6 +28,7 @@ import {
   searchProductsV2RequestSchema,
   searchProductsV2ResultSchema,
   type SearchProductsV2Dependencies,
+  type SearchProductsV2DegradationCode,
   type SearchProductsV2Execution,
   type SearchProductsV2Filters,
   type SearchProductsV2Request,
@@ -155,6 +156,7 @@ function mapPersonalizationContext(request: SearchProductsV2Request) {
       : { budget: { currency: request.context.budget.currency, maximum: request.context.budget.amount } }),
     ...(request.context?.preferredProducts === undefined ? {} : { preferredProductIds: cloneJsonValue(request.context.preferredProducts) }),
     ...(request.context?.excludedProducts === undefined ? {} : { excludedProductIds: cloneJsonValue(request.context.excludedProducts) }),
+    ...(request.context?.explicitRepurchaseProducts === undefined ? {} : { explicitRepurchaseProductIds: cloneJsonValue(request.context.explicitRepurchaseProducts) }),
   };
 }
 
@@ -264,7 +266,7 @@ function collectWarnings(input: {
   generated: readonly WarningWithSource[];
 }): SearchProductsV2Warning[] {
   const commercialWarnings = input.commercial.recommendations.flatMap((recommendation) => (
-    recommendation.warnings.map(() => warning('UPSTREAM_COMMERCIAL_WARNING', 'commercial'))
+    recommendation.warnings.map(() => warning('UPSTREAM_COMMERCIAL_WARNING', 'commercial', recommendation.product))
   ));
   const affinityWarnings = input.affinity === undefined
     ? []
@@ -402,6 +404,7 @@ function mapResult(input: {
   affinityStage: StageStatus['customerAffinity'];
   stages: StageStatus;
   degraded: boolean;
+  degradationReasons: readonly SearchProductsV2DegradationCode[];
   affinityCalls: 0 | 1;
   personalizationCalls: 0 | 1;
   requestedLimit: number;
@@ -484,7 +487,10 @@ function mapResult(input: {
       code: reason.code,
       source: reason.source,
     })),
-    warnings: [],
+    ...(recommendation.ownership === undefined ? {} : { ownership: cloneJsonValue(recommendation.ownership) }),
+    // Per-candidate view of this product's own T08 commercial warnings (e.g. ALREADY_PURCHASED), preserved by
+    // identity instead of collapsing into the anonymous global UPSTREAM_COMMERCIAL_WARNING entry below.
+    warnings: recommendation.commercialRecommendation.warnings.map(() => ({ code: 'UPSTREAM_COMMERCIAL_WARNING' as const })),
   }));
   const personalizationExcluded = (input.personalization?.excluded ?? []).map((item: PersonalizedRecommendationExclusion) => ({
     product: cloneJsonValue(item.product),
@@ -495,6 +501,7 @@ function mapResult(input: {
     ...enrichmentExcluded,
     ...resultLimitExclusions,
   ];
+  const productWarnings = recommendations.reduce((count, recommendation) => count + recommendation.warnings.length, 0);
   const statistics: SearchProductsV2Statistics = {
     commercialCandidates: input.commercial.recommendations.length,
     affinityCandidates: input.affinity?.affinities.length ?? 0,
@@ -503,7 +510,7 @@ function mapResult(input: {
     customerAffinityCalls: input.affinityCalls,
     personalizationCalls: input.personalizationCalls,
     degradedStages: input.degraded ? 1 : 0,
-    warningsGenerated: warnings.length,
+    warningsGenerated: warnings.length + productWarnings,
   };
   const result: SearchProductsV2Result = {
     query: input.request.query?.trim() ?? null,
@@ -525,7 +532,7 @@ function mapResult(input: {
     execution: deepFreeze({
       correlationId: input.correlationId,
       degraded: input.degraded,
-      degradationReasons: input.degraded ? ['CUSTOMER_AFFINITY_RETRYABLE_FAILURE'] : [],
+      degradationReasons: [...input.degradationReasons],
       stages: input.stages,
     }),
   };
@@ -533,8 +540,17 @@ function mapResult(input: {
   return deepFreeze(result);
 }
 
-function isRetryableAffinityError(error: unknown): boolean {
-  return error instanceof CustomerAffinityError && error.retryable;
+// Degrades on evidence-provider integration failures only (CP-R1-T10B3C): network/timeout failures
+// (EVIDENCE_PROVIDER_FAILED, always retryable -> CUSTOMER_AFFINITY_RETRYABLE_FAILURE) and structurally invalid
+// provider responses (INVALID_PROVIDER_RESPONSE — customer mismatch, products outside the batch, duplicated
+// evidence, corrupt payload -> CUSTOMER_AFFINITY_PROVIDER_RESPONSE_INVALID, not retryable). Returns the specific
+// public degradation reason so no caller ever infers it from a bare boolean. Returns undefined for
+// INVALID_REQUEST/INVALID_CUSTOMER_REFERENCE/INVALID_PRODUCT_REFERENCE/INVALID_PARAMETERS: those mean Catalog
+// Service built an invalid T09 request itself, a bug worth failing loudly rather than degrading.
+function degradableAffinityErrorReason(error: unknown): SearchProductsV2DegradationCode | undefined {
+  if (!(error instanceof CustomerAffinityError)) return undefined;
+  if (error.code === 'INVALID_PROVIDER_RESPONSE') return 'CUSTOMER_AFFINITY_PROVIDER_RESPONSE_INVALID';
+  return error.retryable ? 'CUSTOMER_AFFINITY_RETRYABLE_FAILURE' : undefined;
 }
 
 export class DefaultSearchProductsV2Service implements SearchProductsV2Service {
@@ -645,6 +661,7 @@ export class DefaultSearchProductsV2Service implements SearchProductsV2Service {
           personalization: 'skipped',
         },
         degraded: false,
+        degradationReasons: [],
         affinityCalls: 0,
         personalizationCalls: 0,
         requestedLimit,
@@ -658,6 +675,7 @@ export class DefaultSearchProductsV2Service implements SearchProductsV2Service {
     let affinityCalls: 0 | 1 = 0;
     let affinityStage: StageStatus['customerAffinity'] = 'skipped';
     let degraded = false;
+    const degradationReasons: SearchProductsV2DegradationCode[] = [];
     const generatedWarnings: WarningWithSource[] = [];
 
     if (!parsed.data.customer) {
@@ -677,7 +695,8 @@ export class DefaultSearchProductsV2Service implements SearchProductsV2Service {
         affinityStage = 'completed';
         this.dependencies.logger?.info('customer_affinity_completed', { correlationId, stage: 'affinity' });
       } catch (error) {
-        if (!isRetryableAffinityError(error)) {
+        const degradationReason = degradableAffinityErrorReason(error);
+        if (degradationReason === undefined) {
           this.dependencies.logger?.error('search_products_v2_failed', { correlationId, stage: 'affinity' });
           throw new SearchProductsV2Error('INVALID_AFFINITY_RESULT', 'Customer affinity failed with a non-degradable error', {
             stage: 'affinity',
@@ -685,10 +704,15 @@ export class DefaultSearchProductsV2Service implements SearchProductsV2Service {
           });
         }
         degraded = true;
+        degradationReasons.push(degradationReason);
         affinityStage = 'degraded';
         affinity = createNeutralCustomerAffinityResult(parsed.data.customer, products, 'technical_degradation');
         generatedWarnings.push(warning('CUSTOMER_AFFINITY_UNAVAILABLE', 't11'));
-        this.dependencies.logger?.info('customer_affinity_degraded', { correlationId, stage: 'affinity' });
+        this.dependencies.logger?.info('customer_affinity_degraded', {
+          correlationId,
+          stage: 'affinity',
+          errorCode: error instanceof CustomerAffinityError ? error.code : 'unknown',
+        });
       }
     }
 
@@ -707,6 +731,7 @@ export class DefaultSearchProductsV2Service implements SearchProductsV2Service {
           affinityConfidenceMediumMultiplier: 0.7,
           affinityConfidenceHighMultiplier: 1,
           explicitPreferenceBoost: 0.1,
+          explicitRepurchaseBoost: 0.15,
           productRejectionPenalty: 1,
           categoryRejectionPenalty: 0.25,
           minimumPersonalizedScore: 0,
@@ -714,6 +739,15 @@ export class DefaultSearchProductsV2Service implements SearchProductsV2Service {
       });
     } catch (error) {
       this.dependencies.logger?.error('search_products_v2_failed', { correlationId, stage: 'personalization' });
+      if (error instanceof PersonalizedRecommendationError && error.code === 'CUSTOMER_MISMATCH') {
+        // Defensive path: unreachable via a validated request today, since context.customer and the affinity
+        // customer are both derived from the same request.customer (see search()). Reserved for an internal
+        // T10 dependency mismatch, should one ever occur.
+        throw new SearchProductsV2Error('CUSTOMER_MISMATCH', 'Personalization context customer does not match customer affinity result', {
+          stage: 'personalization',
+          cause: error,
+        });
+      }
       throw new SearchProductsV2Error('INVALID_PERSONALIZATION_RESULT', 'Personalization failed', {
         stage: 'personalization',
         retryable: error instanceof PersonalizedRecommendationError && error.retryable,
@@ -742,6 +776,7 @@ export class DefaultSearchProductsV2Service implements SearchProductsV2Service {
         personalization: 'completed',
       },
       degraded,
+      degradationReasons,
       affinityCalls,
       personalizationCalls: 1,
       requestedLimit,

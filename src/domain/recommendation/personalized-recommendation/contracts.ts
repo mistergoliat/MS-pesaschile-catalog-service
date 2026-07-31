@@ -22,6 +22,7 @@ import {
   customerAffinityCustomerReferenceSchema,
   customerProductAffinityResultSchema,
   customerProductAffinitySchema,
+  productOwnershipEvidenceSchema,
   type CustomerAffinityConfidence,
   type CustomerAffinityCustomerReference,
   type CustomerProductAffinity,
@@ -48,7 +49,7 @@ function addIssue(context: z.RefinementCtx, path: Array<string | number>, messag
   context.addIssue({ code: z.ZodIssueCode.custom, message, path });
 }
 
-export const PERSONALIZED_RECOMMENDATION_SCORING_VERSION = 'personalized-recommendation-v1';
+export const PERSONALIZED_RECOMMENDATION_SCORING_VERSION = 'personalized-recommendation-v2';
 
 export const personalizedRecommendationMoneyContextSchema = z
   .object({
@@ -72,6 +73,10 @@ export const personalizedRecommendationContextSchema = z
     budget: personalizedRecommendationMoneyContextSchema.optional(),
     preferredProductIds: z.array(productRelationshipProductReferenceSchema).optional(),
     excludedProductIds: z.array(productRelationshipProductReferenceSchema).optional(),
+    // Explicit current-intent repurchase signal (CP-R1-T10B3C). Distinct from preferredProductIds: this
+    // represents "the customer wants to buy this exact product/variant again right now", not a general taste
+    // preference. Never derived from ownership, directPurchases, or repeatPurchasePattern.
+    explicitRepurchaseProductIds: z.array(productRelationshipProductReferenceSchema).optional(),
   })
   .strict();
 
@@ -84,6 +89,9 @@ export const personalizedRecommendationParametersSchema = z
     affinityConfidenceMediumMultiplier: zeroToOneSchema,
     affinityConfidenceHighMultiplier: zeroToOneSchema,
     explicitPreferenceBoost: nonNegativeNumberSchema.max(1),
+    // Separate from explicitPreferenceBoost: a stronger, distinctly-reasoned boost for current explicit
+    // repurchase intent (CP-R1-T10B3C). Never reused silently for preferredProductIds.
+    explicitRepurchaseBoost: nonNegativeNumberSchema.max(1),
     productRejectionPenalty: nonNegativeNumberSchema.max(1),
     categoryRejectionPenalty: nonNegativeNumberSchema.max(1),
     maximumResults: positiveIntegerSchema.optional(),
@@ -105,6 +113,7 @@ export const DEFAULT_PERSONALIZED_RECOMMENDATION_PARAMETERS = Object.freeze({
   affinityConfidenceMediumMultiplier: 0.7,
   affinityConfidenceHighMultiplier: 1,
   explicitPreferenceBoost: 0.1,
+  explicitRepurchaseBoost: 0.15,
   productRejectionPenalty: 1,
   categoryRejectionPenalty: 0.25,
   minimumPersonalizedScore: 0,
@@ -158,6 +167,7 @@ export const personalizedRecommendationReasonCodeSchema = z.enum([
   'REPEAT_PURCHASE_PATTERN',
   'OBSERVED_SPEND_COMPATIBILITY',
   'EXPLICIT_CONTEXT_PREFERENCE',
+  'EXPLICIT_REPURCHASE_INTENT',
   'GENERAL_COMMERCIAL_FALLBACK',
 ]);
 
@@ -215,6 +225,7 @@ export const personalizedRecommendationScoreComponentsSchema = z
     affinityConfidenceMultiplier: zeroToOneSchema,
     normalizedAffinityContribution: zeroToOneSchema,
     explicitPreferenceBoost: nonNegativeNumberSchema.max(1),
+    explicitRepurchaseContribution: nonNegativeNumberSchema.max(1),
     rejectionPenalty: nonNegativeNumberSchema.max(1),
     rawScore: z.number().finite(),
     finalScore: zeroToOneSchema,
@@ -230,6 +241,9 @@ export const personalizedRecommendationSchema = z
     reasons: z.array(personalizedRecommendationReasonSchema),
     commercialRecommendation: commercialRecommendationSchema,
     customerAffinity: customerProductAffinitySchema.optional(),
+    // Neutral pass-through from CustomerProductAffinity.ownership only. Never derived, recalculated, or
+    // used as a scoring/ranking input here — see defaultPersonalizedRecommendationService.ts.
+    ownership: productOwnershipEvidenceSchema.optional(),
     originalCommercialRank: positiveIntegerSchema,
     personalizedRank: positiveIntegerSchema,
     warnings: z.array(personalizedRecommendationWarningSchema),
@@ -309,9 +323,10 @@ export const personalizedRecommendationResultSchema = z
 
 export type ProductRuntimeReference = ProductRelationshipProductReference;
 export type MoneyContext = z.infer<typeof personalizedRecommendationMoneyContextSchema>;
-export type PersonalizedRecommendationContext = Omit<z.infer<typeof personalizedRecommendationContextSchema>, 'preferredProductIds' | 'excludedProductIds'> & {
+export type PersonalizedRecommendationContext = Omit<z.infer<typeof personalizedRecommendationContextSchema>, 'preferredProductIds' | 'excludedProductIds' | 'explicitRepurchaseProductIds'> & {
   readonly preferredProductIds?: readonly ProductRuntimeReference[];
   readonly excludedProductIds?: readonly ProductRuntimeReference[];
+  readonly explicitRepurchaseProductIds?: readonly ProductRuntimeReference[];
 };
 export type PersonalizedRecommendationParameters = z.infer<typeof personalizedRecommendationParametersSchema>;
 export type CommercialRecommendation = ProductRecommendation;

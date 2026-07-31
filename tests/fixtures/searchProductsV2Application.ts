@@ -216,6 +216,22 @@ export function structuralAffinityFailure(): CustomerAffinityError {
   return new CustomerAffinityError('INVALID_PROVIDER_RESPONSE', 'invalid provider response');
 }
 
+export function customerMismatchAffinityFailure(): CustomerAffinityError {
+  return new CustomerAffinityError('INVALID_PROVIDER_RESPONSE', 'provider returned a different customer');
+}
+
+export function productOutsideBatchAffinityFailure(): CustomerAffinityError {
+  return new CustomerAffinityError('INVALID_PROVIDER_RESPONSE', 'provider returned evidence outside the requested batch');
+}
+
+export function duplicateEvidenceAffinityFailure(): CustomerAffinityError {
+  return new CustomerAffinityError('INVALID_PROVIDER_RESPONSE', 'provider returned duplicated product evidence');
+}
+
+export function nonDegradableAffinityFailure(): CustomerAffinityError {
+  return new CustomerAffinityError('INVALID_CUSTOMER_REFERENCE', 'Catalog Service built an invalid T09 customer reference');
+}
+
 export function buildSearchProductsV2Harness(options: {
   commercialResult?: ProductRecommendationResult;
   affinityResult?: CustomerProductAffinityResult;

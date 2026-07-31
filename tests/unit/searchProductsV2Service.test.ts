@@ -18,7 +18,10 @@ import {
   affinityResultFor,
   commercialRecommendationFor,
   commercialResultFor,
+  ownershipFor,
   productB,
+  productBCombo,
+  productBCombo11,
   productC,
   productD,
   productE,
@@ -30,6 +33,10 @@ import {
   buildSearchProductsV2Harness,
   catalogSummaryFor,
   clone,
+  customerMismatchAffinityFailure,
+  duplicateEvidenceAffinityFailure,
+  nonDegradableAffinityFailure,
+  productOutsideBatchAffinityFailure,
   retryableAffinityFailure,
   searchProductsV2UnknownAffinityResult,
   structuralAffinityFailure,
@@ -90,6 +97,35 @@ describe('SearchProducts V2 contracts', () => {
 
   it('rejects duplicate excluded products', () => {
     expect(searchProductsV2ContextSchema.safeParse({ excludedProducts: [productB, productB] }).success).toBe(false);
+  });
+
+  it('accepts explicitRepurchaseProducts (CP-R1-T10B3C)', () => {
+    expect(searchProductsV2ContextSchema.safeParse({ explicitRepurchaseProducts: [productB] }).success).toBe(true);
+  });
+
+  it('rejects duplicate explicit repurchase products', () => {
+    expect(searchProductsV2ContextSchema.safeParse({ explicitRepurchaseProducts: [productB, productB] }).success).toBe(false);
+  });
+
+  it('rejects the same identity in explicitRepurchaseProducts and excludedProducts', () => {
+    expect(searchProductsV2ContextSchema.safeParse({
+      excludedProducts: [productB],
+      explicitRepurchaseProducts: [productB],
+    }).success).toBe(false);
+  });
+
+  it('accepts explicitRepurchaseProducts and excludedProducts for different identities', () => {
+    expect(searchProductsV2ContextSchema.safeParse({
+      excludedProducts: [productC],
+      explicitRepurchaseProducts: [productB],
+    }).success).toBe(true);
+  });
+
+  it('treats a different combination of the same base product as a distinct identity, not a conflict', () => {
+    expect(searchProductsV2ContextSchema.safeParse({
+      excludedProducts: [productBCombo11],
+      explicitRepurchaseProducts: [productBCombo],
+    }).success).toBe(true);
   });
 
   it('rejects duplicate product filters', () => {
@@ -558,6 +594,7 @@ describe('SearchProducts V2 T09 behavior and degradation', () => {
     const result = await harness.service.search(baseSearchProductsV2Request);
     expect(result.execution.degraded).toBe(true);
     expect(result.execution.stages.customerAffinity).toBe('degraded');
+    expect(result.execution.degradationReasons).toEqual(['CUSTOMER_AFFINITY_RETRYABLE_FAILURE']);
   });
 
   it('returns warning on retryable T09 error', async () => {
@@ -567,15 +604,86 @@ describe('SearchProducts V2 T09 behavior and degradation', () => {
     expect(result.warnings.some((item) => item.code === 'CUSTOMER_AFFINITY_UNAVAILABLE')).toBe(true);
   });
 
-  it('fails non-retryable T09 error', async () => {
+  it('preserves commercial ranking on retryable T09 error', async () => {
+    const harness = buildSearchProductsV2Harness();
+    harness.affinity.failWith = retryableAffinityFailure();
+    const result = await harness.service.search(baseSearchProductsV2Request);
+    expect(result.recommendations.map((item) => item.product.productId)).toEqual(['B', 'C', 'D']);
+  });
+
+  it('does not expose the provider error message or cause for a retryable failure (CP-R1-T10B3C)', async () => {
+    const harness = buildSearchProductsV2Harness();
+    harness.affinity.failWith = retryableAffinityFailure();
+    const result = await harness.service.search(baseSearchProductsV2Request);
+    expect(JSON.stringify(result).toLowerCase()).not.toMatch(/timeout|cause/u);
+  });
+
+  it('degrades a structurally invalid T09 provider response instead of failing (CP-R1-T10B3C)', async () => {
     const harness = buildSearchProductsV2Harness();
     harness.affinity.failWith = structuralAffinityFailure();
-    await expectSearchError(() => harness.service.search(baseSearchProductsV2Request), 'INVALID_AFFINITY_RESULT');
+    const result = await harness.service.search(baseSearchProductsV2Request);
+    expect(result.execution.degraded).toBe(true);
+    expect(result.execution.stages.customerAffinity).toBe('degraded');
+    expect(result.execution.degradationReasons).toEqual(['CUSTOMER_AFFINITY_PROVIDER_RESPONSE_INVALID']);
+    expect(result.warnings.some((item) => item.code === 'CUSTOMER_AFFINITY_UNAVAILABLE')).toBe(true);
+  });
+
+  it('preserves generic commercial ranking when T09 provider response is structurally invalid', async () => {
+    const harness = buildSearchProductsV2Harness();
+    harness.affinity.failWith = structuralAffinityFailure();
+    const result = await harness.service.search(baseSearchProductsV2Request);
+    expect(result.recommendations.map((item) => item.product.productId)).toEqual(['B', 'C', 'D']);
   });
 
   it('fails generic T09 error', async () => {
     const harness = buildSearchProductsV2Harness();
     harness.affinity.failWith = new Error('boom');
+    await expectSearchError(() => harness.service.search(baseSearchProductsV2Request), 'INVALID_AFFINITY_RESULT');
+  });
+
+  it('degrades on a customer mismatch reported by the evidence provider (CP-R1-T10B3C)', async () => {
+    const harness = buildSearchProductsV2Harness();
+    harness.affinity.failWith = customerMismatchAffinityFailure();
+    const result = await harness.service.search(baseSearchProductsV2Request);
+    expect(result.execution.degraded).toBe(true);
+    expect(result.execution.stages.customerAffinity).toBe('degraded');
+    expect(result.execution.degradationReasons).toEqual(['CUSTOMER_AFFINITY_PROVIDER_RESPONSE_INVALID']);
+    expect(result.warnings.some((item) => item.code === 'CUSTOMER_AFFINITY_UNAVAILABLE')).toBe(true);
+    expect(result.recommendations.map((item) => item.product.productId)).toEqual(['B', 'C', 'D']);
+  });
+
+  it('degrades when the evidence provider returns a product outside the requested batch', async () => {
+    const harness = buildSearchProductsV2Harness();
+    harness.affinity.failWith = productOutsideBatchAffinityFailure();
+    const result = await harness.service.search(baseSearchProductsV2Request);
+    expect(result.execution.degraded).toBe(true);
+    expect(result.execution.stages.customerAffinity).toBe('degraded');
+    expect(result.execution.degradationReasons).toEqual(['CUSTOMER_AFFINITY_PROVIDER_RESPONSE_INVALID']);
+    expect(result.warnings.some((item) => item.code === 'CUSTOMER_AFFINITY_UNAVAILABLE')).toBe(true);
+    expect(result.recommendations.map((item) => item.product.productId)).toEqual(['B', 'C', 'D']);
+  });
+
+  it('degrades when the evidence provider returns duplicated product evidence', async () => {
+    const harness = buildSearchProductsV2Harness();
+    harness.affinity.failWith = duplicateEvidenceAffinityFailure();
+    const result = await harness.service.search(baseSearchProductsV2Request);
+    expect(result.execution.degraded).toBe(true);
+    expect(result.execution.stages.customerAffinity).toBe('degraded');
+    expect(result.execution.degradationReasons).toEqual(['CUSTOMER_AFFINITY_PROVIDER_RESPONSE_INVALID']);
+    expect(result.warnings.some((item) => item.code === 'CUSTOMER_AFFINITY_UNAVAILABLE')).toBe(true);
+    expect(result.recommendations.map((item) => item.product.productId)).toEqual(['B', 'C', 'D']);
+  });
+
+  it('does not expose the provider error message or cause for an invalid provider response (CP-R1-T10B3C)', async () => {
+    const harness = buildSearchProductsV2Harness();
+    harness.affinity.failWith = duplicateEvidenceAffinityFailure();
+    const result = await harness.service.search(baseSearchProductsV2Request);
+    expect(JSON.stringify(result).toLowerCase()).not.toMatch(/duplicated product evidence|cause/u);
+  });
+
+  it('does not degrade a CustomerAffinityError that represents an internal contract bug', async () => {
+    const harness = buildSearchProductsV2Harness();
+    harness.affinity.failWith = nonDegradableAffinityFailure();
     await expectSearchError(() => harness.service.search(baseSearchProductsV2Request), 'INVALID_AFFINITY_RESULT');
   });
 
@@ -784,5 +892,203 @@ describe('SearchProducts V2 statistics, immutability, determinism, compatibility
 
   it('does not expose forbidden infrastructure markers', async () => {
     expect(JSON.stringify(await buildSearchProductsV2Harness().service.search(baseSearchProductsV2Request)).toLowerCase()).not.toMatch(/select |redis|customer 360|prestashop|llm|crm/u);
+  });
+});
+
+describe('SearchProducts V2 ownership propagation (CP-R1-T10B3C)', () => {
+  it('appears on the recommendation for the exact candidate T09 provided it for', async () => {
+    const ownership = ownershipFor({ previouslyPurchased: true, exactVariantPreviouslyPurchased: false, totalOrderCount: 3 });
+    const affinityResult = affinityResultFor([affinityFor(productB, 0, 'none', [], { ownership })]);
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    expect(result.recommendations.find((item) => item.product.productId === 'B')?.ownership).toEqual(ownership);
+  });
+
+  it('is absent when T09 does not provide ownership for a candidate', async () => {
+    const result = await buildSearchProductsV2Harness().service.search(baseSearchProductsV2Request);
+    expect(result.recommendations.every((item) => item.ownership === undefined)).toBe(true);
+  });
+
+  it('preserves exactVariantPreviouslyPurchased for the exact variant candidate', async () => {
+    const ownership = ownershipFor({ previouslyPurchased: true, exactVariantPreviouslyPurchased: true, totalOrderCount: 1 });
+    const harness = buildSearchProductsV2Harness({
+      commercialResult: commercialResultFor([commercialRecommendationFor(productBCombo, 1, 80)]),
+      affinityResult: affinityResultFor([affinityFor(productBCombo, 0, 'none', [], { ownership })]),
+      catalogProducts: [catalogSummaryFor(sourceProduct), catalogSummaryFor(productBCombo)],
+    });
+    const result = await harness.service.search(baseSearchProductsV2Request);
+    expect(result.recommendations[0]?.ownership).toEqual(ownership);
+  });
+
+  it('does not appear as a warning', async () => {
+    const affinityResult = affinityResultFor([affinityFor(productB, 0, 'none', [], { ownership: ownershipFor() })]);
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    expect(result.warnings.every((item) => !JSON.stringify(item).includes('previouslyPurchased'))).toBe(true);
+    expect(result.recommendations.find((item) => item.product.productId === 'B')?.warnings ?? []).toEqual([]);
+  });
+
+  it('does not alter commercialReason', async () => {
+    const signals = [signal('CATEGORY_PURCHASE')];
+    const withoutOwnership = await buildSearchProductsV2Harness({
+      affinityResult: affinityResultFor([affinityFor(productB, 0.5, 'medium', signals)]),
+    }).service.search(baseSearchProductsV2Request);
+    const withOwnership = await buildSearchProductsV2Harness({
+      affinityResult: affinityResultFor([affinityFor(productB, 0.5, 'medium', signals, { ownership: ownershipFor() })]),
+    }).service.search(baseSearchProductsV2Request);
+    const before = withoutOwnership.recommendations.find((item) => item.product.productId === 'B')?.commercialReason;
+    const after = withOwnership.recommendations.find((item) => item.product.productId === 'B')?.commercialReason;
+    expect(after).toEqual(before);
+    expect(after?.code).toBe('CUSTOMER_AFFINITY_MATCH');
+  });
+
+  it('does not expose raw evidence, only the neutral ownership shape', async () => {
+    const affinityResult = affinityResultFor([affinityFor(productB, 0, 'none', [], { ownership: ownershipFor() })]);
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    const ownership = result.recommendations.find((item) => item.product.productId === 'B')?.ownership;
+    expect(Object.keys(ownership ?? {}).sort()).toEqual([
+      'exactVariantPreviouslyPurchased',
+      'firstPurchasedAt',
+      'lastPurchasedAt',
+      'previouslyPurchased',
+      'totalOrderCount',
+    ].sort());
+  });
+});
+
+describe('SearchProducts V2 explicit repurchase (CP-R1-T10B3C)', () => {
+  it('maps context.explicitRepurchaseProducts to T10 explicitRepurchaseProductIds', async () => {
+    const harness = buildSearchProductsV2Harness();
+    await harness.service.search({ ...baseSearchProductsV2Request, context: { explicitRepurchaseProducts: [productB] } });
+    expect(harness.personalization.calls[0]?.context?.explicitRepurchaseProductIds).toEqual([productB]);
+  });
+
+  it('rejects a request where explicitRepurchaseProducts conflicts with excludedProducts', async () => {
+    await expectSearchError(
+      () => buildSearchProductsV2Harness().service.search({
+        ...baseSearchProductsV2Request,
+        context: { excludedProducts: [productB], explicitRepurchaseProducts: [productB] },
+      }),
+      'INVALID_REQUEST',
+    );
+  });
+
+  it('rejects duplicated explicitRepurchaseProducts', async () => {
+    await expectSearchError(
+      () => buildSearchProductsV2Harness().service.search({
+        ...baseSearchProductsV2Request,
+        context: { explicitRepurchaseProducts: [productB, productB] },
+      }),
+      'INVALID_REQUEST',
+    );
+  });
+
+  it('surfaces the EXPLICIT_REPURCHASE_INTENT reason in the response', async () => {
+    const result = await buildSearchProductsV2Harness().service.search({
+      ...baseSearchProductsV2Request,
+      context: { explicitRepurchaseProducts: [productB] },
+    });
+    expect(result.recommendations.find((item) => item.product.productId === 'B')?.reasons.some((reason) => reason.code === 'EXPLICIT_REPURCHASE_INTENT')).toBe(true);
+  });
+
+  it('does not boost or add the reason for a product outside explicitRepurchaseProducts', async () => {
+    const result = await buildSearchProductsV2Harness().service.search({
+      ...baseSearchProductsV2Request,
+      context: { explicitRepurchaseProducts: [productB] },
+    });
+    expect(result.recommendations.find((item) => item.product.productId === 'C')?.reasons.some((reason) => reason.code === 'EXPLICIT_REPURCHASE_INTENT')).toBe(false);
+  });
+
+  it('keeps prior behavior identical when the request omits explicitRepurchaseProducts', async () => {
+    const withField = await buildSearchProductsV2Harness().service.search({ ...baseSearchProductsV2Request, context: { explicitRepurchaseProducts: [] } });
+    const without = await buildSearchProductsV2Harness().service.search(baseSearchProductsV2Request);
+    expect(withField.recommendations.map((item) => item.score)).toEqual(without.recommendations.map((item) => item.score));
+  });
+});
+
+describe('SearchProducts V2 CUSTOMER_MISMATCH (CP-R1-T10B3C)', () => {
+  it('maps a T10 CUSTOMER_MISMATCH error to the dedicated error code instead of a generic personalization failure', async () => {
+    const harness = buildSearchProductsV2Harness();
+    harness.personalization.failWith = new PersonalizedRecommendationError('CUSTOMER_MISMATCH', 'mismatch');
+    await expectSearchError(() => harness.service.search(baseSearchProductsV2Request), 'CUSTOMER_MISMATCH');
+  });
+
+  it('still validates request-level customerId mismatch as INVALID_REQUEST at the schema boundary', () => {
+    expect(searchProductsV2RequestSchema.safeParse({
+      sourceProduct: { productId: 'A' },
+      customer: { customerId: 'customer-1' },
+      context: { customerId: 'other' },
+    }).success).toBe(false);
+  });
+});
+
+describe('SearchProducts V2 per-product commercial warnings (CP-R1-T10B3C)', () => {
+  it('preserves a T08 warning associated with its own recommendation', async () => {
+    const commercialResult = commercialResultFor([
+      commercialRecommendationFor(productB, 1, 80, { warnings: [{ code: 'ALREADY_PURCHASED' }] }),
+      commercialRecommendationFor(productC, 2, 70),
+      commercialRecommendationFor(productD, 3, 60),
+    ]);
+    const result = await buildSearchProductsV2Harness({ commercialResult }).service.search(baseSearchProductsV2Request);
+    expect(result.recommendations.find((item) => item.product.productId === 'B')?.warnings).toEqual([{ code: 'UPSTREAM_COMMERCIAL_WARNING' }]);
+    expect(result.recommendations.find((item) => item.product.productId === 'C')?.warnings).toEqual([]);
+  });
+
+  it('tags the global commercial warning entry with the specific product identity', async () => {
+    const commercialResult = commercialResultFor([
+      commercialRecommendationFor(productB, 1, 80, { warnings: [{ code: 'ALREADY_PURCHASED' }] }),
+      commercialRecommendationFor(productC, 2, 70),
+      commercialRecommendationFor(productD, 3, 60),
+    ]);
+    const result = await buildSearchProductsV2Harness({ commercialResult }).service.search(baseSearchProductsV2Request);
+    const globalWarning = result.warnings.find((item) => item.code === 'UPSTREAM_COMMERCIAL_WARNING');
+    expect(globalWarning?.product).toEqual(productB);
+  });
+
+  it('does not exclude a product because it carries an ALREADY_PURCHASED warning', async () => {
+    const commercialResult = commercialResultFor([
+      commercialRecommendationFor(productB, 1, 80, { warnings: [{ code: 'ALREADY_PURCHASED' }] }),
+      commercialRecommendationFor(productC, 2, 70),
+      commercialRecommendationFor(productD, 3, 60),
+    ]);
+    const result = await buildSearchProductsV2Harness({ commercialResult }).service.search(baseSearchProductsV2Request);
+    expect(result.recommendations.some((item) => item.product.productId === 'B')).toBe(true);
+    expect(result.excluded.some((item) => item.product.productId === 'B')).toBe(false);
+  });
+
+  it('does not duplicate a global warning entry shared by multiple products with the same code', async () => {
+    const commercialResult = commercialResultFor([
+      commercialRecommendationFor(productB, 1, 80, { warnings: [{ code: 'LOW_STOCK' }] }),
+      commercialRecommendationFor(productC, 2, 70, { warnings: [{ code: 'LOW_STOCK' }] }),
+      commercialRecommendationFor(productD, 3, 60),
+    ]);
+    const result = await buildSearchProductsV2Harness({ commercialResult }).service.search(baseSearchProductsV2Request);
+    const lowStockWarnings = result.warnings.filter((item) => item.code === 'UPSTREAM_COMMERCIAL_WARNING');
+    expect(lowStockWarnings).toHaveLength(2);
+    expect(new Set(lowStockWarnings.map((item) => item.product?.productId))).toEqual(new Set(['B', 'C']));
+  });
+
+  it('counts per-recommendation warnings in warningsGenerated without double counting', async () => {
+    const commercialResult = commercialResultFor([
+      commercialRecommendationFor(productB, 1, 80, { warnings: [{ code: 'ALREADY_PURCHASED' }] }),
+      commercialRecommendationFor(productC, 2, 70),
+      commercialRecommendationFor(productD, 3, 60),
+    ]);
+    const result = await buildSearchProductsV2Harness({ commercialResult }).service.search(baseSearchProductsV2Request);
+    const productWarnings = result.recommendations.reduce((count, item) => count + item.warnings.length, 0);
+    expect(result.statistics.warningsGenerated).toBe(result.warnings.length + productWarnings);
+  });
+});
+
+describe('SearchProducts V2 backward compatibility (CP-R1-T10B3C)', () => {
+  it('still accepts a request with none of the new fields', async () => {
+    expect(searchProductsV2RequestSchema.safeParse(baseSearchProductsV2Request).success).toBe(true);
+  });
+
+  it('still produces a schema-valid response for a request predating explicitRepurchaseProducts and ownership', async () => {
+    const result = await buildSearchProductsV2Harness().service.search(baseSearchProductsV2Request);
+    expect(searchProductsV2ResultSchema.safeParse(result).success).toBe(true);
+  });
+
+  it('keeps explicitRepurchaseProducts and ownership optional in the schemas', () => {
+    expect(searchProductsV2ContextSchema.safeParse({}).success).toBe(true);
   });
 });

@@ -16,6 +16,7 @@ import type {
 import {
   customerAffinityConfidenceSchema,
   customerAffinityCustomerReferenceSchema,
+  productOwnershipEvidenceSchema,
 } from '../../../domain/recommendation/customer-affinity/index.js';
 import type {
   PersonalizedRecommendationResult,
@@ -43,10 +44,23 @@ function addIssue(context: z.RefinementCtx, path: Array<string | number>, messag
   context.addIssue({ code: z.ZodIssueCode.custom, message, path });
 }
 
+function productReferenceKey(product: ProductRelationshipProductReference): string {
+  return `${product.productId}::${product.combinationId ?? '<base>'}`;
+}
+
 function hasDuplicateProductReferences(products: readonly ProductRelationshipProductReference[] | undefined): boolean {
   if (!products) return false;
-  const keys = products.map((product) => `${product.productId}::${product.combinationId ?? '<base>'}`);
+  const keys = products.map(productReferenceKey);
   return new Set(keys).size !== keys.length;
+}
+
+function hasOverlappingProductReferences(
+  left: readonly ProductRelationshipProductReference[] | undefined,
+  right: readonly ProductRelationshipProductReference[] | undefined,
+): boolean {
+  if (!left || !right || left.length === 0 || right.length === 0) return false;
+  const leftKeys = new Set(left.map(productReferenceKey));
+  return right.some((product) => leftKeys.has(productReferenceKey(product)));
 }
 
 function hasDuplicateStrings(values: readonly string[] | undefined): boolean {
@@ -74,6 +88,10 @@ export const searchProductsV2ContextSchema = z
     budget: searchProductsV2MoneySchema.optional(),
     preferredProducts: z.array(productRelationshipProductReferenceSchema).optional(),
     excludedProducts: z.array(productRelationshipProductReferenceSchema).optional(),
+    // Explicit current-intent repurchase (CP-R1-T10B3C): "the customer wants to buy this exact product or
+    // variant again, right now". Never derived from ownership, directPurchases, repeatPurchasePattern, or
+    // preferredProducts — see docs/recommendation/search-products-v2.md.
+    explicitRepurchaseProducts: z.array(productRelationshipProductReferenceSchema).optional(),
   })
   .strict()
   .superRefine((context, refinement) => {
@@ -82,6 +100,12 @@ export const searchProductsV2ContextSchema = z
     }
     if (hasDuplicateProductReferences(context.excludedProducts)) {
       addIssue(refinement, ['excludedProducts'], 'excludedProducts must be unique by runtime identity');
+    }
+    if (hasDuplicateProductReferences(context.explicitRepurchaseProducts)) {
+      addIssue(refinement, ['explicitRepurchaseProducts'], 'explicitRepurchaseProducts must be unique by runtime identity');
+    }
+    if (hasOverlappingProductReferences(context.excludedProducts, context.explicitRepurchaseProducts)) {
+      addIssue(refinement, ['explicitRepurchaseProducts'], 'explicitRepurchaseProducts must not contain a product identity also present in excludedProducts');
     }
   });
 
@@ -129,6 +153,7 @@ export const searchProductsV2ReasonCodeSchema = z.enum([
   'REPEAT_PURCHASE_PATTERN',
   'OBSERVED_SPEND_COMPATIBILITY',
   'EXPLICIT_CONTEXT_PREFERENCE',
+  'EXPLICIT_REPURCHASE_INTENT',
   'GENERAL_COMMERCIAL_FALLBACK',
 ]);
 
@@ -315,6 +340,9 @@ export const searchProductsV2RecommendationSchema = z
     commercialReason: searchProductsV2CommercialReasonSchema,
     reasons: z.array(searchProductsV2ReasonSchema),
     warnings: z.array(searchProductsV2WarningSchema),
+    // Neutral pass-through from T09/T10 CustomerProductAffinity.ownership. Never a score/ranking input here;
+    // absent when T09 did not provide ownership for this exact candidate.
+    ownership: productOwnershipEvidenceSchema.optional(),
   })
   .strict();
 
@@ -336,7 +364,14 @@ export const searchProductsV2StatisticsSchema = z
     }
   });
 
-export const searchProductsV2DegradationCodeSchema = z.enum(['CUSTOMER_AFFINITY_RETRYABLE_FAILURE']);
+// CUSTOMER_AFFINITY_RETRYABLE_FAILURE: transient provider integration failure (network/timeout), safe to retry.
+// CUSTOMER_AFFINITY_PROVIDER_RESPONSE_INVALID (CP-R1-T10B3C): structurally invalid provider response (customer
+// mismatch, evidence outside the batch, duplicated evidence, corrupt payload) — not transient, retrying the
+// same request will reproduce the same failure; consumers should not auto-retry on this reason alone.
+export const searchProductsV2DegradationCodeSchema = z.enum([
+  'CUSTOMER_AFFINITY_RETRYABLE_FAILURE',
+  'CUSTOMER_AFFINITY_PROVIDER_RESPONSE_INVALID',
+]);
 
 export const searchProductsV2ExecutionStagesSchema = z
   .object({
@@ -404,9 +439,10 @@ export const searchProductsV2ResultSchema = z
 
 export type SearchProductsV2Money = z.infer<typeof searchProductsV2MoneySchema>;
 export type SearchProductsV2CustomerReference = CustomerAffinityCustomerReference;
-export type SearchProductsV2Context = Omit<z.infer<typeof searchProductsV2ContextSchema>, 'preferredProducts' | 'excludedProducts'> & {
+export type SearchProductsV2Context = Omit<z.infer<typeof searchProductsV2ContextSchema>, 'preferredProducts' | 'excludedProducts' | 'explicitRepurchaseProducts'> & {
   readonly preferredProducts?: readonly ProductRelationshipProductReference[];
   readonly excludedProducts?: readonly ProductRelationshipProductReference[];
+  readonly explicitRepurchaseProducts?: readonly ProductRelationshipProductReference[];
 };
 export type SearchProductsV2Filters = z.infer<typeof searchProductsV2FiltersSchema>;
 export type SearchProductsV2Request = Omit<z.infer<typeof searchProductsV2RequestSchema>, 'context'> & {
@@ -425,6 +461,7 @@ export type SearchProductsV2RecommendationRelationship = z.infer<typeof searchPr
 export type SearchProductsV2CommercialReason = z.infer<typeof searchProductsV2CommercialReasonSchema>;
 export type SearchProductsV2Recommendation = z.infer<typeof searchProductsV2RecommendationSchema>;
 export type SearchProductsV2Statistics = z.infer<typeof searchProductsV2StatisticsSchema>;
+export type SearchProductsV2DegradationCode = z.infer<typeof searchProductsV2DegradationCodeSchema>;
 export type SearchProductsV2ExecutionStages = z.infer<typeof searchProductsV2ExecutionStagesSchema>;
 export type SearchProductsV2Execution = z.infer<typeof searchProductsV2ExecutionSchema>;
 export type SearchProductsV2Personalization = z.infer<typeof searchProductsV2PersonalizationSchema>;
