@@ -209,24 +209,69 @@ describe('DefaultCustomerProductAffinityProvider result generation', () => {
     expect(result.affinities).toHaveLength(2);
   });
 
-  it('generates score from evidence', async () => {
+  it('does not generate score from legacy direct-purchase-only evidence', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB, { directPurchases: [{ count: 1 }] })]));
+    const result = await provider(fake).provider.getAffinities({ customer, products: [productB] });
+    expect(result.affinities[0]?.score).toBe(0);
+  });
+
+  it('does not generate score from three legacy direct purchases either', async () => {
     const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB, { directPurchases: [{ count: 3 }] })]));
     const result = await provider(fake).provider.getAffinities({ customer, products: [productB] });
-    expect(result.affinities[0]?.score).toBeGreaterThan(0);
+    expect(result.affinities[0]?.score).toBe(0);
+  });
+
+  it('does not generate a DIRECT_PRODUCT_PURCHASE signal from legacy direct purchases', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB, { directPurchases: [{ count: 3 }] })]));
+    const result = await provider(fake).provider.getAffinities({ customer, products: [productB] });
+    expect(result.affinities[0]?.signals).toEqual([]);
+  });
+
+  it('does not raise confidence from legacy direct-purchase-only evidence', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB, { directPurchases: [{ count: 3 }] })]));
+    const result = await provider(fake).provider.getAffinities({ customer, products: [productB] });
+    expect(result.affinities[0]?.confidence).toBe('none');
+  });
+
+  it('derives ownership from legacy direct purchases without touching score or confidence', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB, { directPurchases: [{ count: 3 }] })]));
+    const result = await provider(fake).provider.getAffinities({ customer, products: [productB] });
+    expect(result.affinities[0]).toMatchObject({
+      score: 0,
+      confidence: 'none',
+      signals: [],
+      ownership: { previouslyPurchased: true },
+    });
   });
 
   it('generates confidence from evidence', async () => {
     const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB, {
-      directPurchases: [{ count: 1 }],
       categoryPurchases: [{ count: 1 }],
+      brandPurchases: [{ count: 1 }],
     })]));
     const result = await provider(fake).provider.getAffinities({ customer, products: [productB] });
     expect(result.affinities[0]?.confidence).toBe('medium');
   });
 
+  it('does not change confidence when legacy direct purchases are added on top of real signals', async () => {
+    const withoutDirectPurchases = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB, {
+      categoryPurchases: [{ count: 1 }],
+      brandPurchases: [{ count: 1 }],
+    })]));
+    const withDirectPurchases = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB, {
+      categoryPurchases: [{ count: 1 }],
+      brandPurchases: [{ count: 1 }],
+      directPurchases: [{ count: 5 }],
+    })]));
+    const baseline = await provider(withoutDirectPurchases).provider.getAffinities({ customer, products: [productB] });
+    const withOwnership = await provider(withDirectPurchases).provider.getAffinities({ customer, products: [productB] });
+    expect(withOwnership.affinities[0]?.confidence).toBe(baseline.affinities[0]?.confidence);
+    expect(withOwnership.affinities[0]?.score).toBe(baseline.affinities[0]?.score);
+  });
+
   it('includes scoring version', async () => {
     const result = await provider().provider.getAffinities(baseAffinityRequest);
-    expect(result.affinities[0]?.scoringVersion).toBe('customer-affinity-v1');
+    expect(result.affinities[0]?.scoringVersion).toBe('customer-affinity-v2');
   });
 
   it('maps provider warnings to global warnings', async () => {
@@ -236,9 +281,15 @@ describe('DefaultCustomerProductAffinityProvider result generation', () => {
   });
 
   it('keeps evidence summaries structured', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB, { categoryPurchases: [{ count: 2 }] })]));
+    const result = await provider(fake).provider.getAffinities({ customer, products: [productB] });
+    expect(result.affinities[0]?.evidence[0]).toMatchObject({ code: 'CATEGORY_PURCHASE', count: 2 });
+  });
+
+  it('does not produce a DIRECT_PRODUCT_PURCHASE evidence summary from legacy direct purchases', async () => {
     const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB, { directPurchases: [{ count: 2 }] })]));
     const result = await provider(fake).provider.getAffinities({ customer, products: [productB] });
-    expect(result.affinities[0]?.evidence[0]).toMatchObject({ code: 'DIRECT_PRODUCT_PURCHASE', count: 2 });
+    expect(result.affinities[0]?.evidence).toEqual([]);
   });
 });
 
@@ -265,8 +316,13 @@ describe('DefaultCustomerProductAffinityProvider statistics and immutability', (
   });
 
   it('counts positive signals', async () => {
-    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB, { directPurchases: [{ count: 1 }] })]));
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB, { categoryPurchases: [{ count: 1 }] })]));
     expect((await provider(fake).provider.getAffinities({ customer, products: [productB] })).statistics.positiveSignalsGenerated).toBe(1);
+  });
+
+  it('does not count legacy direct purchases as a positive signal', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB, { directPurchases: [{ count: 1 }] })]));
+    expect((await provider(fake).provider.getAffinities({ customer, products: [productB] })).statistics.positiveSignalsGenerated).toBe(0);
   });
 
   it('counts negative signals', async () => {
@@ -293,15 +349,28 @@ describe('DefaultCustomerProductAffinityProvider statistics and immutability', (
   });
 
   it('deep freezes signals', async () => {
-    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB, { directPurchases: [{ count: 1 }] })]));
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB, { categoryPurchases: [{ count: 1 }] })]));
     expect(Object.isFrozen((await provider(fake).provider.getAffinities({ customer, products: [productB] })).affinities[0]?.signals)).toBe(true);
   });
 
+  it('deep freezes ownership', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB, { directPurchases: [{ count: 1 }] })]));
+    const result = await provider(fake).provider.getAffinities({ customer, products: [productB] });
+    expect(Object.isFrozen(result.affinities[0]?.ownership)).toBe(true);
+  });
+
   it('does not leak provider object references', async () => {
-    const productEvidence = evidenceFor(productB, { directPurchases: [{ count: 1 }] });
+    const productEvidence = evidenceFor(productB, { categoryPurchases: [{ count: 1 }] });
     const result = await provider(new FakeCustomerAffinityEvidenceProvider(evidenceResult([productEvidence]))).provider.getAffinities({ customer, products: [productB] });
-    productEvidence.directPurchases = [{ count: 99 }];
+    productEvidence.categoryPurchases = [{ count: 99 }];
     expect(result.affinities[0]?.evidence[0]?.count).toBe(1);
+  });
+
+  it('does not leak provider object references through ownership', async () => {
+    const productEvidence = evidenceFor(productB, { directPurchases: [{ count: 1, occurredAt: '2026-01-01T00:00:00.000Z' }] });
+    const result = await provider(new FakeCustomerAffinityEvidenceProvider(evidenceResult([productEvidence]))).provider.getAffinities({ customer, products: [productB] });
+    productEvidence.directPurchases = [{ count: 99, occurredAt: '2026-06-01T00:00:00.000Z' }];
+    expect(result.affinities[0]?.ownership?.totalOrderCount).toBe(1);
   });
 
   it('serializes result to JSON', async () => {
@@ -318,5 +387,47 @@ describe('DefaultCustomerProductAffinityProvider statistics and immutability', (
   it('does not expose SQL, Redis, CRM, Customer 360, PrestaShop, LLM, or E2E markers', async () => {
     const serialized = JSON.stringify(await provider().provider.getAffinities(baseAffinityRequest)).toLowerCase();
     expect(serialized).not.toMatch(/select |redis|crm|customer 360|prestashop|llm|e2e/u);
+  });
+});
+
+describe('DefaultCustomerProductAffinityProvider variant identity isolation (CP-R1-T10B3B correction)', () => {
+  const productBCombo11 = { productId: 'B', combinationId: '11' } as const;
+
+  it('does not apply base-product evidence to a variant candidate in the same batch', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([
+      evidenceFor(productB, { directPurchases: [{ count: 5, occurredAt: '2026-06-01T00:00:00.000Z' }] }),
+    ]));
+    const result = await provider(fake).provider.getAffinities({ customer, products: [productBCombo, productB] });
+    const variantAffinity = result.affinities.find((affinity) => affinity.product.combinationId === '10');
+    const baseAffinity = result.affinities.find((affinity) => affinity.product.combinationId === undefined);
+    expect(variantAffinity?.ownership).toBeUndefined();
+    expect(variantAffinity?.warnings.some((item) => item.code === 'PARTIAL_CUSTOMER_HISTORY')).toBe(true);
+    expect(baseAffinity?.ownership).toMatchObject({ previouslyPurchased: true });
+  });
+
+  it('does not apply variant 10 evidence to variant 11 in the same batch', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([
+      evidenceFor(productBCombo, { directPurchases: [{ count: 5, occurredAt: '2026-06-01T00:00:00.000Z' }] }),
+    ]));
+    const result = await provider(fake).provider.getAffinities({ customer, products: [productBCombo, productBCombo11] });
+    const variant10Affinity = result.affinities.find((affinity) => affinity.product.combinationId === '10');
+    const variant11Affinity = result.affinities.find((affinity) => affinity.product.combinationId === '11');
+    expect(variant10Affinity?.ownership).toMatchObject({ previouslyPurchased: true, exactVariantPreviouslyPurchased: true });
+    expect(variant11Affinity?.ownership).toBeUndefined();
+    expect(variant11Affinity?.warnings.some((item) => item.code === 'PARTIAL_CUSTOMER_HISTORY')).toBe(true);
+  });
+
+  it('derives exactVariantPreviouslyPurchased=true only when evidence is matched to that exact variant', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([
+      evidenceFor(productBCombo, { directPurchases: [{ count: 2, occurredAt: '2026-06-01T00:00:00.000Z' }] }),
+    ]));
+    const result = await provider(fake).provider.getAffinities({ customer, products: [productBCombo] });
+    expect(result.affinities[0]?.ownership).toEqual({
+      previouslyPurchased: true,
+      exactVariantPreviouslyPurchased: true,
+      totalOrderCount: 2,
+      firstPurchasedAt: '2026-06-01T00:00:00.000Z',
+      lastPurchasedAt: '2026-06-01T00:00:00.000Z',
+    });
   });
 });

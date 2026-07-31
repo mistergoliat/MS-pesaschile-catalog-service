@@ -78,6 +78,6 @@ export class FakeCustomerAffinityEvidenceProvider implements CustomerAffinityEvi
 
 export const customAffinityParameters: CustomerAffinityParameters = {
   ...DEFAULT_CUSTOMER_AFFINITY_PARAMETERS,
-  directProductPurchaseWeight: 0.4,
+  categoryPurchaseWeight: 0.4,
   recentProductInterestWeight: 0.1,
 };

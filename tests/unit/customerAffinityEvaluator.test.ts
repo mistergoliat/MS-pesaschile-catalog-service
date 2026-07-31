@@ -9,6 +9,7 @@ import {
   customerAffinityParametersSchema,
   customerAffinityWarningSchema,
   customerProductAffinityResultSchema,
+  productOwnershipEvidenceSchema,
 } from '../../src/domain/recommendation/customer-affinity/index.js';
 import {
   affinityContext,
@@ -108,15 +109,199 @@ describe('customer affinity contracts', () => {
   });
 });
 
+describe('productOwnershipEvidenceSchema', () => {
+  it('accepts previouslyPurchased=false and exactVariantPreviouslyPurchased=false', () => {
+    expect(productOwnershipEvidenceSchema.safeParse({
+      previouslyPurchased: false,
+      exactVariantPreviouslyPurchased: false,
+    }).success).toBe(true);
+  });
+
+  it('accepts previouslyPurchased=true and exactVariantPreviouslyPurchased=false', () => {
+    expect(productOwnershipEvidenceSchema.safeParse({
+      previouslyPurchased: true,
+      exactVariantPreviouslyPurchased: false,
+    }).success).toBe(true);
+  });
+
+  it('accepts previouslyPurchased=true and exactVariantPreviouslyPurchased=true', () => {
+    expect(productOwnershipEvidenceSchema.safeParse({
+      previouslyPurchased: true,
+      exactVariantPreviouslyPurchased: true,
+    }).success).toBe(true);
+  });
+
+  it('rejects exactVariantPreviouslyPurchased=true without previouslyPurchased', () => {
+    expect(productOwnershipEvidenceSchema.safeParse({
+      previouslyPurchased: false,
+      exactVariantPreviouslyPurchased: true,
+    }).success).toBe(false);
+  });
+
+  it('rejects negative totalOrderCount', () => {
+    expect(productOwnershipEvidenceSchema.safeParse({
+      previouslyPurchased: true,
+      exactVariantPreviouslyPurchased: false,
+      totalOrderCount: -1,
+    }).success).toBe(false);
+  });
+
+  it('rejects an invalid timestamp', () => {
+    expect(productOwnershipEvidenceSchema.safeParse({
+      previouslyPurchased: true,
+      exactVariantPreviouslyPurchased: false,
+      lastPurchasedAt: 'not-a-date',
+    }).success).toBe(false);
+  });
+
+  it('rejects firstPurchasedAt after lastPurchasedAt', () => {
+    expect(productOwnershipEvidenceSchema.safeParse({
+      previouslyPurchased: true,
+      exactVariantPreviouslyPurchased: false,
+      firstPurchasedAt: '2026-06-01T00:00:00.000Z',
+      lastPurchasedAt: '2026-01-01T00:00:00.000Z',
+    }).success).toBe(false);
+  });
+
+  it('rejects additional fields', () => {
+    expect(productOwnershipEvidenceSchema.safeParse({
+      previouslyPurchased: true,
+      exactVariantPreviouslyPurchased: false,
+      amount: 1000,
+    }).success).toBe(false);
+  });
+});
+
 describe('DefaultCustomerAffinityEvaluator signals', () => {
-  it('generates direct product purchase signal', () => {
-    expect(evaluate(evidenceFor(productB, { directPurchases: [{ count: 3, occurredAt: '2026-06-01T00:00:00.000Z' }] })).signals).toContainEqual({
-      code: 'DIRECT_PRODUCT_PURCHASE',
-      direction: 'positive',
-      strength: 1,
+  it('does not generate a DIRECT_PRODUCT_PURCHASE signal from legacy directPurchases', () => {
+    const result = evaluate(evidenceFor(productB, { directPurchases: [{ count: 3, occurredAt: '2026-06-01T00:00:00.000Z' }] }));
+    expect(result.signals.some((signal) => signal.code === 'DIRECT_PRODUCT_PURCHASE')).toBe(false);
+  });
+
+  it('does not generate a DIRECT_PRODUCT_PURCHASE evidence summary from legacy directPurchases', () => {
+    const result = evaluate(evidenceFor(productB, { directPurchases: [{ count: 3, occurredAt: '2026-06-01T00:00:00.000Z' }] }));
+    expect(result.evidence.some((item) => item.code === 'DIRECT_PRODUCT_PURCHASE')).toBe(false);
+  });
+
+  it('derives ownership.previouslyPurchased from legacy directPurchases', () => {
+    const result = evaluate(evidenceFor(productB, { directPurchases: [{ count: 1, occurredAt: '2026-06-01T00:00:00.000Z' }] }));
+    expect(result.ownership).toMatchObject({ previouslyPurchased: true });
+  });
+
+  it('does not claim exact variant ownership for a base product candidate', () => {
+    const result = evaluate(evidenceFor(productB, { directPurchases: [{ count: 1, occurredAt: '2026-06-01T00:00:00.000Z' }] }));
+    expect(result.ownership?.exactVariantPreviouslyPurchased).toBe(false);
+  });
+
+  it('derives exact variant ownership when the candidate is a specific combination', () => {
+    const result = new DefaultCustomerAffinityEvaluator().evaluate(
+      productBCombo,
+      evidenceFor(productBCombo, { directPurchases: [{ count: 1, occurredAt: '2026-06-01T00:00:00.000Z' }] }),
+      undefined,
+      affinityContext,
+      DEFAULT_CUSTOMER_AFFINITY_PARAMETERS,
+    );
+    expect(result.ownership).toMatchObject({ previouslyPurchased: true, exactVariantPreviouslyPurchased: true });
+  });
+
+  it('derives totalOrderCount and first/last purchased timestamps from legacy directPurchases', () => {
+    const result = evaluate(evidenceFor(productB, {
+      directPurchases: [
+        { count: 1, occurredAt: '2026-01-01T00:00:00.000Z' },
+        { count: 2, occurredAt: '2026-06-01T00:00:00.000Z' },
+      ],
+    }));
+    expect(result.ownership).toEqual({
+      previouslyPurchased: true,
+      exactVariantPreviouslyPurchased: false,
+      totalOrderCount: 3,
+      firstPurchasedAt: '2026-01-01T00:00:00.000Z',
+      lastPurchasedAt: '2026-06-01T00:00:00.000Z',
     });
   });
 
+  it('leaves ownership absent when there is no directPurchases evidence and no explicit ownership', () => {
+    const result = evaluate(evidenceFor(productB, { categoryPurchases: [{ count: 5 }] }));
+    expect(result.ownership).toBeUndefined();
+  });
+
+  it('prefers explicit ownership evidence over derivation from legacy directPurchases', () => {
+    const result = evaluate(evidenceFor(productB, {
+      directPurchases: [{ count: 5, occurredAt: '2026-06-01T00:00:00.000Z' }],
+      ownership: { previouslyPurchased: true, exactVariantPreviouslyPurchased: true, totalOrderCount: 1 },
+    }));
+    expect(result.ownership).toEqual({ previouslyPurchased: true, exactVariantPreviouslyPurchased: true, totalOrderCount: 1 });
+    expect(result.warnings).toEqual([]);
+  });
+});
+
+describe('ownership versus legacy directPurchases contradiction (CP-R1-T10B3B correction)', () => {
+  it('flags the contradiction when explicit ownership says false but directPurchases is non-empty', () => {
+    const result = evaluate(evidenceFor(productB, {
+      directPurchases: [{ count: 3, occurredAt: '2026-06-01T00:00:00.000Z' }],
+      ownership: { previouslyPurchased: false, exactVariantPreviouslyPurchased: false },
+    }));
+    expect(result.ownership).toEqual({ previouslyPurchased: false, exactVariantPreviouslyPurchased: false });
+    expect(result.warnings).toEqual([{
+      code: 'INVALID_EVIDENCE_IGNORED',
+      productIdentity: 'B::<base>',
+      details: { field: 'directPurchases', reason: 'contradicts_explicit_ownership' },
+    }]);
+  });
+
+  it('does not affect score/confidence-relevant fields for the contradictory case', () => {
+    const result = evaluate(evidenceFor(productB, {
+      directPurchases: [{ count: 3, occurredAt: '2026-06-01T00:00:00.000Z' }],
+      ownership: { previouslyPurchased: false, exactVariantPreviouslyPurchased: false },
+    }));
+    expect(result.signals).toEqual([]);
+    expect(result.evidence).toEqual([]);
+    expect(result.validEvidenceCount).toBe(0);
+  });
+
+  it('does not duplicate the contradiction warning', () => {
+    const result = evaluate(evidenceFor(productB, {
+      directPurchases: [{ count: 1 }, { count: 2 }],
+      ownership: { previouslyPurchased: false, exactVariantPreviouslyPurchased: false },
+    }));
+    expect(result.warnings).toHaveLength(1);
+  });
+
+  it('is deterministic for the same contradictory input', () => {
+    const evidence = evidenceFor(productB, {
+      directPurchases: [{ count: 3, occurredAt: '2026-06-01T00:00:00.000Z' }],
+      ownership: { previouslyPurchased: false, exactVariantPreviouslyPurchased: false },
+    });
+    expect(evaluate(evidence)).toEqual(evaluate(evidence));
+  });
+
+  it('does not warn when ownership is true and directPurchases is empty', () => {
+    const result = evaluate(evidenceFor(productB, {
+      ownership: { previouslyPurchased: true, exactVariantPreviouslyPurchased: false },
+    }));
+    expect(result.ownership).toEqual({ previouslyPurchased: true, exactVariantPreviouslyPurchased: false });
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('does not warn when ownership is true and directPurchases is present (not contradictory)', () => {
+    const result = evaluate(evidenceFor(productB, {
+      ownership: { previouslyPurchased: true, exactVariantPreviouslyPurchased: false },
+      directPurchases: [{ count: 2, occurredAt: '2026-06-01T00:00:00.000Z' }],
+    }));
+    expect(result.ownership).toEqual({ previouslyPurchased: true, exactVariantPreviouslyPurchased: false });
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('derives ownership from directPurchases when ownership is absent (no contradiction possible)', () => {
+    const result = evaluate(evidenceFor(productB, {
+      directPurchases: [{ count: 2, occurredAt: '2026-06-01T00:00:00.000Z' }],
+    }));
+    expect(result.ownership).toMatchObject({ previouslyPurchased: true });
+    expect(result.warnings).toEqual([]);
+  });
+});
+
+describe('DefaultCustomerAffinityEvaluator signals', () => {
   it('generates category purchase signal', () => {
     expect(evaluate(evidenceFor(productB, { categoryPurchases: [{ count: 5 }] })).signals).toContainEqual({
       code: 'CATEGORY_PURCHASE',
@@ -172,14 +357,6 @@ describe('DefaultCustomerAffinityEvaluator signals', () => {
     expect(evaluate(evidenceFor(productB, { ownedCompatibleProducts: [{ ownedProduct: { productId: 'A' } }] })).signals[0]?.code).toBe('OWNED_COMPATIBLE_PRODUCT');
   });
 
-  it('generates repeat purchase pattern signal', () => {
-    expect(evaluate(evidenceFor(productB, { repeatPurchasePattern: { purchaseCount: 3, medianIntervalDays: 30 } })).signals[0]?.code).toBe('REPEAT_PURCHASE_PATTERN');
-  });
-
-  it('ignores insufficient repeat evidence', () => {
-    expect(evaluate(evidenceFor(productB, { repeatPurchasePattern: { purchaseCount: 1 } })).signals).toHaveLength(0);
-  });
-
   it('generates observed spend fit signal', () => {
     expect(evaluate(evidenceFor(productB, { candidatePrice: { currency: 'CLP', amount: 9000 } })).signals[0]?.code).toBe('OBSERVED_SPEND_FIT');
   });
@@ -217,15 +394,15 @@ describe('DefaultCustomerAffinityEvaluator signals', () => {
   });
 
   it('summarizes evidence counts', () => {
-    expect(evaluate(evidenceFor(productB, { directPurchases: [{ count: 2 }] })).evidence[0]).toMatchObject({
-      code: 'DIRECT_PRODUCT_PURCHASE',
+    expect(evaluate(evidenceFor(productB, { categoryPurchases: [{ count: 2 }] })).evidence[0]).toMatchObject({
+      code: 'CATEGORY_PURCHASE',
       count: 2,
     });
   });
 
   it('preserves most recent timestamp in summaries', () => {
     expect(evaluate(evidenceFor(productB, {
-      directPurchases: [
+      categoryPurchases: [
         { occurredAt: '2026-01-01T00:00:00.000Z' },
         { occurredAt: '2026-06-01T00:00:00.000Z' },
       ],
@@ -246,5 +423,75 @@ describe('DefaultCustomerAffinityEvaluator signals', () => {
       DEFAULT_CUSTOMER_AFFINITY_PARAMETERS,
     );
     expect(result.warnings[0]?.code).toBe('NO_CUSTOMER_HISTORY');
+  });
+});
+
+describe('DefaultCustomerAffinityEvaluator repeat purchase pattern', () => {
+  it('does not activate below purchaseCount 2', () => {
+    expect(evaluate(evidenceFor(productB, { repeatPurchasePattern: { purchaseCount: 1, lastPurchasedAt: '2026-06-01T00:00:00.000Z' } })).signals).toHaveLength(0);
+  });
+
+  it('does not activate without lastPurchasedAt even with referenceTime present', () => {
+    const result = evaluate(evidenceFor(productB, { repeatPurchasePattern: { purchaseCount: 3, medianIntervalDays: 30 } }));
+    expect(result.signals).toHaveLength(0);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('does not activate without context.referenceTime and warns', () => {
+    const result = new DefaultCustomerAffinityEvaluator().evaluate(
+      productB,
+      evidenceFor(productB, { repeatPurchasePattern: { purchaseCount: 3, lastPurchasedAt: '2026-06-01T00:00:00.000Z' } }),
+      undefined,
+      {},
+      DEFAULT_CUSTOMER_AFFINITY_PARAMETERS,
+    );
+    expect(result.signals).toHaveLength(0);
+    expect(result.warnings[0]).toMatchObject({ code: 'REFERENCE_TIME_UNAVAILABLE', details: { signal: 'REPEAT_PURCHASE_PATTERN' } });
+  });
+
+  it('activates within the configured window', () => {
+    const result = evaluate(evidenceFor(productB, { repeatPurchasePattern: { purchaseCount: 3, lastPurchasedAt: '2026-06-01T00:00:00.000Z' } }));
+    expect(result.signals[0]?.code).toBe('REPEAT_PURCHASE_PATTERN');
+  });
+
+  it('activates exactly at the window boundary (inclusive)', () => {
+    const result = new DefaultCustomerAffinityEvaluator().evaluate(
+      productB,
+      evidenceFor(productB, { repeatPurchasePattern: { purchaseCount: 2, lastPurchasedAt: '2025-07-22T12:00:00.000Z' } }),
+      undefined,
+      { referenceTime: '2026-07-22T12:00:00.000Z' },
+      DEFAULT_CUSTOMER_AFFINITY_PARAMETERS,
+    );
+    expect(result.signals[0]?.code).toBe('REPEAT_PURCHASE_PATTERN');
+  });
+
+  it('does not activate one second past the window boundary', () => {
+    const result = new DefaultCustomerAffinityEvaluator().evaluate(
+      productB,
+      evidenceFor(productB, { repeatPurchasePattern: { purchaseCount: 2, lastPurchasedAt: '2025-07-22T11:59:59.000Z' } }),
+      undefined,
+      { referenceTime: '2026-07-22T12:00:00.000Z' },
+      DEFAULT_CUSTOMER_AFFINITY_PARAMETERS,
+    );
+    expect(result.signals).toHaveLength(0);
+  });
+
+  it('does not activate for a lastPurchasedAt far outside the window', () => {
+    const result = evaluate(evidenceFor(productB, { repeatPurchasePattern: { purchaseCount: 3, lastPurchasedAt: '2023-01-01T00:00:00.000Z' } }));
+    expect(result.signals).toHaveLength(0);
+  });
+
+  it('does not activate for a lastPurchasedAt in the future relative to referenceTime', () => {
+    const result = evaluate(evidenceFor(productB, { repeatPurchasePattern: { purchaseCount: 3, lastPurchasedAt: '2026-08-01T00:00:00.000Z' } }));
+    expect(result.signals).toHaveLength(0);
+  });
+
+  it('is not influenced by ownership derived from legacy directPurchases', () => {
+    const withoutOwnership = evaluate(evidenceFor(productB, { repeatPurchasePattern: { purchaseCount: 3, lastPurchasedAt: '2026-06-01T00:00:00.000Z' } }));
+    const withOwnership = evaluate(evidenceFor(productB, {
+      repeatPurchasePattern: { purchaseCount: 3, lastPurchasedAt: '2026-06-01T00:00:00.000Z' },
+      directPurchases: [{ count: 5, occurredAt: '2026-06-01T00:00:00.000Z' }],
+    }));
+    expect(withOwnership.signals).toEqual(withoutOwnership.signals);
   });
 });

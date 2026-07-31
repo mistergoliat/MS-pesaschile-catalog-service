@@ -2,6 +2,7 @@ import { productRelationshipProductReferenceSchema } from '../relationship-engin
 import { cloneJsonValue, deepFreeze } from '../relationship-engine/publication/canonicalJson.js';
 import { createProductRuntimeIdentity } from '../relationship-engine/runtime/index.js';
 import {
+  CUSTOMER_AFFINITY_SCORING_VERSION,
   DEFAULT_CUSTOMER_AFFINITY_PARAMETERS,
   customerAffinityCustomerReferenceSchema,
   customerAffinityEvidenceResultSchema,
@@ -46,7 +47,7 @@ function neutralAffinity(product: CustomerProductAffinityRequest['products'][num
     product: cloneJsonValue(product),
     score: 0,
     confidence: 'none',
-    scoringVersion: 'customer-affinity-v1',
+    scoringVersion: CUSTOMER_AFFINITY_SCORING_VERSION,
     signals: deepFreeze([]),
     evidence: deepFreeze([]),
     warnings: warning ? deepFreeze([warning]) : deepFreeze([]),
@@ -181,6 +182,7 @@ export class DefaultCustomerProductAffinityProvider implements CustomerProductAf
         signals: deepFreeze(cloneJsonValue(evaluation.signals)),
         evidence: deepFreeze(cloneJsonValue(evaluation.evidence)),
         warnings: deepFreeze(cloneJsonValue(evaluation.warnings)),
+        ...(evaluation.ownership === undefined ? {} : { ownership: deepFreeze(cloneJsonValue(evaluation.ownership)) }),
       });
     }
 

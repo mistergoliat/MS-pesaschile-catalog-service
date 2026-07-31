@@ -12,7 +12,9 @@ import {
   type CustomerCommercialProfileEvidence,
   type CustomerProductEvidence,
   type MoneyEvidence,
+  type ProductOwnershipEvidence,
 } from './contracts.js';
+import type { ProductRelationshipProductReference } from '../relationship-engine/contracts.js';
 
 type CountedEvidence = {
   count?: number;
@@ -29,6 +31,14 @@ function mostRecent(values: readonly CountedEvidence[] | undefined): string | un
     .filter((value): value is string => value !== undefined)
     .sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))
     .at(-1);
+}
+
+function earliest(values: readonly CountedEvidence[] | undefined): string | undefined {
+  return (values ?? [])
+    .map((value) => value.occurredAt)
+    .filter((value): value is string => value !== undefined)
+    .sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))
+    .at(0);
 }
 
 function inWindow(occurredAt: string | undefined, referenceTime: string | undefined, days: number): boolean {
@@ -101,6 +111,28 @@ function spendFitStrength(price: MoneyEvidence, profile: CustomerCommercialProfi
   return { status: 'outside_observed_range' };
 }
 
+// Neutral fact only: must never feed `signals`/`evidence` (score, confidence). Provider-supplied `ownership`
+// always wins. Otherwise derived from legacy `directPurchases`, matched to this exact candidate by the
+// provider's batch lookup, so `exactVariantPreviouslyPurchased` is safe only when the candidate itself
+// carries a combinationId (a base-product candidate has no "variant" to be exact about).
+function deriveOwnership(
+  product: ProductRelationshipProductReference,
+  item: CustomerProductEvidence,
+): ProductOwnershipEvidence | undefined {
+  if (item.ownership) return item.ownership;
+  const directPurchaseCount = sumCounts(item.directPurchases);
+  if (directPurchaseCount === 0) return undefined;
+  const first = earliest(item.directPurchases);
+  const last = mostRecent(item.directPurchases);
+  return {
+    previouslyPurchased: true,
+    exactVariantPreviouslyPurchased: product.combinationId !== undefined,
+    totalOrderCount: directPurchaseCount,
+    ...(first === undefined ? {} : { firstPurchasedAt: first }),
+    ...(last === undefined ? {} : { lastPurchasedAt: last }),
+  };
+}
+
 export class DefaultCustomerAffinityEvaluator implements CustomerAffinityEvaluator {
   evaluate(
     product: CustomerAffinityEvaluation['product'],
@@ -140,10 +172,13 @@ export class DefaultCustomerAffinityEvaluator implements CustomerAffinityEvaluat
     }
 
     const item = parsed.data;
-    const directPurchaseCount = sumCounts(item.directPurchases);
-    if (directPurchaseCount > 0) {
-      addSignal(signals, signal('DIRECT_PRODUCT_PURCHASE', Math.min(1, directPurchaseCount / 3)));
-      summaries.push(summary('DIRECT_PRODUCT_PURCHASE', directPurchaseCount, mostRecent(item.directPurchases)));
+    // Legacy `directPurchases` is deprecated: it must not produce a DIRECT_PRODUCT_PURCHASE signal or
+    // evidence summary anymore (customer-affinity-v2). It is only consumed by deriveOwnership() below.
+    if (item.ownership?.previouslyPurchased === false && sumCounts(item.directPurchases) > 0) {
+      warnings.push(warning('INVALID_EVIDENCE_IGNORED', productIdentity, {
+        field: 'directPurchases',
+        reason: 'contradicts_explicit_ownership',
+      }));
     }
 
     const categoryPurchaseCount = sumCounts(item.categoryPurchases);
@@ -207,15 +242,20 @@ export class DefaultCustomerAffinityEvaluator implements CustomerAffinityEvaluat
     }
 
     if (item.repeatPurchasePattern && item.repeatPurchasePattern.purchaseCount >= 2) {
-      addSignal(signals, signal('REPEAT_PURCHASE_PATTERN', Math.min(1, item.repeatPurchasePattern.purchaseCount / 5)));
-      summaries.push(summary(
-        'REPEAT_PURCHASE_PATTERN',
-        item.repeatPurchasePattern.purchaseCount,
-        item.repeatPurchasePattern.lastPurchasedAt,
-        item.repeatPurchasePattern.medianIntervalDays === undefined
-          ? undefined
-          : { medianIntervalDays: item.repeatPurchasePattern.medianIntervalDays },
-      ));
+      if (!context?.referenceTime) {
+        warnings.push(warning('REFERENCE_TIME_UNAVAILABLE', productIdentity, { signal: 'REPEAT_PURCHASE_PATTERN' }));
+      } else if (inWindow(item.repeatPurchasePattern.lastPurchasedAt, context.referenceTime, parameters.repeatPurchaseWindowDays)) {
+        addSignal(signals, signal('REPEAT_PURCHASE_PATTERN', Math.min(1, item.repeatPurchasePattern.purchaseCount / 5)));
+        summaries.push(summary(
+          'REPEAT_PURCHASE_PATTERN',
+          item.repeatPurchasePattern.purchaseCount,
+          item.repeatPurchasePattern.lastPurchasedAt,
+          item.repeatPurchasePattern.medianIntervalDays === undefined
+            ? undefined
+            : { medianIntervalDays: item.repeatPurchasePattern.medianIntervalDays },
+        ));
+      }
+      // Missing lastPurchasedAt or out-of-window: stays neutral, no signal, no warning (same as interests above).
     }
 
     if (item.candidatePrice) {
@@ -234,6 +274,7 @@ export class DefaultCustomerAffinityEvaluator implements CustomerAffinityEvaluat
       }
     }
 
+    const ownership = deriveOwnership(product, item);
     return {
       product,
       productIdentity,
@@ -241,6 +282,7 @@ export class DefaultCustomerAffinityEvaluator implements CustomerAffinityEvaluat
       evidence: summaries,
       warnings,
       validEvidenceCount: summaries.reduce((count, current) => count + current.count, 0),
+      ...(ownership === undefined ? {} : { ownership }),
     };
   }
 }
