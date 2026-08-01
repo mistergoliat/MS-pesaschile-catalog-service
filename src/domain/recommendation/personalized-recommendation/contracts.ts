@@ -200,6 +200,11 @@ export const personalizedRecommendationWarningCodeSchema = z.enum([
   'CUSTOMER_NOT_IDENTIFIED',
   'NO_CUSTOMER_HISTORY',
   'PARTIAL_CUSTOMER_HISTORY',
+  // CP-R1-T10B4A: preserved 1:1 from T09's identically-named warning codes (see affinityWarningCode in
+  // defaultPersonalizedRecommendationService.ts), same as the two codes above — never collapsed into
+  // AFFINITY_WARNING_PROPAGATED.
+  'CUSTOMER_HISTORY_NOT_LINKED',
+  'CUSTOMER_REFERENCE_NOT_FOUND',
   'AFFINITY_MISSING_FOR_PRODUCT',
   'AFFINITY_FOR_UNKNOWN_PRODUCT_IGNORED',
   'CUSTOMER_MISMATCH',

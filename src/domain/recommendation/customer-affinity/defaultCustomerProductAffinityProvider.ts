@@ -2,6 +2,7 @@ import { productRelationshipProductReferenceSchema } from '../relationship-engin
 import { cloneJsonValue, deepFreeze } from '../relationship-engine/publication/canonicalJson.js';
 import { createProductRuntimeIdentity } from '../relationship-engine/runtime/index.js';
 import {
+  CUSTOMER_AFFINITY_RESERVED_PROVIDER_WARNING_CODES,
   CUSTOMER_AFFINITY_SCORING_VERSION,
   DEFAULT_CUSTOMER_AFFINITY_PARAMETERS,
   customerAffinityCustomerReferenceSchema,
@@ -59,6 +60,32 @@ function warning(code: CustomerAffinityWarning['code'], productIdentity?: string
     code,
     ...(productIdentity === undefined ? {} : { productIdentity }),
   };
+}
+
+const RESERVED_PROVIDER_WARNING_CODE_MAP: Readonly<Record<string, CustomerAffinityWarning['code']>> = {
+  [CUSTOMER_AFFINITY_RESERVED_PROVIDER_WARNING_CODES.CUSTOMER_HISTORY_NOT_LINKED]: 'CUSTOMER_HISTORY_NOT_LINKED',
+  [CUSTOMER_AFFINITY_RESERVED_PROVIDER_WARNING_CODES.CUSTOMER_REFERENCE_NOT_FOUND]: 'CUSTOMER_REFERENCE_NOT_FOUND',
+};
+
+// Exact-string whitelist after shared trim normalization (CP-R1-T10B4A): `code` already went through
+// `customerAffinityProviderWarningSchema`'s `nonEmptyStringSchema` (trims peripheral whitespace, like every
+// other free-form string in this contract) before this function ever sees it, so only that whitespace is
+// forgiving. An unrecognized provider code — including one that happens to spell a T09-internal output code
+// such as 'NO_CUSTOMER_HISTORY', in upper case, or with internal spaces instead of underscores — is never
+// treated as reserved. It always falls through to the generic AFFINITY_PROVIDER_WARNING in the caller. This is
+// what stops a provider from injecting an arbitrary T09 output code by picking a matching string.
+function reservedProviderWarningCode(code: string): CustomerAffinityWarning['code'] | undefined {
+  return RESERVED_PROVIDER_WARNING_CODE_MAP[code];
+}
+
+function findReservedProviderWarningCode(
+  warnings: CustomerAffinityEvidenceResult['warnings'],
+): CustomerAffinityWarning['code'] | undefined {
+  for (const item of warnings ?? []) {
+    const mapped = reservedProviderWarningCode(item.code);
+    if (mapped) return mapped;
+  }
+  return undefined;
 }
 
 function createStatistics(input: {
@@ -157,9 +184,19 @@ export class DefaultCustomerProductAffinityProvider implements CustomerProductAf
       evidenceByProduct.set(createProductRuntimeIdentity(productEvidence.product), productEvidence);
     }
 
+    // CP-R1-T10B4A: a reserved functional warning (CUSTOMER_HISTORY_NOT_LINKED / CUSTOMER_REFERENCE_NOT_FOUND)
+    // means the provider could not consult history at all — it is not "history queried and empty". Every
+    // candidate stays neutral with no per-product warning (the evaluator, which would otherwise stamp
+    // NO_CUSTOMER_HISTORY per product for undefined evidence, is deliberately never invoked in this branch).
+    const reservedWarningCode = findReservedProviderWarningCode(validatedEvidence.warnings);
+
     const affinities: CustomerProductAffinity[] = [];
     const productsWithEvidence = evidenceByProduct.size;
     for (const product of deduplicated.products) {
+      if (reservedWarningCode) {
+        affinities.push(neutralAffinity(product));
+        continue;
+      }
       const productIdentity = createProductRuntimeIdentity(product);
       const productEvidence = evidenceByProduct.get(productIdentity);
       if (!productEvidence && productsWithEvidence > 0) {
@@ -186,13 +223,21 @@ export class DefaultCustomerProductAffinityProvider implements CustomerProductAf
       });
     }
 
-    const globalWarnings: CustomerAffinityWarning[] = [
-      ...(validatedEvidence.warnings ?? []).map(() => warning('AFFINITY_PROVIDER_WARNING')),
-    ];
-    if (productsWithEvidence === 0) {
-      globalWarnings.push(warning('NO_CUSTOMER_HISTORY'));
-    } else if (productsWithEvidence < deduplicated.products.length) {
-      globalWarnings.push(warning('PARTIAL_CUSTOMER_HISTORY'));
+    // Reserved functional states replace NO_CUSTOMER_HISTORY/PARTIAL_CUSTOMER_HISTORY entirely: the result must
+    // never assert "history not linked/not found" and "history queried and empty/partial" at the same time.
+    // Unreserved provider warnings still map 1:1 to AFFINITY_PROVIDER_WARNING, unchanged from before this task.
+    const globalWarnings: CustomerAffinityWarning[] = reservedWarningCode ? [warning(reservedWarningCode)] : [];
+    globalWarnings.push(
+      ...(validatedEvidence.warnings ?? [])
+        .filter((item) => reservedProviderWarningCode(item.code) === undefined)
+        .map(() => warning('AFFINITY_PROVIDER_WARNING')),
+    );
+    if (!reservedWarningCode) {
+      if (productsWithEvidence === 0) {
+        globalWarnings.push(warning('NO_CUSTOMER_HISTORY'));
+      } else if (productsWithEvidence < deduplicated.products.length) {
+        globalWarnings.push(warning('PARTIAL_CUSTOMER_HISTORY'));
+      }
     }
 
     return this.buildResult({
@@ -226,6 +271,28 @@ export class DefaultCustomerProductAffinityProvider implements CustomerProductAf
     }
     if (returned.some((identity) => !requested.has(identity))) {
       throw new CustomerAffinityError('INVALID_PROVIDER_RESPONSE', 'Customer affinity provider returned evidence for a product outside the batch');
+    }
+
+    // CP-R1-T10B4A: CUSTOMER_HISTORY_NOT_LINKED and CUSTOMER_REFERENCE_NOT_FOUND are mutually exclusive facts
+    // about the same customer (existing-but-unlinked vs. not existing at all) — a provider declaring both is
+    // rejected rather than silently resolved by precedence. Reserved codes also assert "history could not be
+    // consulted", which contradicts a response that also carries actual product evidence.
+    const reservedCodesPresent = new Set(
+      (parsed.data.warnings ?? [])
+        .map((item) => reservedProviderWarningCode(item.code))
+        .filter((code): code is CustomerAffinityWarning['code'] => code !== undefined),
+    );
+    if (reservedCodesPresent.size > 1) {
+      throw new CustomerAffinityError(
+        'INVALID_PROVIDER_RESPONSE',
+        'Customer affinity provider returned mutually exclusive customer history availability warnings',
+      );
+    }
+    if (reservedCodesPresent.size === 1 && parsed.data.productEvidence.length > 0) {
+      throw new CustomerAffinityError(
+        'INVALID_PROVIDER_RESPONSE',
+        'Customer affinity provider returned product evidence alongside a customer history availability warning',
+      );
     }
 
     return cloneJsonValue(parsed.data);

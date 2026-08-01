@@ -1,4 +1,4 @@
-import { cloneJsonValue, deepFreeze } from '../../../domain/recommendation/relationship-engine/publication/canonicalJson.js';
+import { canonicalizeJson, cloneJsonValue, deepFreeze } from '../../../domain/recommendation/relationship-engine/publication/canonicalJson.js';
 import { createProductRuntimeIdentity } from '../../../domain/recommendation/relationship-engine/runtime/index.js';
 import {
   DEFAULT_PRODUCT_RECOMMENDATION_SERVICE_PARAMETERS,
@@ -92,11 +92,26 @@ function warning(
 
 const sourceOrder: WarningSource[] = ['t11', 'commercial', 'affinity', 'personalization'];
 
+// CP-R1-T10B4A (closure round): public warnings represent facts — "this global/product-scoped condition is
+// true" — not pipeline events. `source` (t11/commercial/affinity/personalization) is purely an internal
+// construction detail: `SearchProductsV2Warning` never exposes it, so two entries that differ only by source
+// are indistinguishable to a consumer and must collapse into one. The same fact can legitimately reach this
+// array twice — once read directly off T09's result, once relayed through T10's own warnings — for any code
+// recognized on both legs (see mapAffinityWarningCode/mapPersonalizationWarningCode); `source` must never be
+// part of the key, or those two identical-looking entries both survive.
+//
+// `details` **is** part of the key: it is the one field capable of making two same-code, same-scope warnings
+// genuinely different facts (e.g. two distinct counts). No current call site ever emits the same code at the
+// same scope with different `details` — every `details`-bearing code here (`CATALOG_PRODUCT_MISSING` and its
+// siblings in globalCatalogWarnings) is emitted at most once per response — but the key does not rely on that
+// invariant holding forever: it compares a canonical (key-sorted) serialization of `details`, so a future
+// difference is preserved rather than silently collapsed. Absence of `details` is its own distinct bucket, not
+// conflated with an empty object.
 function warningKey(item: WarningWithSource): string {
   return [
-    item.source,
     item.code,
     item.product === undefined ? '<global>' : createProductRuntimeIdentity(item.product),
+    item.details === undefined ? '<no-details>' : canonicalizeJson(item.details),
   ].join('|');
 }
 
@@ -232,6 +247,9 @@ function mapAffinityWarningCode(code: string): SearchProductsV2Warning['code'] {
   if (code === 'CUSTOMER_NOT_IDENTIFIED') return 'CUSTOMER_NOT_IDENTIFIED';
   if (code === 'NO_CUSTOMER_HISTORY') return 'NO_CUSTOMER_HISTORY';
   if (code === 'PARTIAL_CUSTOMER_HISTORY') return 'PARTIAL_CUSTOMER_HISTORY';
+  // CP-R1-T10B4A: preserved 1:1, never collapsed into UPSTREAM_AFFINITY_WARNING.
+  if (code === 'CUSTOMER_HISTORY_NOT_LINKED') return 'CUSTOMER_HISTORY_NOT_LINKED';
+  if (code === 'CUSTOMER_REFERENCE_NOT_FOUND') return 'CUSTOMER_REFERENCE_NOT_FOUND';
   return 'UPSTREAM_AFFINITY_WARNING';
 }
 
@@ -240,6 +258,11 @@ function mapPersonalizationWarningCode(code: PersonalizedRecommendationWarning['
   if (code === 'NO_CUSTOMER_HISTORY') return 'NO_CUSTOMER_HISTORY';
   if (code === 'PARTIAL_CUSTOMER_HISTORY') return 'PARTIAL_CUSTOMER_HISTORY';
   if (code === 'CUSTOMER_AFFINITY_UNAVAILABLE') return 'CUSTOMER_AFFINITY_UNAVAILABLE';
+  // CP-R1-T10B4A: preserved 1:1 — otherwise T10's now-correct CUSTOMER_HISTORY_NOT_LINKED/
+  // CUSTOMER_REFERENCE_NOT_FOUND warning (see affinityWarningCode) would be re-collapsed into
+  // UPSTREAM_PERSONALIZATION_WARNING right here, undoing the fix.
+  if (code === 'CUSTOMER_HISTORY_NOT_LINKED') return 'CUSTOMER_HISTORY_NOT_LINKED';
+  if (code === 'CUSTOMER_REFERENCE_NOT_FOUND') return 'CUSTOMER_REFERENCE_NOT_FOUND';
   if (code === 'AFFINITY_MISSING_FOR_PRODUCT') return 'AFFINITY_MISSING_FOR_PRODUCT';
   if (code === 'PERSONALIZATION_CONTEXT_PARTIALLY_APPLIED') return 'PERSONALIZATION_CONTEXT_PARTIALLY_APPLIED';
   return 'UPSTREAM_PERSONALIZATION_WARNING';
@@ -275,18 +298,26 @@ function collectWarnings(input: {
           mapAffinityWarningCode(item.code),
           'affinity',
         )),
+        // CP-R1-T10B4A (closure round): tagged with the owning candidate's product — previously these were
+        // built without a product, so a per-product T09 warning (e.g. PARTIAL_CUSTOMER_HISTORY on one specific
+        // candidate) looked identical to a true global warning of the same code, and two different products
+        // sharing a code collapsed into one anonymous entry instead of staying distinct.
         ...input.affinity.affinities.flatMap((affinity) => affinity.warnings.map((item) => warning(
           mapAffinityWarningCode(item.code),
           'affinity',
+          affinity.product,
         ))),
       ];
   const personalizationWarnings = input.personalization === undefined
     ? []
     : [
         ...input.personalization.warnings.map((item) => warning(mapPersonalizationWarningCode(item.code), 'personalization')),
+        // CP-R1-T10B4A (closure round): same product-tagging fix as the affinity leg above, for T10's own
+        // per-recommendation warnings.
         ...input.personalization.recommendations.flatMap((recommendation) => recommendation.warnings.map((item) => warning(
           mapPersonalizationWarningCode(item.code),
           'personalization',
+          recommendation.product,
         ))),
       ];
   return deduplicateWarnings([
@@ -376,6 +407,25 @@ function personalizationMetadata(input: {
     return {
       applied: false,
       reason: 'customer_affinity_unavailable' as const,
+      customerId: input.request.customer.customerId,
+    };
+  }
+  // CP-R1-T10B4A: these two functional states mean personalization never had real customer signal to work
+  // with, exactly like 'no_customer_history' below — 'applied: true' would be contractually false here (see
+  // docs/releases/CP-R1-T10B4A-history-availability-semantics.md, "Personalization metadata"). Checked before
+  // 'no_customer_history' because a provider response is validated (T09) to carry at most one of the three;
+  // the order only matters defensively.
+  if (input.warnings.some((item) => item.code === 'CUSTOMER_REFERENCE_NOT_FOUND')) {
+    return {
+      applied: false,
+      reason: 'customer_reference_not_found' as const,
+      customerId: input.request.customer.customerId,
+    };
+  }
+  if (input.warnings.some((item) => item.code === 'CUSTOMER_HISTORY_NOT_LINKED')) {
+    return {
+      applied: false,
+      reason: 'customer_history_not_linked' as const,
       customerId: input.request.customer.customerId,
     };
   }
@@ -809,4 +859,9 @@ export const searchProductsV2Internals = {
   createNeutralCustomerAffinityResult,
   mapCommercialRequest,
   mapPersonalizationContext,
+  // CP-R1-T10B4A (closure round): exposed so the code+product+details deduplication policy can be tested
+  // directly — no public request/response shape can otherwise construct two warnings sharing a code and scope
+  // with genuinely different `details`, since every details-bearing code in this service is emitted at most
+  // once per response.
+  deduplicateWarnings,
 } as const;

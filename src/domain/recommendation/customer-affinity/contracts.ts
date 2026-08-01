@@ -60,6 +60,12 @@ export const customerAffinityWarningCodeSchema = z.enum([
   'CURRENCY_MISMATCH',
   'SPEND_PROFILE_UNAVAILABLE',
   'AFFINITY_PROVIDER_WARNING',
+  // CP-R1-T10B4A: functional customer-history-availability states. Global only, never attached to a
+  // productIdentity, and mutually exclusive with NO_CUSTOMER_HISTORY/PARTIAL_CUSTOMER_HISTORY and with each
+  // other — see CUSTOMER_AFFINITY_RESERVED_PROVIDER_WARNING_CODES for the provider-facing vocabulary that maps
+  // to these two codes.
+  'CUSTOMER_HISTORY_NOT_LINKED',
+  'CUSTOMER_REFERENCE_NOT_FOUND',
 ]);
 
 export const customerAffinityCustomerReferenceSchema = z
@@ -232,6 +238,21 @@ export const customerAffinityProviderWarningSchema = z
     details: z.record(jsonValueSchema).optional(),
   })
   .strict();
+
+// CP-R1-T10B4A: the only two `code` strings on a provider warning that T09 recognizes as a functional
+// customer-history-availability state instead of an opaque provider warning. Exact-string whitelist after
+// shared trim normalization (see reservedProviderWarningCode in defaultCustomerProductAffinityProvider.ts):
+// `customerAffinityProviderWarningSchema.code` is `nonEmptyStringSchema`, which already trims every free-form
+// string in this contract, so peripheral whitespace ('  customer_history_not_linked  ') is normalized away
+// before the comparison — the same way it already is for every other string field here — but the match is
+// still case-sensitive and does not tolerate internal whitespace, so a provider cannot inject a T09-internal
+// output code (e.g. spelling 'NO_CUSTOMER_HISTORY', or this schema's own codes in upper case, as its own
+// warning code); anything that isn't one of these two exact values, once trimmed, falls through to the generic
+// AFFINITY_PROVIDER_WARNING.
+export const CUSTOMER_AFFINITY_RESERVED_PROVIDER_WARNING_CODES = Object.freeze({
+  CUSTOMER_HISTORY_NOT_LINKED: 'customer_history_not_linked',
+  CUSTOMER_REFERENCE_NOT_FOUND: 'customer_reference_not_found',
+} as const);
 
 export const customerAffinityEvidenceResultSchema = z
   .object({

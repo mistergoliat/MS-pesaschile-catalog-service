@@ -138,6 +138,15 @@ the fact from the `degraded: boolean` flag alone:
 
 Both reasons degrade identically otherwise: commercial ranking preserved, neutral affinity, `200 OK`.
 
+**Not degradation (CP-R1-T10B4A):** `CUSTOMER_HISTORY_NOT_LINKED` and `CUSTOMER_REFERENCE_NOT_FOUND` are global
+warnings T09 can return from a `getAffinities()` call that completed normally — the evidence provider was
+consulted and answered, it just could not resolve history for a structural reason (no PrestaShop link, or the
+customer reference does not exist). These never set `execution.degraded = true`, never move
+`customerAffinity` to `degraded`, and never produce `CUSTOMER_AFFINITY_UNAVAILABLE`. See "Warnings" below and
+`docs/recommendation/customer-product-affinity-provider.md` ("Customer History Availability") for the full
+semantics. Do not confuse a functional "could not resolve" answer with a technical failure to even get an
+answer — only the latter degrades.
+
 Does not degrade (fails hard, `INVALID_AFFINITY_RESULT`):
 
 - `INVALID_CUSTOMER_REFERENCE`, `INVALID_PRODUCT_REFERENCE`, `INVALID_PARAMETERS`, `INVALID_REQUEST` from T09 —
@@ -328,6 +337,8 @@ Supported public warning codes:
 - `CUSTOMER_NOT_IDENTIFIED`
 - `NO_CUSTOMER_HISTORY`
 - `PARTIAL_CUSTOMER_HISTORY`
+- `CUSTOMER_HISTORY_NOT_LINKED` (CP-R1-T10B4A)
+- `CUSTOMER_REFERENCE_NOT_FOUND` (CP-R1-T10B4A)
 - `CUSTOMER_AFFINITY_UNAVAILABLE`
 - `AFFINITY_MISSING_FOR_PRODUCT`
 - `PERSONALIZATION_CONTEXT_PARTIALLY_APPLIED`
@@ -340,14 +351,55 @@ Supported public warning codes:
 - `UPSTREAM_AFFINITY_WARNING`
 - `UPSTREAM_PERSONALIZATION_WARNING`
 
-Global warnings are deduplicated by `(code, product identity or "global")`. CP-R1-T10B3C attaches the specific
-product to `UPSTREAM_COMMERCIAL_WARNING` entries derived from T08 (e.g. `ALREADY_PURCHASED`, `LOW_STOCK`)
-instead of collapsing every product's warning into one anonymous global entry — two different products with the
-same warning code now produce two distinct global entries. The same warning is also mirrored into that specific
-recommendation's own `warnings[]` (see "Response"), matching the schema's pre-existing invariant that
+`CUSTOMER_HISTORY_NOT_LINKED` and `CUSTOMER_REFERENCE_NOT_FOUND` are mapped 1:1 from T09's identically-named
+codes by `mapAffinityWarningCode` — unlike most T09 warning codes, they are never collapsed into
+`UPSTREAM_AFFINITY_WARNING`. Both are global only (T09 never associates them with a specific product), and
+`recommendation.ownership` is absent on every recommendation when either appears, exactly like confirmed empty
+history. `personalized-recommendation`'s own `affinityWarningCode()` (the parallel mapping T10 applies to the
+same T09 warnings before re-surfacing them in its own result) preserves both codes 1:1 as well, so neither is
+re-collapsed into `AFFINITY_WARNING_PROPAGATED`/`UPSTREAM_PERSONALIZATION_WARNING` on the T10→T11 leg — see
+"Personalization Metadata" below and `docs/releases/CP-R1-T10B4A-history-availability-semantics.md`.
+
+Warnings are deduplicated by `(code, product identity or "global", canonical details)` — never by which
+pipeline stage produced them. `SearchProductsV2Warning` has no `source`/`stage` field; internally, the same fact
+can reach this array twice (read directly off T09's result, and relayed through T10's own warnings — see
+"Personalization Metadata" above), and those two entries are deduplicated into one because they are otherwise
+identical. `details` (present today only on `CATALOG_PRODUCT_MISSING`/`CATALOG_PRODUCT_INACTIVE`/
+`CATALOG_PRICE_UNAVAILABLE`/`CATALOG_STOCK_UNKNOWN`) participates in the key via a canonical, key-sorted
+serialization: two warnings with the same code and scope but genuinely different `details` are **not**
+collapsed — they are different facts. Product-scoped warnings from every origin (T08 commercial, T09 affinity,
+T10 personalization) carry their own candidate's product identity, so two different products sharing a warning
+code produce two distinct entries, and a truly global warning of the same code (e.g. "some products lack
+history") stays a separate entry from a specific product's own instance of that code (e.g. "this product lacks
+history") rather than being conflated with it. CP-R1-T10B3C attaches the specific product to
+`UPSTREAM_COMMERCIAL_WARNING` entries derived from T08 (e.g. `ALREADY_PURCHASED`, `LOW_STOCK`) instead of
+collapsing every product's warning into one anonymous global entry. The same warning is also mirrored into that
+specific recommendation's own `warnings[]` (see "Response"), matching the schema's pre-existing invariant that
 `statistics.warningsGenerated` counts global warnings plus recommendation warnings, not just global ones. A
 commercial warning (including `ALREADY_PURCHASED`) never excludes a product and never becomes a boost — it is
 informational only.
+
+## Personalization Metadata
+
+`personalization: { applied: boolean; reason?: string; customerId?: string }` reports whether real customer
+signal was actually used to rank this response, and, when it was not, why. `applied: true` is a claim that
+`customerAffinities` reached T10 with real, usable, non-neutral data — it must never be `true` merely because a
+`customer` was supplied and no request-level error occurred. `personalizationMetadata()`
+(`defaultSearchProductsV2Service.ts`) resolves `reason` with fixed precedence, most specific first:
+
+```text
+1. no customer at all                          -> reason: 'customer_not_provided'
+2. customer affinity technically degraded      -> reason: 'customer_affinity_unavailable'
+3. CUSTOMER_REFERENCE_NOT_FOUND (CP-R1-T10B4A)  -> reason: 'customer_reference_not_found'
+4. CUSTOMER_HISTORY_NOT_LINKED (CP-R1-T10B4A)   -> reason: 'customer_history_not_linked'
+5. NO_CUSTOMER_HISTORY                          -> reason: 'no_customer_history'
+6. otherwise                                    -> applied: true, no reason
+```
+
+T09's provider-response validation already rejects a response declaring more than one of
+`CUSTOMER_REFERENCE_NOT_FOUND`/`CUSTOMER_HISTORY_NOT_LINKED` at once (see
+`docs/recommendation/customer-product-affinity-provider.md`, "Provider Warning Mapping"), so steps 3 and 4 are
+mutually exclusive by construction — the order between them is a defensive fallback, not a real decision point.
 
 Absence of `customerId` is represented as:
 
@@ -361,6 +413,23 @@ Absence of `customerId` is represented as:
 ```
 
 It must not create one `CUSTOMER_NOT_IDENTIFIED` warning per recommendation.
+
+`CUSTOMER_HISTORY_NOT_LINKED` and `CUSTOMER_REFERENCE_NOT_FOUND` (CP-R1-T10B4A) follow the same shape as
+`NO_CUSTOMER_HISTORY`:
+
+```json
+{
+  "personalization": {
+    "applied": false,
+    "reason": "customer_history_not_linked",
+    "customerId": "..."
+  }
+}
+```
+
+Neither is degradation: `execution.degraded` stays `false`, `customerAffinity` stage stays `completed`,
+`degradationReasons` stays `[]`, and no `CUSTOMER_AFFINITY_UNAVAILABLE` warning appears — only the
+`personalization` metadata and the matching global warning change, never the execution/degradation fields.
 
 ## Statistics
 
@@ -448,6 +517,27 @@ implement:
 - durable-versus-consumable classification;
 - cart, quote, checkout, or order mutation.
 
+## Explicitly Out Of Scope (CP-R1-T10B4A)
+
+This task propagates two new global warning codes, corrects `personalization` metadata for them, and closes the
+same-code public-warning duplication that affected them and every other code shared between T09 and T10 (three
+closure rounds, see `docs/releases/CP-R1-T10B4A-history-availability-semantics.md`). It deliberately does not
+implement:
+
+- a Customer Profile HTTP evidence adapter, `fetch`, pagination, base URL, HTTP timeout, or
+  `CUSTOMER_AFFINITY_PROVIDER_MODE=http` (see "Next Task");
+- any change to T10/T11 scoring, ranking, `ownership`, `customer-affinity-v2`, or the
+  `personalized-recommendation` scoring version;
+- any change to the endpoint path, HTTP method, or response envelope;
+- deduplicating the two genuinely *different* fallback codes (`UPSTREAM_AFFINITY_WARNING` from T09 direct,
+  `UPSTREAM_PERSONALIZATION_WARNING` from the T10 relay) that a T09 warning code unrecognized by T10's own
+  `affinityWarningCode()` still produces (e.g. `AFFINITY_PROVIDER_WARNING`, `REFERENCE_TIME_UNAVAILABLE`,
+  `INVALID_EVIDENCE_IGNORED`, `CURRENCY_MISMATCH`, `SPEND_PROFILE_UNAVAILABLE`) — these are legitimately
+  distinct public codes, not a same-code duplicate, and merging different codes into one would hide which
+  fallback path produced the warning; extending T10's `affinityWarningCode()` to recognize every T09 code
+  symmetrically is a separate, larger change than this closure round.
+
 ## Next Task
 
-CP-R1-T10B4 — Customer Profile Evidence Adapter.
+CP-R1-T10B4B — Customer Profile HTTP Evidence Adapter: the real `CustomerAffinityEvidenceProvider` implementation
+that talks to Customer Profile and emits the warnings this task and CP-R1-T10B4A now recognize end-to-end.

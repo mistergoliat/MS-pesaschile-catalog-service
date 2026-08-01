@@ -346,6 +346,8 @@ Warnings are structured and may be global or per-product:
 - `CURRENCY_MISMATCH`
 - `SPEND_PROFILE_UNAVAILABLE`
 - `AFFINITY_PROVIDER_WARNING`
+- `CUSTOMER_HISTORY_NOT_LINKED` (CP-R1-T10B4A, global only — see "Customer History Availability")
+- `CUSTOMER_REFERENCE_NOT_FOUND` (CP-R1-T10B4A, global only — see "Customer History Availability")
 
 Warnings are not commercial text and must not contain raw operational payloads, stack traces, secrets, or unnecessary PII.
 
@@ -357,9 +359,127 @@ This lets T10 degrade to general commercial recommendations.
 
 ## Missing History
 
-When a customer exists but no product evidence exists, T09 returns neutral affinities, per-product `NO_CUSTOMER_HISTORY` warnings, and a global `NO_CUSTOMER_HISTORY` warning. This is not an error and does not exclude candidates.
+When a customer exists, the evidence provider was actually consulted, and it confirmed there is no product
+evidence, T09 returns neutral affinities, per-product `NO_CUSTOMER_HISTORY` warnings, and a global
+`NO_CUSTOMER_HISTORY` warning. This is not an error and does not exclude candidates.
+
+`NO_CUSTOMER_HISTORY` means exactly that and nothing more: a lookup completed and confirmed zero purchases. It
+does **not** mean the customer's identity could not be resolved, or that the customer has no PrestaShop link —
+see "Customer History Availability" below for those two distinct states, added in CP-R1-T10B4A.
 
 When evidence exists for only part of the batch, available products are evaluated and missing products degrade neutrally with `PARTIAL_CUSTOMER_HISTORY`.
+
+## Customer History Availability (CP-R1-T10B4A)
+
+An audit ahead of the future Customer Profile HTTP adapter (T10B4) found that T09 had no way to represent two
+functional facts a real evidence source can return, distinct from "queried and empty":
+
+- the master customer exists but has no usable PrestaShop link — history could not be consulted at all;
+- the customer reference itself does not exist — an identity T09 cannot vouch for.
+
+Before this task, both would have had to be squeezed into `NO_CUSTOMER_HISTORY` (losing the distinction) or into
+`AFFINITY_PROVIDER_WARNING` (losing the code entirely — see "Provider Warning Mapping" below). Neither is
+correct: "history not linked" and "customer not found" are not "zero purchases confirmed."
+
+### Confirmed Empty History
+
+Unchanged. Provider responds:
+
+```json
+{ "customer": { "customerId": "..." }, "productEvidence": [], "warnings": [] }
+```
+
+Result: `NO_CUSTOMER_HISTORY` (global and per-product), `customerAffinity` stage `completed`,
+`execution.degraded = false`, `ownership` absent, `score: 0`, `confidence: 'none'`.
+
+### Customer History Not Linked
+
+Provider declares the reserved warning code `customer_history_not_linked` (see "Provider Warning Mapping"):
+
+```json
+{ "customer": { "customerId": "..." }, "productEvidence": [], "warnings": [{ "code": "customer_history_not_linked" }] }
+```
+
+T09 maps this to a single **global** `CUSTOMER_HISTORY_NOT_LINKED` warning. Semantics:
+
+- the master customer exists;
+- there is no usable link to PrestaShop (or equivalent commerce system) to consult;
+- history was never actually queried — this is not "zero purchases";
+- not a technical failure — do not confuse with `EVIDENCE_PROVIDER_FAILED`/`CUSTOMER_AFFINITY_UNAVAILABLE`;
+- not retryable by default (retrying does not create a link);
+- creates no `ownership` (never a synthesized `previouslyPurchased: false`);
+- does not affect `score`, `confidence`, `signals`, `evidence`, or ranking.
+
+### Customer Reference Not Found
+
+Provider declares the reserved warning code `customer_reference_not_found`:
+
+```json
+{ "customer": { "customerId": "..." }, "productEvidence": [], "warnings": [{ "code": "customer_reference_not_found" }] }
+```
+
+T09 maps this to a single **global** `CUSTOMER_REFERENCE_NOT_FOUND` warning. Semantics:
+
+- the master customer identifier does not exist as far as the evidence source can tell;
+- represents an unresolved/inconsistent identity, not zero purchases;
+- not a technical failure, not retryable by default;
+- creates no `ownership`, does not affect `score`, `confidence`, `signals`, `evidence`, or ranking.
+
+### Functional State Versus Technical Degradation
+
+`CUSTOMER_HISTORY_NOT_LINKED` and `CUSTOMER_REFERENCE_NOT_FOUND` are **not** degradation. Both are returned by a
+`getEvidence()` call that completed normally (no thrown error): `customerAffinity` stage stays `completed`,
+`execution.degraded` stays `false`, and `CUSTOMER_AFFINITY_UNAVAILABLE` never appears alongside them. A real
+provider failure — timeout, connection error, malformed response — still goes through "Degradation" below,
+unchanged: `EVIDENCE_PROVIDER_FAILED` / `INVALID_PROVIDER_RESPONSE`, `execution.degraded = true`, stage
+`degraded`, warning `CUSTOMER_AFFINITY_UNAVAILABLE`. The two families must never be mixed: a provider that cannot
+reach its backing store throws; a provider that successfully learns "not linked" or "not found" returns a
+normal result carrying one of these two warnings.
+
+### Provider Warning Mapping
+
+`CUSTOMER_AFFINITY_RESERVED_PROVIDER_WARNING_CODES` (`contracts.ts`) is the exact-string whitelist a provider
+warning's `code` is checked against:
+
+```text
+'customer_history_not_linked'   -> CUSTOMER_HISTORY_NOT_LINKED   (global)
+'customer_reference_not_found'  -> CUSTOMER_REFERENCE_NOT_FOUND  (global)
+anything else                   -> AFFINITY_PROVIDER_WARNING     (global, one entry per unrecognized warning, unchanged)
+```
+
+The match is exact-string, not a passthrough: a provider cannot inject an arbitrary T09-internal code by
+spelling it (e.g. a provider warning literally coded `'NO_CUSTOMER_HISTORY'` still maps to
+`AFFINITY_PROVIDER_WARNING`, never to a real T09 output code). `customerAffinityProviderWarningSchema.code`
+remains an open, free-form string — the whitelist lives only in the mapping function, so unknown provider
+warnings keep working exactly as before this task (see "Provider Warning Mapping" is additive, not a schema
+restriction).
+
+A duplicate reserved code (the same warning sent more than once) collapses into a single global entry — it does
+not multiply `warningsGenerated`.
+
+**Mutually exclusive, rejected rather than resolved by precedence.** `CUSTOMER_HISTORY_NOT_LINKED` and
+`CUSTOMER_REFERENCE_NOT_FOUND` describe contradictory facts about the same customer (existing-but-unlinked vs.
+not existing). A provider response declaring both is rejected as `INVALID_PROVIDER_RESPONSE` rather than
+silently picking one — there is no documented precedence to fall back on, because there is no valid scenario
+where both are simultaneously true. For the same reason, a reserved code alongside non-empty `productEvidence`
+is also rejected as `INVALID_PROVIDER_RESPONSE`: a provider cannot assert "history could not be consulted" and
+supply actual product evidence in the same response.
+
+### Neutrality
+
+For both new codes, every candidate in the batch receives the exact same neutral shape produced by "Missing
+Customer" (`neutralAffinity`, no per-product warning): `score: 0`, `confidence: 'none'`, `signals: []`,
+`evidence: []`, no `ownership`. The evaluator is never invoked for these two states — not even the evaluator's
+own `NO_CUSTOMER_HISTORY`-for-undefined-evidence path — so no per-product warning of any kind is added. Neither
+code is associated with a specific product; both are global-only.
+
+### Statistics
+
+`productsWithEvidence` is `0` and `productsWithoutEvidence` equals the deduplicated batch size, same as confirmed
+empty history (the reserved-response guard above guarantees `productEvidence` is empty whenever a reserved code
+is present). `warningsGenerated` counts exactly one global warning per reserved-state response (plus any
+unrelated unrecognized provider warnings, mapped to `AFFINITY_PROVIDER_WARNING` as usual) — zero per-product
+warnings, since no candidate receives one.
 
 ## Degradation
 
@@ -425,9 +545,23 @@ This task fixes T09's ownership scoring semantics only. It deliberately does not
 - technical compatibility validation for `OWNED_COMPATIBLE_PRODUCT` (still fully trusts the evidence provider);
 - any new ranking engine.
 
+## Explicitly Out Of Scope (CP-R1-T10B4A)
+
+This task closes the customer-history-availability warning vocabulary only. It deliberately does not implement:
+
+- a Customer Profile HTTP evidence adapter, `fetch`, pagination, base URL, HTTP timeout, or
+  `CUSTOMER_AFFINITY_PROVIDER_MODE=http` (see "Next Task");
+- authentication against Customer Profile;
+- any mapping from Customer Profile's `purchased-products` endpoint into `CustomerProductEvidence`;
+- ever setting `ownership.previouslyPurchased` to `true` or `false` from either new state — both remain
+  ownership-absent, exactly like confirmed empty history;
+- `masterCustomerId` resolution, CRM, RFM, clustering, or segmentation;
+- any scoring change (`customer-affinity-v2` is untouched) or new structured `signals`/`reasons`;
+- changes to T10 (`personalized-recommendation`) — the two new codes are read directly from T09's result by T11,
+  the same way `NO_CUSTOMER_HISTORY`/`PARTIAL_CUSTOMER_HISTORY` already were; T10's own contracts are unchanged.
+
 ## Next Task
 
-CP-R1-T10B3C — Ownership Propagation and Explicit Repurchase: expose `ownership` end-to-end through T10's
-public result and T11's HTTP response, and design where explicit repurchase intent lives in the contract
-(`context.intent`, a dedicated product list, or a new signal), following the precedence recommended in
-CP-R1-T10B3A section 7.
+CP-R1-T10B4B — Customer Profile HTTP Evidence Adapter: implement the real `CustomerAffinityEvidenceProvider`
+that talks to Customer Profile's HTTP API and emits `customer_history_not_linked` / `customer_reference_not_found`
+for the states this task now recognizes, and `EVIDENCE_PROVIDER_FAILED` / retries for genuine technical failures.

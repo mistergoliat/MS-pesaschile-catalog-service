@@ -8,9 +8,11 @@ export type CustomerAffinityErrorCode =
   | 'EVIDENCE_PROVIDER_FAILED'
   // Reserved exclusively for validation failures of the response returned by a CustomerAffinityEvidenceProvider:
   // invalid schema, customer mismatch reported by the provider, duplicated evidence, evidence outside the
-  // requested batch, or a corrupt payload. Never reuse this code for internal evaluator/scorer bugs or other
-  // T09 contract errors — T11 treats it as an integration failure and degrades to neutral affinity on purpose
-  // (see degradableAffinityErrorReason in defaultSearchProductsV2Service.ts).
+  // requested batch, a corrupt payload, or (CP-R1-T10B4A) a provider response declaring both reserved
+  // customer-history-availability warnings at once, or a reserved warning alongside actual product evidence.
+  // Never reuse this code for internal evaluator/scorer bugs or other T09 contract errors — T11 treats it as an
+  // integration failure and degrades to neutral affinity on purpose (see degradableAffinityErrorReason in
+  // defaultSearchProductsV2Service.ts).
   | 'INVALID_PROVIDER_RESPONSE';
 
 export class CustomerAffinityError extends Error {

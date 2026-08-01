@@ -47,10 +47,12 @@ export function evidenceFor(
 
 export function evidenceResult(
   productEvidence: CustomerProductEvidence[] = [evidenceFor(productB)],
+  warnings?: CustomerAffinityEvidenceResult['warnings'],
 ): CustomerAffinityEvidenceResult {
   return {
     customer,
     productEvidence,
+    ...(warnings === undefined ? {} : { warnings }),
   };
 }
 
