@@ -169,6 +169,11 @@ export const searchProductsV2WarningCodeSchema = z.enum([
   'CUSTOMER_NOT_IDENTIFIED',
   'NO_CUSTOMER_HISTORY',
   'PARTIAL_CUSTOMER_HISTORY',
+  // CP-R1-T10B4A: functional customer-history-availability states propagated 1:1 from T09 — never collapsed
+  // into UPSTREAM_AFFINITY_WARNING (see mapAffinityWarningCode). Neither implies degradation: both keep
+  // execution.degraded=false and customerAffinity stage 'completed'.
+  'CUSTOMER_HISTORY_NOT_LINKED',
+  'CUSTOMER_REFERENCE_NOT_FOUND',
   'CUSTOMER_AFFINITY_UNAVAILABLE',
   'AFFINITY_MISSING_FOR_PRODUCT',
   'PERSONALIZATION_CONTEXT_PARTIALLY_APPLIED',
@@ -404,7 +409,16 @@ export const searchProductsV2ExecutionSchema = z
 export const searchProductsV2PersonalizationSchema = z
   .object({
     applied: z.boolean(),
-    reason: z.enum(['customer_not_provided', 'customer_affinity_unavailable', 'no_customer_history']).optional(),
+    // CP-R1-T10B4A: 'customer_history_not_linked'/'customer_reference_not_found' mirror T09's identically-named
+    // warning codes — both mean personalization could not use real customer signal, distinct from
+    // 'no_customer_history' (history was queried and confirmed empty).
+    reason: z.enum([
+      'customer_not_provided',
+      'customer_affinity_unavailable',
+      'customer_reference_not_found',
+      'customer_history_not_linked',
+      'no_customer_history',
+    ]).optional(),
     customerId: nonEmptyStringSchema.optional(),
   })
   .strict();

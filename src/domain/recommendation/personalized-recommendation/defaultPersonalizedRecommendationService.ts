@@ -76,6 +76,11 @@ function affinityWarningCode(code: string): PersonalizedRecommendationWarning['c
   if (code === 'CUSTOMER_NOT_IDENTIFIED') return 'CUSTOMER_NOT_IDENTIFIED';
   if (code === 'NO_CUSTOMER_HISTORY') return 'NO_CUSTOMER_HISTORY';
   if (code === 'PARTIAL_CUSTOMER_HISTORY') return 'PARTIAL_CUSTOMER_HISTORY';
+  // CP-R1-T10B4A: preserved 1:1, like the three codes above — otherwise T11 would end up publishing both the
+  // specific code (read directly off T09's result) and a generic AFFINITY_WARNING_PROPAGATED/
+  // UPSTREAM_PERSONALIZATION_WARNING for the same fact.
+  if (code === 'CUSTOMER_HISTORY_NOT_LINKED') return 'CUSTOMER_HISTORY_NOT_LINKED';
+  if (code === 'CUSTOMER_REFERENCE_NOT_FOUND') return 'CUSTOMER_REFERENCE_NOT_FOUND';
   return 'AFFINITY_WARNING_PROPAGATED';
 }
 

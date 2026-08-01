@@ -583,6 +583,50 @@ describe('SearchProducts V2 T09 behavior and degradation', () => {
     expect(result.warnings.some((item) => item.code === 'AFFINITY_MISSING_FOR_PRODUCT')).toBe(true);
   });
 
+  it('propagates CUSTOMER_HISTORY_NOT_LINKED from T09 without degrading (CP-R1-T10B4A)', async () => {
+    const affinityResult = {
+      ...affinityResultFor([affinityFor(productB, 0, 'none', []), affinityFor(productC, 0, 'none', []), affinityFor(productD, 0, 'none', [])]),
+      warnings: [{ code: 'CUSTOMER_HISTORY_NOT_LINKED' as const }],
+    };
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    expect(result.warnings.some((item) => item.code === 'CUSTOMER_HISTORY_NOT_LINKED')).toBe(true);
+    expect(result.execution.degraded).toBe(false);
+    expect(result.execution.stages.customerAffinity).toBe('completed');
+    expect(result.execution.degradationReasons).toEqual([]);
+    expect(result.warnings.some((item) => item.code === 'CUSTOMER_AFFINITY_UNAVAILABLE')).toBe(false);
+  });
+
+  it('propagates CUSTOMER_REFERENCE_NOT_FOUND from T09 without degrading (CP-R1-T10B4A)', async () => {
+    const affinityResult = {
+      ...affinityResultFor([affinityFor(productB, 0, 'none', []), affinityFor(productC, 0, 'none', []), affinityFor(productD, 0, 'none', [])]),
+      warnings: [{ code: 'CUSTOMER_REFERENCE_NOT_FOUND' as const }],
+    };
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    expect(result.warnings.some((item) => item.code === 'CUSTOMER_REFERENCE_NOT_FOUND')).toBe(true);
+    expect(result.execution.degraded).toBe(false);
+    expect(result.execution.stages.customerAffinity).toBe('completed');
+    expect(result.execution.degradationReasons).toEqual([]);
+    expect(result.warnings.some((item) => item.code === 'CUSTOMER_AFFINITY_UNAVAILABLE')).toBe(false);
+  });
+
+  it('preserves commercial ranking when T09 reports CUSTOMER_HISTORY_NOT_LINKED (CP-R1-T10B4A)', async () => {
+    const affinityResult = {
+      ...affinityResultFor([affinityFor(productB, 0, 'none', []), affinityFor(productC, 0, 'none', []), affinityFor(productD, 0, 'none', [])]),
+      warnings: [{ code: 'CUSTOMER_HISTORY_NOT_LINKED' as const }],
+    };
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    expect(result.recommendations.map((item) => item.product.productId)).toEqual(['B', 'C', 'D']);
+  });
+
+  it('does not attach ownership to any recommendation when T09 reports CUSTOMER_REFERENCE_NOT_FOUND (CP-R1-T10B4A)', async () => {
+    const affinityResult = {
+      ...affinityResultFor([affinityFor(productB, 0, 'none', []), affinityFor(productC, 0, 'none', []), affinityFor(productD, 0, 'none', [])]),
+      warnings: [{ code: 'CUSTOMER_REFERENCE_NOT_FOUND' as const }],
+    };
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    expect(result.recommendations.every((item) => item.ownership === undefined)).toBe(true);
+  });
+
   it('uses complete affinity', async () => {
     const result = await buildSearchProductsV2Harness().service.search(baseSearchProductsV2Request);
     expect(result.recommendations.some((item) => item.affinityScore > 0)).toBe(true);
@@ -711,6 +755,211 @@ describe('SearchProducts V2 T09 behavior and degradation', () => {
   it('does not put unknown affinity into public ranking', async () => {
     const result = await buildSearchProductsV2Harness({ affinityResult: searchProductsV2UnknownAffinityResult }).service.search(baseSearchProductsV2Request);
     expect(result.recommendations.some((item) => item.product.productId === productE.productId)).toBe(false);
+  });
+});
+
+describe('SearchProducts V2 personalization metadata (CP-R1-T10B4A)', () => {
+  it('reports applied:true when affinity is real and positive', async () => {
+    const result = await buildSearchProductsV2Harness().service.search(baseSearchProductsV2Request);
+    expect(result.personalization).toEqual({ applied: true, customerId: baseSearchProductsV2Request.customer!.customerId });
+  });
+
+  it('reports applied:false/no_customer_history for confirmed empty history', async () => {
+    const affinityResult = {
+      ...affinityResultFor([affinityFor(productB, 0, 'none', [], { warnings: [{ code: 'NO_CUSTOMER_HISTORY' }] })]),
+      warnings: [{ code: 'NO_CUSTOMER_HISTORY' as const }],
+    };
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    expect(result.personalization).toEqual({
+      applied: false,
+      reason: 'no_customer_history',
+      customerId: baseSearchProductsV2Request.customer!.customerId,
+    });
+  });
+
+  it('reports applied:false/customer_affinity_unavailable for technical degradation', async () => {
+    const harness = buildSearchProductsV2Harness();
+    harness.affinity.failWith = retryableAffinityFailure();
+    const result = await harness.service.search(baseSearchProductsV2Request);
+    expect(result.personalization).toEqual({
+      applied: false,
+      reason: 'customer_affinity_unavailable',
+      customerId: baseSearchProductsV2Request.customer!.customerId,
+    });
+  });
+
+  it('reports applied:false/customer_not_provided without a customer', async () => {
+    const harness = buildSearchProductsV2Harness();
+    const request = { ...baseSearchProductsV2Request };
+    delete request.customer;
+    const result = await harness.service.search(request);
+    expect(result.personalization).toEqual({ applied: false, reason: 'customer_not_provided' });
+  });
+
+  it('reports applied:false/customer_history_not_linked for CUSTOMER_HISTORY_NOT_LINKED', async () => {
+    const affinityResult = {
+      ...affinityResultFor([affinityFor(productB, 0, 'none', []), affinityFor(productC, 0, 'none', []), affinityFor(productD, 0, 'none', [])]),
+      warnings: [{ code: 'CUSTOMER_HISTORY_NOT_LINKED' as const }],
+    };
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    expect(result.personalization).toEqual({
+      applied: false,
+      reason: 'customer_history_not_linked',
+      customerId: baseSearchProductsV2Request.customer!.customerId,
+    });
+    expect(result.execution.degraded).toBe(false);
+    expect(result.execution.stages.customerAffinity).toBe('completed');
+    expect(result.execution.degradationReasons).toEqual([]);
+    expect(result.recommendations.map((item) => item.product.productId)).toEqual(['B', 'C', 'D']);
+    expect(result.recommendations.every((item) => item.ownership === undefined)).toBe(true);
+    expect(result.warnings.some((item) => item.code === 'CUSTOMER_AFFINITY_UNAVAILABLE')).toBe(false);
+  });
+
+  it('reports applied:false/customer_reference_not_found for CUSTOMER_REFERENCE_NOT_FOUND', async () => {
+    const affinityResult = {
+      ...affinityResultFor([affinityFor(productB, 0, 'none', []), affinityFor(productC, 0, 'none', []), affinityFor(productD, 0, 'none', [])]),
+      warnings: [{ code: 'CUSTOMER_REFERENCE_NOT_FOUND' as const }],
+    };
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    expect(result.personalization).toEqual({
+      applied: false,
+      reason: 'customer_reference_not_found',
+      customerId: baseSearchProductsV2Request.customer!.customerId,
+    });
+    expect(result.execution.degraded).toBe(false);
+    expect(result.execution.stages.customerAffinity).toBe('completed');
+    expect(result.execution.degradationReasons).toEqual([]);
+    expect(result.recommendations.map((item) => item.product.productId)).toEqual(['B', 'C', 'D']);
+    expect(result.recommendations.every((item) => item.ownership === undefined)).toBe(true);
+    expect(result.warnings.some((item) => item.code === 'CUSTOMER_AFFINITY_UNAVAILABLE')).toBe(false);
+  });
+
+  it('does not collapse CUSTOMER_HISTORY_NOT_LINKED into a generic upstream warning anywhere in the response', async () => {
+    const affinityResult = {
+      ...affinityResultFor([affinityFor(productB, 0, 'none', []), affinityFor(productC, 0, 'none', []), affinityFor(productD, 0, 'none', [])]),
+      warnings: [{ code: 'CUSTOMER_HISTORY_NOT_LINKED' as const }],
+    };
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    expect(result.warnings.some((item) => item.code === 'UPSTREAM_PERSONALIZATION_WARNING')).toBe(false);
+    expect(result.warnings.some((item) => item.code === 'UPSTREAM_AFFINITY_WARNING')).toBe(false);
+    expect(result.warnings.every((item) => item.code === 'CUSTOMER_HISTORY_NOT_LINKED')).toBe(true);
+  });
+
+  it('reports CUSTOMER_HISTORY_NOT_LINKED as exactly one global entry, not one per relay leg (CP-R1-T10B4A closure)', async () => {
+    const affinityResult = {
+      ...affinityResultFor([affinityFor(productB, 0, 'none', []), affinityFor(productC, 0, 'none', []), affinityFor(productD, 0, 'none', [])]),
+      warnings: [{ code: 'CUSTOMER_HISTORY_NOT_LINKED' as const }],
+    };
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    expect(result.warnings).toEqual([{ code: 'CUSTOMER_HISTORY_NOT_LINKED' }]);
+    expect(result.statistics.warningsGenerated).toBe(1);
+  });
+
+  it('does not collapse CUSTOMER_REFERENCE_NOT_FOUND into a generic upstream warning anywhere in the response', async () => {
+    const affinityResult = {
+      ...affinityResultFor([affinityFor(productB, 0, 'none', []), affinityFor(productC, 0, 'none', []), affinityFor(productD, 0, 'none', [])]),
+      warnings: [{ code: 'CUSTOMER_REFERENCE_NOT_FOUND' as const }],
+    };
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    expect(result.warnings.some((item) => item.code === 'UPSTREAM_PERSONALIZATION_WARNING')).toBe(false);
+    expect(result.warnings.some((item) => item.code === 'UPSTREAM_AFFINITY_WARNING')).toBe(false);
+    expect(result.warnings.every((item) => item.code === 'CUSTOMER_REFERENCE_NOT_FOUND')).toBe(true);
+  });
+
+  it('reports CUSTOMER_REFERENCE_NOT_FOUND as exactly one global entry, not one per relay leg (CP-R1-T10B4A closure)', async () => {
+    const affinityResult = {
+      ...affinityResultFor([affinityFor(productB, 0, 'none', []), affinityFor(productC, 0, 'none', []), affinityFor(productD, 0, 'none', [])]),
+      warnings: [{ code: 'CUSTOMER_REFERENCE_NOT_FOUND' as const }],
+    };
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    expect(result.warnings).toEqual([{ code: 'CUSTOMER_REFERENCE_NOT_FOUND' }]);
+    expect(result.statistics.warningsGenerated).toBe(1);
+  });
+});
+
+describe('SearchProducts V2 warning deduplication (CP-R1-T10B4A closure)', () => {
+  it('reduces a NO_CUSTOMER_HISTORY duplicate relayed by T09 and T10 to one global entry, without dropping legitimate per-product ones', async () => {
+    const affinityResult = {
+      ...affinityResultFor([
+        affinityFor(productB, 0, 'none', [], { warnings: [{ code: 'NO_CUSTOMER_HISTORY' }] }),
+        affinityFor(productC, 0, 'none', [], { warnings: [{ code: 'NO_CUSTOMER_HISTORY' }] }),
+        affinityFor(productD, 0, 'none', [], { warnings: [{ code: 'NO_CUSTOMER_HISTORY' }] }),
+      ]),
+      warnings: [{ code: 'NO_CUSTOMER_HISTORY' as const }],
+    };
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    const globalEntries = result.warnings.filter((item) => item.code === 'NO_CUSTOMER_HISTORY' && item.product === undefined);
+    const productEntries = result.warnings.filter((item) => item.code === 'NO_CUSTOMER_HISTORY' && item.product !== undefined);
+    expect(globalEntries).toHaveLength(1);
+    expect(productEntries.map((item) => item.product?.productId).sort()).toEqual(['B', 'C', 'D']);
+    expect(result.statistics.warningsGenerated).toBe(result.warnings.length);
+  });
+
+  it('reduces a PARTIAL_CUSTOMER_HISTORY global duplicate relayed by T09 and T10 to one entry', async () => {
+    const affinityResult = {
+      ...affinityResultFor([affinityFor(productB, 0.8, 'high'), affinityFor(productC, 0, 'none', []), affinityFor(productD, 0, 'none', [])]),
+      warnings: [{ code: 'PARTIAL_CUSTOMER_HISTORY' as const }],
+    };
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    expect(result.warnings.filter((item) => item.code === 'PARTIAL_CUSTOMER_HISTORY')).toHaveLength(1);
+    expect(result.warnings.filter((item) => item.code === 'PARTIAL_CUSTOMER_HISTORY')[0]?.product).toBeUndefined();
+  });
+
+  it('keeps PARTIAL_CUSTOMER_HISTORY for two different products as two distinct entries', async () => {
+    const affinityResult = affinityResultFor([
+      affinityFor(productB, 0, 'none', [], { warnings: [{ code: 'PARTIAL_CUSTOMER_HISTORY' }] }),
+      affinityFor(productC, 0, 'none', [], { warnings: [{ code: 'PARTIAL_CUSTOMER_HISTORY' }] }),
+      affinityFor(productD, 1, 'high'),
+    ]);
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    const entries = result.warnings.filter((item) => item.code === 'PARTIAL_CUSTOMER_HISTORY');
+    expect(entries).toHaveLength(2);
+    expect(entries.map((item) => item.product?.productId).sort()).toEqual(['B', 'C']);
+  });
+
+  it('keeps a global PARTIAL_CUSTOMER_HISTORY and a per-product one for the same code as two distinct entries', async () => {
+    const affinityResult = {
+      ...affinityResultFor([
+        affinityFor(productB, 0, 'none', [], { warnings: [{ code: 'PARTIAL_CUSTOMER_HISTORY' }] }),
+        affinityFor(productC, 1, 'high'),
+        affinityFor(productD, 1, 'high'),
+      ]),
+      warnings: [{ code: 'PARTIAL_CUSTOMER_HISTORY' as const }],
+    };
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    const entries = result.warnings.filter((item) => item.code === 'PARTIAL_CUSTOMER_HISTORY');
+    expect(entries).toHaveLength(2);
+    expect(entries.some((item) => item.product === undefined)).toBe(true);
+    expect(entries.some((item) => item.product?.productId === 'B')).toBe(true);
+  });
+
+  it('keeps genuinely different codes separate when the same T09 fact is relayed under two different fallback codes', async () => {
+    const affinityResult = {
+      ...affinityResultFor([affinityFor(productB, 0.5, 'medium')]),
+      warnings: [{ code: 'AFFINITY_PROVIDER_WARNING' as const }],
+    };
+    const result = await buildSearchProductsV2Harness({ affinityResult }).service.search(baseSearchProductsV2Request);
+    expect(result.warnings.some((item) => item.code === 'UPSTREAM_AFFINITY_WARNING')).toBe(true);
+    expect(result.warnings.some((item) => item.code === 'UPSTREAM_PERSONALIZATION_WARNING')).toBe(true);
+  });
+
+  it('deduplicates warnings sharing code, scope, and identical details', () => {
+    const deduplicated = searchProductsV2Internals.deduplicateWarnings([
+      { code: 'CATALOG_PRODUCT_MISSING', source: 't11', details: { count: 3 } },
+      { code: 'CATALOG_PRODUCT_MISSING', source: 'commercial', details: { count: 3 } },
+    ]);
+    expect(deduplicated).toEqual([{ code: 'CATALOG_PRODUCT_MISSING', details: { count: 3 } }]);
+  });
+
+  it('preserves both entries when code and scope match but details genuinely differ', () => {
+    const deduplicated = searchProductsV2Internals.deduplicateWarnings([
+      { code: 'CATALOG_PRODUCT_MISSING', source: 't11', details: { count: 3 } },
+      { code: 'CATALOG_PRODUCT_MISSING', source: 't11', details: { count: 5 } },
+    ]);
+    expect(deduplicated).toEqual([
+      { code: 'CATALOG_PRODUCT_MISSING', details: { count: 3 } },
+      { code: 'CATALOG_PRODUCT_MISSING', details: { count: 5 } },
+    ]);
   });
 });
 

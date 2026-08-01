@@ -431,3 +431,148 @@ describe('DefaultCustomerProductAffinityProvider variant identity isolation (CP-
     });
   });
 });
+
+describe('DefaultCustomerProductAffinityProvider customer history availability (CP-R1-T10B4A)', () => {
+  it('maps customer_history_not_linked to a single global CUSTOMER_HISTORY_NOT_LINKED warning', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [{ code: 'customer_history_not_linked' }]));
+    const result = await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(result.warnings).toEqual([{ code: 'CUSTOMER_HISTORY_NOT_LINKED' }]);
+  });
+
+  it('does not add NO_CUSTOMER_HISTORY or AFFINITY_PROVIDER_WARNING alongside CUSTOMER_HISTORY_NOT_LINKED', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [{ code: 'customer_history_not_linked' }]));
+    const result = await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(result.warnings.some((item) => item.code === 'NO_CUSTOMER_HISTORY')).toBe(false);
+    expect(result.warnings.some((item) => item.code === 'AFFINITY_PROVIDER_WARNING')).toBe(false);
+  });
+
+  it('does not add a per-product warning for CUSTOMER_HISTORY_NOT_LINKED', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [{ code: 'customer_history_not_linked' }]));
+    const result = await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(result.affinities.every((affinity) => affinity.warnings.length === 0)).toBe(true);
+  });
+
+  it('keeps every candidate neutral for CUSTOMER_HISTORY_NOT_LINKED', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [{ code: 'customer_history_not_linked' }]));
+    const result = await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(result.affinities.every((affinity) => (
+      affinity.score === 0 && affinity.confidence === 'none' && affinity.signals.length === 0 && affinity.evidence.length === 0
+    ))).toBe(true);
+    expect(result.affinities.every((affinity) => affinity.ownership === undefined)).toBe(true);
+  });
+
+  it('maps customer_reference_not_found to a single global CUSTOMER_REFERENCE_NOT_FOUND warning', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [{ code: 'customer_reference_not_found' }]));
+    const result = await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(result.warnings).toEqual([{ code: 'CUSTOMER_REFERENCE_NOT_FOUND' }]);
+  });
+
+  it('does not add NO_CUSTOMER_HISTORY or AFFINITY_PROVIDER_WARNING alongside CUSTOMER_REFERENCE_NOT_FOUND', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [{ code: 'customer_reference_not_found' }]));
+    const result = await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(result.warnings.some((item) => item.code === 'NO_CUSTOMER_HISTORY')).toBe(false);
+    expect(result.warnings.some((item) => item.code === 'AFFINITY_PROVIDER_WARNING')).toBe(false);
+  });
+
+  it('keeps every candidate neutral for CUSTOMER_REFERENCE_NOT_FOUND', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [{ code: 'customer_reference_not_found' }]));
+    const result = await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(result.affinities.every((affinity) => affinity.score === 0 && affinity.confidence === 'none')).toBe(true);
+    expect(result.affinities.every((affinity) => affinity.ownership === undefined)).toBe(true);
+  });
+
+  it('does not treat an unrecognized warning code as reserved even when it spells a T09-internal code', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [{ code: 'NO_CUSTOMER_HISTORY' }]));
+    const result = await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(result.warnings.some((item) => item.code === 'AFFINITY_PROVIDER_WARNING')).toBe(true);
+    expect(result.warnings.some((item) => item.code === 'CUSTOMER_HISTORY_NOT_LINKED')).toBe(false);
+    expect(result.warnings.some((item) => item.code === 'CUSTOMER_REFERENCE_NOT_FOUND')).toBe(false);
+    expect(result.warnings.some((item) => item.code === 'NO_CUSTOMER_HISTORY')).toBe(true);
+  });
+
+  it('normalizes peripheral whitespace around a reserved code, same as every other free-form string in this contract', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [{ code: '  customer_history_not_linked  ' }]));
+    const result = await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(result.warnings).toEqual([{ code: 'CUSTOMER_HISTORY_NOT_LINKED' }]);
+  });
+
+  it('does not recognize an upper-case variant of a reserved code (case-sensitive whitelist)', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [{ code: 'CUSTOMER_HISTORY_NOT_LINKED' }]));
+    const result = await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(result.warnings.some((item) => item.code === 'CUSTOMER_HISTORY_NOT_LINKED')).toBe(false);
+    expect(result.warnings.some((item) => item.code === 'AFFINITY_PROVIDER_WARNING')).toBe(true);
+  });
+
+  it('does not recognize a reserved code spelled with internal spaces instead of underscores', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [{ code: 'customer history not linked' }]));
+    const result = await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(result.warnings.some((item) => item.code === 'CUSTOMER_HISTORY_NOT_LINKED')).toBe(false);
+    expect(result.warnings.some((item) => item.code === 'AFFINITY_PROVIDER_WARNING')).toBe(true);
+  });
+
+  it('deduplicates a reserved warning sent more than once into a single global entry', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [
+      { code: 'customer_history_not_linked' },
+      { code: 'customer_history_not_linked' },
+    ]));
+    const result = await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(result.warnings).toEqual([{ code: 'CUSTOMER_HISTORY_NOT_LINKED' }]);
+    expect(result.statistics.warningsGenerated).toBe(1);
+  });
+
+  it('rejects a provider response declaring both reserved warnings at once', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [
+      { code: 'customer_history_not_linked' },
+      { code: 'customer_reference_not_found' },
+    ]));
+    await expectAffinityError(() => provider(fake).provider.getAffinities(baseAffinityRequest), 'INVALID_PROVIDER_RESPONSE');
+  });
+
+  it('rejects a reserved warning alongside actual product evidence', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([evidenceFor(productB)], [{ code: 'customer_history_not_linked' }]));
+    await expectAffinityError(() => provider(fake).provider.getAffinities(baseAffinityRequest), 'INVALID_PROVIDER_RESPONSE');
+  });
+
+  it('does not include details on the reserved global warning', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [{ code: 'customer_history_not_linked' }]));
+    const result = await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(result.warnings[0]).toEqual({ code: 'CUSTOMER_HISTORY_NOT_LINKED' });
+  });
+
+  it('counts statistics correctly for a reserved-only response', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [{ code: 'customer_reference_not_found' }]));
+    const result = await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(result.statistics.productsWithEvidence).toBe(0);
+    expect(result.statistics.productsWithoutEvidence).toBe(2);
+    expect(result.statistics.warningsGenerated).toBe(1);
+  });
+
+  it('still produces NO_CUSTOMER_HISTORY for a plain empty response without a reserved warning (unchanged)', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([]));
+    const result = await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(result.warnings.some((item) => item.code === 'NO_CUSTOMER_HISTORY')).toBe(true);
+    expect(result.warnings.some((item) => (
+      item.code === 'CUSTOMER_HISTORY_NOT_LINKED' || item.code === 'CUSTOMER_REFERENCE_NOT_FOUND'
+    ))).toBe(false);
+  });
+
+  it('deep freezes the result for a reserved warning response', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [{ code: 'customer_history_not_linked' }]));
+    const result = await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(Object.isFrozen(result.warnings)).toBe(true);
+    expect(Object.isFrozen(result.affinities)).toBe(true);
+  });
+
+  it('does not mutate the provider warnings input array', async () => {
+    const providerWarnings = [{ code: 'customer_history_not_linked' }];
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], providerWarnings));
+    await provider(fake).provider.getAffinities(baseAffinityRequest);
+    expect(providerWarnings).toEqual([{ code: 'customer_history_not_linked' }]);
+  });
+
+  it('does not expose provider payload markers, PII, or infrastructure identifiers for a reserved warning', async () => {
+    const fake = new FakeCustomerAffinityEvidenceProvider(evidenceResult([], [{ code: 'customer_history_not_linked' }]));
+    const serialized = JSON.stringify(await provider(fake).provider.getAffinities(baseAffinityRequest)).toLowerCase();
+    expect(serialized).not.toMatch(/select |redis|crm|customer 360|prestashop|llm|e2e|mastercustomerid|prestashopcustomerid/u);
+  });
+});
