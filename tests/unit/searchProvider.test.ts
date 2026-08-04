@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SearchCandidate } from '../../src/domain/catalog/ports.js';
+import { evaluateCatalogSearchTextRelevance } from '../../src/domain/catalog/searchTextRelevance.js';
 import { MySqlSearchProvider } from '../../src/infrastructure/search/mysqlSearchProvider.js';
 import { createRepositoryStub } from '../support/fakes.js';
 
@@ -109,6 +110,16 @@ describe('MySqlSearchProvider', () => {
       'partial_name',
     ]);
     expect(spaced.map((result) => result.matchType)).toEqual(historicalCompact.map((result) => result.matchType));
+    expect(historicalCompact.map((result) => evaluateCatalogSearchTextRelevance({
+      item: result,
+      query: 'barra olimpica 20kg',
+      isDefault: false,
+    }).score)).toEqual([2, 2, 2, 2]);
+    expect(spaced.map((result) => evaluateCatalogSearchTextRelevance({
+      item: result,
+      query: 'barra olímpica 20 kg',
+      isDefault: false,
+    }).score)).toEqual([2, 2, 2, 2]);
     expect(historicalCompact.map((result) => result.name)).toEqual([
       'Barra Olimpica 20kg 220cm Eco Serie | PROmachine',
       'Barra Olimpica 20kg Classic Serie | PROmachine',
@@ -136,6 +147,93 @@ describe('MySqlSearchProvider', () => {
 
     expect(results.map((result) => result.productId)).toEqual([545]);
     expect(results[0]?.matchType).toBe('partial_name');
+  });
+
+  it('ranks complete name token coverage ahead of incomplete name coverage', async () => {
+    const repository = createRepositoryStub({
+      getSearchCandidates: async () => [
+        candidate({ productId: 1, productName: 'Barra EZ 20kg' }),
+        candidate({ productId: 2, productName: 'Barra Olimpica 20kg Eco' }),
+      ],
+    });
+
+    const provider = new MySqlSearchProvider(repository);
+    const results = await provider.search('barra olimpica 20kg', 5, false);
+
+    expect(results.map((result) => result.productId)).toEqual([2, 1]);
+    expect(results.map((result) => result.matchType)).toEqual(['partial_name', 'description']);
+  });
+
+  it('ranks exact name phrases ahead of dispersed ordered tokens within partial name matches', async () => {
+    const repository = createRepositoryStub({
+      getSearchCandidates: async () => [
+        candidate({ productId: 1, productName: 'Barra Olimpica Eco 20kg' }),
+        candidate({ productId: 2, productName: 'Barra Olimpica 20kg Eco' }),
+      ],
+    });
+
+    const provider = new MySqlSearchProvider(repository);
+    const results = await provider.search('barra olimpica 20kg', 5, false);
+
+    expect(results.map((result) => result.productId)).toEqual([2, 1]);
+  });
+
+  it('ranks ordered tokens ahead of disordered tokens when coverage is equal', async () => {
+    const repository = createRepositoryStub({
+      getSearchCandidates: async () => [
+        candidate({ productId: 1, productName: '20kg Olimpica Barra' }),
+        candidate({ productId: 2, productName: 'Barra Olimpica 20kg' }),
+      ],
+    });
+
+    const provider = new MySqlSearchProvider(repository);
+    const results = await provider.search('barra olimpica 20kg', 5, false);
+
+    expect(results.map((result) => result.productId)).toEqual([2, 1]);
+  });
+
+  it('keeps name matches ahead of description-only matches', async () => {
+    const repository = createRepositoryStub({
+      getSearchCandidates: async () => [
+        candidate({
+          productId: 1,
+          productName: 'Implemento de Entrenamiento',
+          shortDescription: 'barra olimpica 20kg',
+        }),
+        candidate({
+          productId: 2,
+          productName: 'Barra Olimpica 20kg Pro',
+          shortDescription: null,
+        }),
+      ],
+    });
+
+    const provider = new MySqlSearchProvider(repository);
+    const results = await provider.search('barra olimpica 20kg', 5, false);
+
+    expect(results.map((result) => result.productId)).toEqual([2, 1]);
+    expect(results.map((result) => result.matchType)).toEqual(['partial_name', 'description']);
+  });
+
+  it('recovers specific three-or-more-token queries when the repository returns tokenized name candidates', async () => {
+    const repository = createRepositoryStub({
+      getSearchCandidates: async (query) => {
+        if (query === 'barra olimpica eco 20kg') {
+          return [candidate({ productId: 1, productName: 'Barra Olimpica 20kg 220cm Eco' })];
+        }
+        if (query === 'mancuerna hexagonal 20kg') {
+          return [candidate({ productId: 2, productName: 'Par Mancuernas Hexagonales 20kg' })];
+        }
+        return [];
+      },
+    });
+
+    const provider = new MySqlSearchProvider(repository);
+
+    await expect(provider.search('barra ol\u00edmpica eco 20 kg', 5, false))
+      .resolves.toMatchObject([{ productId: 1, matchType: 'partial_name' }]);
+    await expect(provider.search('mancuerna hexagonal 20 kg', 5, false))
+      .resolves.toMatchObject([{ productId: 2, matchType: 'partial_name' }]);
   });
 
   it('deduplicates repository calls when the original query is already canonical', async () => {
@@ -225,6 +323,26 @@ describe('MySqlSearchProvider', () => {
 
     expect(results.map((result) => result.productId)).toEqual([101, 100]);
     expect(results.map((result) => result.matchType)).toEqual(['exact_sku', 'partial_name']);
+  });
+
+  it('produces deterministic ranking regardless of repository arrival order', async () => {
+    const candidates = [
+      candidate({ productId: 3, productName: 'Barra Olimpica 20kg Training' }),
+      candidate({ productId: 1, productName: 'Barra Olimpica 20kg Eco' }),
+      candidate({ productId: 2, productName: 'Barra Olimpica 20kg Classic' }),
+    ];
+    const leftProvider = new MySqlSearchProvider(createRepositoryStub({
+      getSearchCandidates: async () => candidates,
+    }));
+    const rightProvider = new MySqlSearchProvider(createRepositoryStub({
+      getSearchCandidates: async () => [...candidates].reverse(),
+    }));
+
+    const left = await leftProvider.search('barra olimpica 20kg', 5, false);
+    const right = await rightProvider.search('barra olimpica 20kg', 5, false);
+
+    expect(left.map((result) => result.productId)).toEqual(right.map((result) => result.productId));
+    expect(left.map((result) => result.productId)).toEqual([2, 1, 3]);
   });
 
   it('preserves variants with the same product id and different combination ids', async () => {

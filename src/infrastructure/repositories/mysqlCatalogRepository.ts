@@ -6,7 +6,8 @@ import type {
 } from '../../domain/catalog/ports.js';
 import type { AttributeValue, CatalogScope, ProductCoreRecord, VariantSummary } from '../../domain/catalog/types.js';
 import { DISCOVERY_EXCLUDED_PRODUCT_IDS } from '../../domain/catalog/discoveryExclusionPolicy.js';
-import { tokenizeCatalogSearchText } from '../../domain/catalog/searchTextNormalization.js';
+import { normalizeCatalogSearchText, tokenizeCatalogSearchText } from '../../domain/catalog/searchTextNormalization.js';
+import { catalogSearchTextTokenCoverage } from '../../domain/catalog/searchTextRelevance.js';
 import { config } from '../../shared/config.js';
 import { stripHtml } from '../../shared/html.js';
 import { runQuery } from '../database/queries.js';
@@ -49,8 +50,27 @@ function normalizeSku(primary: string | null, fallback: string | null): string |
   return primary?.trim() || fallback?.trim() || null;
 }
 
-function isCanonicalUnitToken(token: string): boolean {
-  return /^\d+(?:\.\d+)?(?:kg|g|lb|mm|cm|m)$/u.test(token);
+function shouldUseNameTokenFallback(query: string, tokens: readonly string[]): boolean {
+  if (query !== normalizeCatalogSearchText(query)) {
+    return false;
+  }
+  const hasShortAlphabeticToken = tokens.some((token) => /^[a-z]{1,3}$/u.test(token));
+  const hasCanonicalUnitToken = tokens.some((token) => /^\d+(?:\.\d+)?(?:kg|g|lb|mm|cm|m)$/u.test(token));
+  return tokens.length >= 2 && (!hasShortAlphabeticToken || hasCanonicalUnitToken);
+}
+
+function hasFullNameTokenCoverage(query: string, candidates: readonly SearchCandidate[]): boolean {
+  return candidates.some((candidate) => {
+    const coverage = catalogSearchTextTokenCoverage({ query, text: candidate.productName });
+    return coverage.total > 0 && coverage.matched === coverage.total;
+  });
+}
+
+function shouldRunNameTokenFallback(
+  query: string,
+  candidates: readonly SearchCandidate[],
+): boolean {
+  return candidates.length === 0 || !hasFullNameTokenCoverage(query, candidates);
 }
 
 export class MySqlCatalogRepository implements CatalogRepository {
@@ -253,16 +273,54 @@ export class MySqlCatalogRepository implements CatalogRepository {
     const normalized = query.trim();
     const like = `%${normalized}%`;
     const tokens = tokenizeCatalogSearchText(normalized);
-    // "barra 20kg" is not a contiguous phrase in names like "barra olimpica 20kg".
-    // Keep this fallback limited to abbreviated two-token searches with an explicit measure.
-    const shouldUseTokenSearch = tokens.length === 2 && tokens.some(isCanonicalUnitToken);
-    const tokenSearchSql = shouldUseTokenSearch
-      ? ` OR (${tokens.map(() => 'pl.name LIKE ?').join(' AND ')})`
-      : '';
-    const tokenSearchValues = shouldUseTokenSearch
-      ? tokens.map((token) => `%${token}%`)
-      : [];
-    const rows = await runQuery<SearchCandidateRow[]>(
+    const phraseCandidates = this.mapSearchCandidateRows(await this.fetchSearchCandidateRows({
+      searchPredicateSql: `
+            p.reference = ?
+            OR pa.reference = ?
+            OR pl.name = ?
+            OR pl.name LIKE ?
+            OR pl.description_short LIKE ?
+            OR pl.description LIKE ?
+      `,
+      searchValues: [
+        normalized,
+        normalized,
+        normalized,
+        like,
+        like,
+        like,
+      ],
+      includeOutOfStock,
+      limit,
+    }));
+
+    if (!shouldUseNameTokenFallback(normalized, tokens) || !shouldRunNameTokenFallback(normalized, phraseCandidates)) {
+      return phraseCandidates;
+    }
+
+    // Some specific queries are not contiguous phrases in product names. Require every
+    // canonical token, keep this name-only, and merge after the historical phrase route.
+    const tokenCandidates = this.mapSearchCandidateRows(await this.fetchSearchCandidateRows({
+      searchPredicateSql: tokens.map(() => 'pl.name LIKE ?').join(' AND '),
+      searchValues: tokens.map((token) => `%${token}%`),
+      includeOutOfStock,
+      limit,
+    }));
+
+    const candidatesByKey = new Map<string, SearchCandidate>();
+    for (const candidate of [...phraseCandidates, ...tokenCandidates]) {
+      candidatesByKey.set(`${candidate.productId}:${candidate.combinationId}`, candidate);
+    }
+    return [...candidatesByKey.values()];
+  }
+
+  private async fetchSearchCandidateRows(input: {
+    readonly searchPredicateSql: string;
+    readonly searchValues: readonly unknown[];
+    readonly includeOutOfStock: boolean;
+    readonly limit: number;
+  }): Promise<SearchCandidateRow[]> {
+    return runQuery<SearchCandidateRow[]>(
       this.pool,
       'search-candidates',
       `
@@ -306,16 +364,10 @@ export class MySqlCatalogRepository implements CatalogRepository {
           AND agl.id_lang = ?
         WHERE p.active = 1
           AND (
-            p.reference = ?
-            OR pa.reference = ?
-            OR pl.name = ?
-            OR pl.name LIKE ?
-            OR pl.description_short LIKE ?
-            OR pl.description LIKE ?
-            ${tokenSearchSql}
+            ${input.searchPredicateSql}
           )
           AND p.id_product NOT IN (${placeholders(DISCOVERY_EXCLUDED_PRODUCT_IDS)})
-          ${includeOutOfStock ? '' : 'AND COALESCE(sa.physical_quantity, 0) > 0'}
+          ${input.includeOutOfStock ? '' : 'AND COALESCE(sa.physical_quantity, 0) > 0'}
         GROUP BY
           p.id_product,
           pa.id_product_attribute,
@@ -336,19 +388,15 @@ export class MySqlCatalogRepository implements CatalogRepository {
         this.scope.shopId,
         this.scope.langId,
         this.scope.langId,
-        normalized,
-        normalized,
-        normalized,
-        like,
-        like,
-        like,
-        ...tokenSearchValues,
+        ...input.searchValues,
         ...DISCOVERY_EXCLUDED_PRODUCT_IDS,
-        Math.max(limit * 10, 50),
+        Math.max(input.limit * 10, 50),
       ],
       this.timeoutMs,
     );
+  }
 
+  private mapSearchCandidateRows(rows: readonly SearchCandidateRow[]): SearchCandidate[] {
     return rows.map((row) => ({
       productId: row.productId,
       combinationId: row.combinationId,
