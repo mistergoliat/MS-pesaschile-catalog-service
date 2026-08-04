@@ -537,7 +537,23 @@ implement:
   fallback path produced the warning; extending T10's `affinityWarningCode()` to recognize every T09 code
   symmetrically is a separate, larger change than this closure round.
 
+## Explicitly Out Of Scope (CP-R1-T10B4B)
+
+CP-R1-T10B4B implements `HttpCustomerAffinityEvidenceProvider` (see
+`docs/recommendation/customer-product-affinity-provider.md` and
+`docs/releases/CP-R1-T10B4B-customer-profile-http-evidence-adapter.md`) — a T09 evidence provider, wired through
+`CUSTOMER_AFFINITY_PROVIDER_MODE=http`. T11's own contracts, endpoint, scoring, and warning-mapping are
+unchanged: the six wiring tests added by this task (`tests/integration/searchProductsV2HttpCustomerAffinityWiring.test.ts`)
+confirm the real adapter drives the exact same `NO_CUSTOMER_HISTORY` / `PARTIAL_CUSTOMER_HISTORY` /
+`CUSTOMER_HISTORY_NOT_LINKED` / `CUSTOMER_REFERENCE_NOT_FOUND` / `CUSTOMER_AFFINITY_UNAVAILABLE` /
+`personalization` behavior already documented above, rather than adding new behavior at this layer. This task
+deliberately does not implement:
+
+- any change to `SearchProductsV2Request`/`SearchProductsV2Result`, the endpoint path, HTTP method, or response
+  envelope;
+- any change to T10/T11 scoring, ranking, `ownership` propagation, or warning-mapping logic;
+- `masterCustomerId` resolution, CRM Customer 360, or Sales Agent integration.
+
 ## Next Task
 
-CP-R1-T10B4B — Customer Profile HTTP Evidence Adapter: the real `CustomerAffinityEvidenceProvider` implementation
-that talks to Customer Profile and emits the warnings this task and CP-R1-T10B4A now recognize end-to-end.
+CP-R1-T10B5 — CRM SearchProducts V2 Client and Identity Wiring.

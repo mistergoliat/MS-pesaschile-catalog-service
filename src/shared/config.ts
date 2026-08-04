@@ -59,7 +59,9 @@ const envSchema = z.object({
   RELATIONSHIP_SOURCE_ORDER_STATES: z.string().optional(),
   RELATIONSHIP_SOURCE_EXCLUDED_PRODUCT_IDS: z.string().optional(),
   RELATIONSHIP_SOURCE_MAX_PRODUCTS_PER_ORDER: z.coerce.number().int().min(2).max(500).default(50),
-  CUSTOMER_AFFINITY_PROVIDER_MODE: z.enum(['unavailable', 'empty']).default('unavailable'),
+  CUSTOMER_AFFINITY_PROVIDER_MODE: z.enum(['unavailable', 'empty', 'http']).default('unavailable'),
+  CUSTOMER_PROFILE_BASE_URL: z.string().trim().optional(),
+  CUSTOMER_PROFILE_TIMEOUT_MS: z.coerce.number().int().min(100).max(30000).default(2500),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -105,6 +107,32 @@ if (!prefixPattern.test(raw.PRESTASHOP_DB_PREFIX) || !raw.PRESTASHOP_DB_PREFIX.e
 
 if (raw.CACHE_DRIVER === 'redis' && !raw.REDIS_URL) {
   throw new Error('REDIS_URL is required when CACHE_DRIVER=redis');
+}
+
+let customerProfileBaseUrl: string | null = null;
+if (raw.CUSTOMER_AFFINITY_PROVIDER_MODE === 'http') {
+  if (!raw.CUSTOMER_PROFILE_BASE_URL) {
+    throw new Error('CUSTOMER_PROFILE_BASE_URL is required when CUSTOMER_AFFINITY_PROVIDER_MODE=http');
+  }
+  let parsedCustomerProfileUrl: URL;
+  try {
+    parsedCustomerProfileUrl = new URL(raw.CUSTOMER_PROFILE_BASE_URL);
+  } catch {
+    throw new Error('CUSTOMER_PROFILE_BASE_URL must be a valid absolute URL');
+  }
+  if (parsedCustomerProfileUrl.protocol !== 'http:' && parsedCustomerProfileUrl.protocol !== 'https:') {
+    throw new Error('CUSTOMER_PROFILE_BASE_URL must use the http or https protocol');
+  }
+  if (parsedCustomerProfileUrl.username || parsedCustomerProfileUrl.password) {
+    throw new Error('CUSTOMER_PROFILE_BASE_URL must not include embedded credentials');
+  }
+  if (parsedCustomerProfileUrl.search) {
+    throw new Error('CUSTOMER_PROFILE_BASE_URL must not include a query string');
+  }
+  if (parsedCustomerProfileUrl.hash) {
+    throw new Error('CUSTOMER_PROFILE_BASE_URL must not include a fragment');
+  }
+  customerProfileBaseUrl = parsedCustomerProfileUrl.toString().replace(/\/+$/, '');
 }
 
 export const config = {
@@ -165,5 +193,9 @@ export const config = {
       maxProductsPerOrder: raw.RELATIONSHIP_SOURCE_MAX_PRODUCTS_PER_ORDER,
     },
     customerAffinityProviderMode: raw.CUSTOMER_AFFINITY_PROVIDER_MODE,
+    customerProfile: {
+      baseUrl: customerProfileBaseUrl,
+      timeoutMs: raw.CUSTOMER_PROFILE_TIMEOUT_MS,
+    },
   },
 } as const;

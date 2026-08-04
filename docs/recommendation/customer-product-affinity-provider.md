@@ -314,9 +314,11 @@ validated. This is a contractual obligation on the evidence provider, not someth
   propagated to a different variant of the same base product.** T09's batch matching already enforces this on
   its side (see tests below); the provider must not defeat it by mislabeling entries.
 
-A future evidence provider (Customer Profile HTTP adapter, T10B4) is expected to honor these obligations. If it
-cannot yet distinguish purchases by combination, it should report ownership at the base-product identity only,
-or supply explicit `ownership` with `exactVariantPreviouslyPurchased: false`, rather than guessing.
+`HttpCustomerAffinityEvidenceProvider` (CP-R1-T10B4B, see "HTTP Evidence Adapter" below) is the first real
+provider that has to honor these obligations against a live contract. It reports ownership under
+`{ productId: String(row.productId) }` when Customer Profile's `productAttributeId` is `0`, and under
+`{ productId: String(row.productId), combinationId: String(row.productAttributeId) }` when it is greater than
+zero — never mixing the two, and never attaching one variant's row to a different variant's identity.
 
 ## Neutrality
 
@@ -483,20 +485,53 @@ warnings, since no candidate receives one.
 
 ## Degradation
 
-Two independent stub providers exist in `src/infrastructure/recommendation/customerAffinityEvidenceProviders.ts`,
-selected by `CUSTOMER_AFFINITY_PROVIDER_MODE` (`'empty'` or `'unavailable'`, default `'unavailable'`); no HTTP
-provider exists yet.
+Three providers exist, selected by `CUSTOMER_AFFINITY_PROVIDER_MODE` (`'unavailable'`, `'empty'`, or `'http'`;
+default `'unavailable'`):
 
-- `EmptyCustomerAffinityEvidenceProvider` always returns `productEvidence: []`. It never invents `ownership`; the
-  result is the same "no history" neutral affinity described in "Missing History".
-- `UnavailableCustomerAffinityEvidenceProvider` always throws `EVIDENCE_PROVIDER_FAILED` with `retryable: true`.
-  `DefaultCustomerProductAffinityProvider.getAffinities` also wraps *any* exception thrown by
+- `EmptyCustomerAffinityEvidenceProvider` (`src/infrastructure/recommendation/customerAffinityEvidenceProviders.ts`)
+  always returns `productEvidence: []`. It never invents `ownership`; the result is the same "no history" neutral
+  affinity described in "Missing History".
+- `UnavailableCustomerAffinityEvidenceProvider` (same file) always throws `EVIDENCE_PROVIDER_FAILED` with
+  `retryable: true`. `DefaultCustomerProductAffinityProvider.getAffinities` also wraps *any* exception thrown by
   `evidenceProvider.getEvidence(...)` into a `retryable: true` `EVIDENCE_PROVIDER_FAILED` error — a network or
-  timeout failure from a future real provider degrades the same way.
+  timeout failure from a real provider degrades the same way.
+- `HttpCustomerAffinityEvidenceProvider` (CP-R1-T10B4B,
+  `src/infrastructure/recommendation/httpCustomerAffinityEvidenceProvider.ts`) is the real provider backed by
+  Customer Profile's HTTP API. See "HTTP Evidence Adapter" below and
+  `docs/releases/CP-R1-T10B4B-customer-profile-http-evidence-adapter.md` for the full contract.
 - A structurally invalid provider response (wrong customer, evidence outside the batch, duplicated product
   evidence) is rejected as `INVALID_PROVIDER_RESPONSE`, which is **not** retryable by default. This is an
   existing behavior this task does not change; T11 currently treats it as a hard failure rather than a
   degradable one (documented as a known gap, out of scope here — see "Explicitly Out Of Scope").
+
+## HTTP Evidence Adapter (CP-R1-T10B4B)
+
+`HttpCustomerAffinityEvidenceProvider` queries Customer Profile's
+`GET /v1/customers/:masterCustomerId/purchased-products` and maps real historical purchases into positive-only
+`ProductOwnershipEvidence`. Summary (full detail in the release doc):
+
+- **Customer identity**: in `mode=http`, `customer.customerId` is interpreted specifically as Customer Profile's
+  `masterCustomerId` — a numeric string, trimmed, not `'0'`, bounded to Customer Profile's own length limit.
+  Validated before any HTTP request is built; an invalid reference throws (surfaces as `EVIDENCE_PROVIDER_FAILED`
+  through the same wrapping as any other provider failure). Never a PrestaShop `id_customer`, email, phone, or
+  DNI — that distinction is not enforced by T09's own `CustomerAffinityCustomerReference` schema, so it is this
+  adapter's own responsibility.
+- **Pagination**: `limit=100`, `offset` incremented until `pagination.hasMore === false`, one shared timeout
+  across every page. Guards against a misbehaving upstream (page count, total row count, offset/limit/returned
+  consistency, no duplicate product/variant identity across or within pages) all throw rather than silently
+  truncating or double-counting.
+- **Positive-only ownership**: only rows matching a requested candidate produce `CustomerProductEvidence`; an
+  unmatched candidate is simply omitted (never `previouslyPurchased: false`) — Customer Profile only certifies
+  history for one linked PrestaShop account, so absence never proves "never purchased."
+- **Functional states**: `customer_not_linked` / `customer_not_found` return a normal result carrying
+  `customer_history_not_linked` / `customer_reference_not_found` (T09's reserved provider-warning vocabulary, see
+  "Provider Warning Mapping" above) — never a thrown error, never `ownership`.
+- **Technical failures**: HTTP timeout, network error, `5xx`, `401`/`403`/`400`, a `degraded` response
+  (`prestashop_unavailable`/`prestashop_timeout`), or any schema-invalid payload all throw — degrading exactly
+  like `UnavailableCustomerAffinityEvidenceProvider` above.
+- **Security**: never logs the raw response body, the full request URL, or `masterCustomerId`; Customer Profile
+  has no authentication today, so `mode=http` must only be enabled against a private-network or
+  gateway-protected instance.
 
 ## Determinism
 
@@ -560,8 +595,19 @@ This task closes the customer-history-availability warning vocabulary only. It d
 - changes to T10 (`personalized-recommendation`) — the two new codes are read directly from T09's result by T11,
   the same way `NO_CUSTOMER_HISTORY`/`PARTIAL_CUSTOMER_HISTORY` already were; T10's own contracts are unchanged.
 
+## Explicitly Out Of Scope (CP-R1-T10B4B)
+
+This task implements the HTTP evidence adapter only. It deliberately does not implement:
+
+- authentication against Customer Profile, or an outbound API key/credential of any kind;
+- retries, a circuit breaker, or a cache in front of Customer Profile;
+- `masterCustomerId` resolution, `identityType`, CRM Customer 360 integration, or Sales Agent integration;
+- RFM, clustering, lifecycle, category/brand affinity, repeat-purchase mapping, observed spend, interests,
+  `preferredProducts`, `explicitRepurchaseProducts`, or durable/consumable classification;
+- any change to T09's contracts, T10B4A's warning semantics, or scoring/ranking;
+- a batch/filtered Customer Profile endpoint — this adapter always reads the customer's full purchased-products
+  history and matches it locally against the requested candidate batch.
+
 ## Next Task
 
-CP-R1-T10B4B — Customer Profile HTTP Evidence Adapter: implement the real `CustomerAffinityEvidenceProvider`
-that talks to Customer Profile's HTTP API and emits `customer_history_not_linked` / `customer_reference_not_found`
-for the states this task now recognizes, and `EVIDENCE_PROVIDER_FAILED` / retries for genuine technical failures.
+CP-R1-T10B5 — CRM SearchProducts V2 Client and Identity Wiring.
