@@ -4,6 +4,10 @@ import type {
   ProductResponse,
   SearchResponse,
 } from '../src/shared/contracts.js';
+export type {
+  SearchProductsV2Request,
+  SearchProductsV2Result,
+} from '../src/application/recommendation/search-products-v2/index.js';
 
 export const catalogToolInputSchema = z.union([
   z.object({

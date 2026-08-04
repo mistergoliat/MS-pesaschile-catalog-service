@@ -1,11 +1,15 @@
 import { randomUUID } from 'node:crypto';
-import type { ZodType } from 'zod';
+import { z, type ZodType } from 'zod';
 import {
   batchResponseSchema,
-  errorResponseSchema,
   productResponseSchema,
   searchResponseSchema,
 } from '../src/shared/contracts.js';
+import {
+  searchProductsV2ResultSchema,
+  type SearchProductsV2Request,
+  type SearchProductsV2Result,
+} from '../src/application/recommendation/search-products-v2/index.js';
 import type {
   BatchGetProductsResult,
   CatalogToolInput,
@@ -36,6 +40,19 @@ export class CatalogClientError extends Error {
     this.name = 'CatalogClientError';
   }
 }
+
+const catalogErrorResponseSchema = z
+  .object({
+    error: z
+      .object({
+        code: z.string(),
+        message: z.string(),
+        correlationId: z.string().optional(),
+        retryable: z.boolean().optional(),
+      })
+      .passthrough(),
+  })
+  .strict();
 
 function normalizeTransportError(error: unknown, context: CatalogClientContext): CatalogClientError {
   if (error instanceof CatalogClientError) {
@@ -110,7 +127,7 @@ async function requestJson<T>(
     }
 
     if (!response.ok) {
-      const parsed = errorResponseSchema.safeParse(payload);
+      const parsed = catalogErrorResponseSchema.safeParse(payload);
       const error = parsed.success
         ? parsed.data.error
         : { code: 'CATALOG_QUERY_FAILED', message: `HTTP ${response.status}`, correlationId: correlationId ?? '' };
@@ -119,7 +136,7 @@ async function requestJson<T>(
         response.status,
         error.code,
         error.correlationId || correlationId || undefined,
-        response.status >= 500,
+        error.retryable ?? response.status >= 500,
       );
     }
 
@@ -165,6 +182,23 @@ export async function searchProducts(
   }
 
   return requestJson(context, url.toString(), { method: 'GET' }, searchResponseSchema, true);
+}
+
+export async function searchProductsV2(
+  input: SearchProductsV2Request,
+  context: CatalogClientContext,
+): Promise<SearchProductsV2Result> {
+  return requestJson(
+    context,
+    buildUrl(context.baseUrl, '/api/v2/recommendations/search-products'),
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(input),
+    },
+    searchProductsV2ResultSchema,
+    true,
+  );
 }
 
 export async function getProduct(
