@@ -27,9 +27,39 @@ import {
   EmptyCustomerAffinityEvidenceProvider,
   UnavailableCustomerAffinityEvidenceProvider,
 } from './infrastructure/recommendation/customerAffinityEvidenceProviders.js';
+import {
+  HttpCustomerAffinityEvidenceProvider,
+  type HttpCustomerAffinityEvidenceProviderLogger,
+} from './infrastructure/recommendation/httpCustomerAffinityEvidenceProvider.js';
+import type { CustomerAffinityEvidenceProvider } from './domain/recommendation/customer-affinity/index.js';
 import { createRecommendationRuntime } from './recommendationRuntime.js';
 import { logger } from './shared/logger.js';
 import { createCorrelationId } from './shared/crypto.js';
+
+export function createCustomerAffinityEvidenceProvider(
+  mode: typeof config.recommendation.customerAffinityProviderMode,
+  deps: {
+    customerProfile: { baseUrl: string | null; timeoutMs: number };
+    logger: HttpCustomerAffinityEvidenceProviderLogger;
+  },
+): CustomerAffinityEvidenceProvider {
+  if (mode === 'empty') {
+    return new EmptyCustomerAffinityEvidenceProvider();
+  }
+  if (mode === 'http') {
+    const baseUrl = deps.customerProfile.baseUrl;
+    if (!baseUrl) {
+      // Defensive: config.ts already fails at startup when mode=http and the base URL is missing.
+      throw new Error('CUSTOMER_PROFILE_BASE_URL must be configured when CUSTOMER_AFFINITY_PROVIDER_MODE=http');
+    }
+    return new HttpCustomerAffinityEvidenceProvider({
+      baseUrl,
+      timeoutMs: deps.customerProfile.timeoutMs,
+      logger: deps.logger,
+    });
+  }
+  return new UnavailableCustomerAffinityEvidenceProvider();
+}
 
 export async function createRuntime() {
   const pool = createPool();
@@ -66,9 +96,16 @@ export async function createRuntime() {
   const exploreProductsService = new DefaultExploreProductsService({
     dataReader: new MySqlCatalogExploreDataReader(pool),
   });
-  const customerAffinityEvidenceProvider = config.recommendation.customerAffinityProviderMode === 'empty'
-    ? new EmptyCustomerAffinityEvidenceProvider()
-    : new UnavailableCustomerAffinityEvidenceProvider();
+  const customerAffinityEvidenceProvider = createCustomerAffinityEvidenceProvider(
+    config.recommendation.customerAffinityProviderMode,
+    {
+      customerProfile: config.recommendation.customerProfile,
+      logger: {
+        info: (event, fields) => logger.info({ event, ...fields }, event),
+        error: (event, fields) => logger.error({ event, ...fields }, event),
+      },
+    },
+  );
   const productIntentCatalogProvider = new CatalogProductIntentProvider(service, catalogCommercialTruthService);
   const productIntentResolutionService = new DefaultProductIntentResolutionService({
     normalizer: new DefaultProductQueryNormalizer(),
