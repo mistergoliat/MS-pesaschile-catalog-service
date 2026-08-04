@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { CatalogApplicationService } from '../../src/application/catalogService.js';
 import { createCacheStub, createPricingProviderStub, createRepositoryStub, createSearchProviderStub, createStockProviderStub } from '../support/fakes.js';
-import type { ProductCoreRecord, VariantSummary } from '../../src/domain/catalog/types.js';
+import type { ProductCoreRecord, SearchItem, VariantSummary } from '../../src/domain/catalog/types.js';
 
 function makeService(options?: {
   product?: ProductCoreRecord | null;
@@ -64,6 +64,48 @@ function makeService(options?: {
   });
 
   return { service, repository, stockProvider, pricingProvider };
+}
+
+const cachedBarSearchItems: SearchItem[] = [
+  {
+    productId: 545,
+    combinationId: 0,
+    sku: 'BAR-20',
+    name: 'Barra Olimpica 20kg',
+    variantLabel: null,
+    shortDescription: 'Barra olimpica 20kg',
+    physicalQuantity: 3,
+    available: true,
+    matchType: 'partial_name',
+  },
+];
+
+async function expectEquivalentSearchQueriesShareCache(firstQuery: string, secondQuery: string) {
+  const search = vi.fn().mockResolvedValue(cachedBarSearchItems);
+  const cache = createCacheStub();
+  const service = new CatalogApplicationService({
+    repository: createRepositoryStub(),
+    searchProvider: createSearchProviderStub({ search }),
+    stockProvider: createStockProviderStub(),
+    pricingProvider: createPricingProviderStub(),
+    cache,
+  });
+
+  const first = await service.searchProducts(firstQuery, 5, false);
+  const cachedAfterFirst = cache.store.get('search:barra olimpica 20kg:5:0') as { query: string; items: SearchItem[] };
+  const second = await service.searchProducts(secondQuery, 5, false);
+  const cachedAfterSecond = cache.store.get('search:barra olimpica 20kg:5:0') as { query: string; items: SearchItem[] };
+
+  expect(search).toHaveBeenCalledTimes(1);
+  expect(first.query).toBe(firstQuery);
+  expect(second.query).toBe(secondQuery);
+  expect(first.freshness.cached).toBe(false);
+  expect(second.freshness.cached).toBe(true);
+  expect(first.items).toEqual(cachedBarSearchItems);
+  expect(second.items).toEqual(cachedBarSearchItems);
+  expect(cachedAfterFirst).toBe(cachedAfterSecond);
+  expect(cachedAfterSecond.query).toBe(firstQuery);
+  expect(cachedAfterSecond.items).toEqual(cachedBarSearchItems);
 }
 
 describe('CatalogApplicationService', () => {
@@ -243,6 +285,14 @@ describe('CatalogApplicationService', () => {
     const result = await service.getProduct({ productId: 1, combinationId: 0, quantity: 1 });
     expect(result.freshness.cached).toBe(true);
     expect(repository.getProductCore).not.toHaveBeenCalled();
+  });
+
+  it('serves spaced then compact equivalent search queries from the canonical cache key', async () => {
+    await expectEquivalentSearchQueriesShareCache('barra ol\u00edmpica 20 kg', 'barra olimpica 20kg');
+  });
+
+  it('serves compact then spaced equivalent search queries from the canonical cache key', async () => {
+    await expectEquivalentSearchQueriesShareCache('barra olimpica 20kg', 'barra ol\u00edmpica 20 kg');
   });
 
   it('returns item-level errors in batch mode', async () => {
