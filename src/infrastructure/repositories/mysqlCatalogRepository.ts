@@ -6,6 +6,7 @@ import type {
 } from '../../domain/catalog/ports.js';
 import type { AttributeValue, CatalogScope, ProductCoreRecord, VariantSummary } from '../../domain/catalog/types.js';
 import { DISCOVERY_EXCLUDED_PRODUCT_IDS } from '../../domain/catalog/discoveryExclusionPolicy.js';
+import { tokenizeCatalogSearchText } from '../../domain/catalog/searchTextNormalization.js';
 import { config } from '../../shared/config.js';
 import { stripHtml } from '../../shared/html.js';
 import { runQuery } from '../database/queries.js';
@@ -46,6 +47,10 @@ function placeholders(values: readonly unknown[]): string {
 
 function normalizeSku(primary: string | null, fallback: string | null): string | null {
   return primary?.trim() || fallback?.trim() || null;
+}
+
+function isCanonicalUnitToken(token: string): boolean {
+  return /^\d+(?:\.\d+)?(?:kg|g|lb|mm|cm|m)$/u.test(token);
 }
 
 export class MySqlCatalogRepository implements CatalogRepository {
@@ -247,6 +252,16 @@ export class MySqlCatalogRepository implements CatalogRepository {
   ): Promise<SearchCandidate[]> {
     const normalized = query.trim();
     const like = `%${normalized}%`;
+    const tokens = tokenizeCatalogSearchText(normalized);
+    // "barra 20kg" is not a contiguous phrase in names like "barra olimpica 20kg".
+    // Keep this fallback limited to abbreviated two-token searches with an explicit measure.
+    const shouldUseTokenSearch = tokens.length === 2 && tokens.some(isCanonicalUnitToken);
+    const tokenSearchSql = shouldUseTokenSearch
+      ? ` OR (${tokens.map(() => 'pl.name LIKE ?').join(' AND ')})`
+      : '';
+    const tokenSearchValues = shouldUseTokenSearch
+      ? tokens.map((token) => `%${token}%`)
+      : [];
     const rows = await runQuery<SearchCandidateRow[]>(
       this.pool,
       'search-candidates',
@@ -297,6 +312,7 @@ export class MySqlCatalogRepository implements CatalogRepository {
             OR pl.name LIKE ?
             OR pl.description_short LIKE ?
             OR pl.description LIKE ?
+            ${tokenSearchSql}
           )
           AND p.id_product NOT IN (${placeholders(DISCOVERY_EXCLUDED_PRODUCT_IDS)})
           ${includeOutOfStock ? '' : 'AND COALESCE(sa.physical_quantity, 0) > 0'}
@@ -326,6 +342,7 @@ export class MySqlCatalogRepository implements CatalogRepository {
         like,
         like,
         like,
+        ...tokenSearchValues,
         ...DISCOVERY_EXCLUDED_PRODUCT_IDS,
         Math.max(limit * 10, 50),
       ],

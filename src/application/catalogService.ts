@@ -7,6 +7,7 @@ import { cacheHitsTotal, cacheMissesTotal, priceResolutionTotal } from '../share
 import { RequestCoalescer } from '../shared/coalescer.js';
 import { productCacheKey, priceCacheKey, searchCacheKey, stockCacheKey } from '../shared/cacheKeys.js';
 import { buildProductPublicUrl, type ProductPublicLink } from '../domain/catalog/commercial-truth/index.js';
+import { normalizeCatalogSearchText } from '../domain/catalog/searchTextNormalization.js';
 import type {
   BatchGetInput,
   BatchGetItemResult,
@@ -84,7 +85,8 @@ export class CatalogApplicationService {
     items: SearchItem[];
     freshness: { cached: boolean; generatedAt: string };
   }> {
-    const key = searchCacheKey({ query, limit, includeOutOfStock });
+    const cacheKeyQuery = normalizeCatalogSearchText(query);
+    const key = searchCacheKey({ query: cacheKeyQuery, limit, includeOutOfStock });
     const cached = await this.dependencies.cache.get<{
       query: string;
       items: SearchItem[];
@@ -95,6 +97,7 @@ export class CatalogApplicationService {
       cacheHitsTotal.inc({ area: 'search' });
       return {
         ...cached,
+        query,
         freshness: { ...cached.freshness, cached: true },
       };
     }
