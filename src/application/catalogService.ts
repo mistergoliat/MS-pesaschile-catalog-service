@@ -2,10 +2,12 @@ import { config } from '../shared/config.js';
 import {
   CombinationNotFoundError,
   ProductNotFoundError,
+  WeightUnavailableError,
 } from '../shared/errors.js';
 import { cacheHitsTotal, cacheMissesTotal, priceResolutionTotal } from '../shared/metrics.js';
 import { RequestCoalescer } from '../shared/coalescer.js';
 import { productCacheKey, priceCacheKey, searchCacheKey, stockCacheKey } from '../shared/cacheKeys.js';
+import { toWeightKg } from '../shared/weight.js';
 import { buildProductPublicUrl, type ProductPublicLink } from '../domain/catalog/commercial-truth/index.js';
 import { normalizeCatalogSearchText } from '../domain/catalog/searchTextNormalization.js';
 import type {
@@ -35,6 +37,18 @@ function variantAttributeLabels(variants: readonly { attributes: readonly { grou
     }
   }
   return labels;
+}
+
+function resolveEffectiveWeightKg(input: { baseWeightKg: number; weightImpactKg: number }): number {
+  const effectiveWeightKg = input.baseWeightKg + input.weightImpactKg;
+  if (effectiveWeightKg < 0) {
+    // ps_product.weight and the combination weight impact columns are NOT NULL and never
+    // negative in production today (CAT-R1-T13A). This guards the arithmetic result rather
+    // than any single source column, mirroring StockUnavailableError's "this specific fact
+    // for the selected variant could not be resolved" pattern instead of inventing 0.
+    throw new WeightUnavailableError();
+  }
+  return toWeightKg(effectiveWeightKg);
 }
 
 function productPublicLink(input: {
@@ -146,7 +160,7 @@ export class CatalogApplicationService {
 
       const variants = await this.dependencies.repository.getVariants(input.productId);
       const hasVariants = variants.length > 0;
-      const { linkRewrite, ...productCore } = product;
+      const { linkRewrite, baseWeightKg, ...productCore } = product;
       const publicLink = productPublicLink({
         productId: product.productId,
         linkRewrite,
@@ -188,10 +202,19 @@ export class CatalogApplicationService {
                 }
               : null;
 
-      const variantList = variants.map((variant) => ({
-        ...variant,
-        sku: variant.sku ?? product.sku,
-      }));
+      const variantList = variants.map((variant) => {
+        // weightImpactKg is an internal delta used only to resolve `weightKg` below; it is not
+        // part of the public `variants[]` contract (CAT-R1-T13B).
+        const { weightImpactKg: _weightImpactKg, ...publicVariant } = variant;
+        return { ...publicVariant, sku: variant.sku ?? product.sku };
+      });
+
+      const weightKg = selectedVariant
+        ? resolveEffectiveWeightKg({
+            baseWeightKg,
+            weightImpactKg: selectedVariantBase?.weightImpactKg ?? 0,
+          })
+        : null;
 
       const timestamps = {
         productCheckedAt: new Date().toISOString(),
@@ -209,6 +232,7 @@ export class CatalogApplicationService {
           variants: variantList,
           pricing: null,
           stock: null,
+          weightKg,
           freshness: timestamps,
         };
         await this.dependencies.cache.set(key, response, config.cache.productTtlSeconds);
@@ -272,6 +296,7 @@ export class CatalogApplicationService {
         variants: variantList,
         pricing: resolvedPricing,
         stock: resolvedStock,
+        weightKg,
         freshness: timestamps,
       };
       await this.dependencies.cache.set(key, response, config.cache.productTtlSeconds);

@@ -32,6 +32,7 @@ function makeService(options?: {
       longDescription: 'Largo',
       linkRewrite: 'disco-bumper',
       active: true,
+      baseWeightKg: 20,
     }),
     getVariants: vi.fn().mockResolvedValue(options?.variants ?? []),
     getDefaultCombinationId: vi.fn().mockResolvedValue(options?.defaultCombinationId ?? null),
@@ -124,6 +125,7 @@ describe('CatalogApplicationService', () => {
     expect(result.attributes).toEqual([]);
     expect(result.stock?.physicalQuantity).toBe(8);
     expect(result.pricing?.quantity).toBe(2);
+    expect(result.weightKg).toBe(20);
     expect(stockProvider.getStock).toHaveBeenCalledWith(1, 0);
     expect(pricingProvider.quote).toHaveBeenCalledWith(
       expect.objectContaining({ productId: 1, combinationId: 0, quantity: 2 }),
@@ -142,6 +144,7 @@ describe('CatalogApplicationService', () => {
           physicalQuantity: 4,
           available: true,
           isDefault: true,
+          weightImpactKg: 0,
         },
       ],
       defaultCombinationId: 20,
@@ -156,6 +159,143 @@ describe('CatalogApplicationService', () => {
     });
     expect(result.selectedVariant?.sku).toBe('BUMPER');
     expect(result.attributes).toEqual([{ group: 'Peso', value: '20 kg' }]);
+    expect(result.weightKg).toBe(20);
+    expect(result.variants[0]).not.toHaveProperty('weightImpactKg');
+  });
+
+  it('adds combination weight impact to base weight for the selected variant (synthetic fixture — production impacts are 0 today)', async () => {
+    const { service } = makeService({
+      product: {
+        productId: 1,
+        name: 'Disco bumper',
+        sku: 'BUMPER',
+        shortDescription: 'Corto',
+        longDescription: 'Largo',
+        linkRewrite: 'disco-bumper',
+        active: true,
+        baseWeightKg: 20,
+      },
+      variants: [
+        {
+          combinationId: 20,
+          sku: null,
+          label: 'Peso: 20 kg',
+          attributes: [{ group: 'Peso', value: '20 kg' }],
+          impactPrice: 0,
+          physicalQuantity: 4,
+          available: true,
+          isDefault: true,
+          weightImpactKg: 2.5,
+        },
+      ],
+      defaultCombinationId: 20,
+    });
+
+    const result = await service.getProduct({ productId: 1, combinationId: 0, quantity: 1 });
+    expect(result.weightKg).toBe(22.5);
+  });
+
+  it('rounds the effective weight to 3 decimal places with ROUND_HALF_UP', async () => {
+    const { service } = makeService({
+      product: {
+        productId: 1,
+        name: 'Disco bumper',
+        sku: 'BUMPER',
+        shortDescription: 'Corto',
+        longDescription: 'Largo',
+        linkRewrite: 'disco-bumper',
+        active: true,
+        baseWeightKg: 20.1234,
+      },
+    });
+
+    const result = await service.getProduct({ productId: 1, combinationId: 0, quantity: 1 });
+    expect(result.weightKg).toBe(20.123);
+  });
+
+  it('preserves a literal zero weight instead of normalizing it to null', async () => {
+    const { service } = makeService({
+      product: {
+        productId: 505,
+        name: 'Costo logistico',
+        sku: 'CT',
+        shortDescription: null,
+        longDescription: null,
+        linkRewrite: 'costo-logistico',
+        active: true,
+        baseWeightKg: 0,
+      },
+    });
+
+    const result = await service.getProduct({ productId: 505, combinationId: 0, quantity: 1 });
+    expect(result.weightKg).toBe(0);
+    expect(result.weightKg).not.toBeNull();
+  });
+
+  it('fails closed with WeightUnavailableError when the resultant effective weight would be negative', async () => {
+    const { service } = makeService({
+      product: {
+        productId: 1,
+        name: 'Disco bumper',
+        sku: 'BUMPER',
+        shortDescription: 'Corto',
+        longDescription: 'Largo',
+        linkRewrite: 'disco-bumper',
+        active: true,
+        baseWeightKg: 1,
+      },
+      variants: [
+        {
+          combinationId: 20,
+          sku: null,
+          label: 'Peso: -2 kg (invalid, synthetic)',
+          attributes: [],
+          impactPrice: 0,
+          physicalQuantity: 4,
+          available: true,
+          isDefault: true,
+          weightImpactKg: -2,
+        },
+      ],
+      defaultCombinationId: 20,
+    });
+
+    await expect(service.getProduct({ productId: 1, combinationId: 0, quantity: 1 })).rejects.toMatchObject({
+      code: 'WEIGHT_UNAVAILABLE',
+    });
+  });
+
+  it('does not mutate the repository-provided variant objects while resolving weight', async () => {
+    const sourceVariant: VariantSummary = {
+      combinationId: 20,
+      sku: null,
+      label: 'Peso: 20 kg',
+      attributes: [{ group: 'Peso', value: '20 kg' }],
+      impactPrice: 0,
+      physicalQuantity: 4,
+      available: true,
+      isDefault: true,
+      weightImpactKg: 2.5,
+    };
+    const { service } = makeService({
+      variants: [sourceVariant],
+      defaultCombinationId: 20,
+    });
+
+    await service.getProduct({ productId: 1, combinationId: 0, quantity: 1 });
+
+    expect(sourceVariant.weightImpactKg).toBe(2.5);
+    expect(sourceVariant).toEqual({
+      combinationId: 20,
+      sku: null,
+      label: 'Peso: 20 kg',
+      attributes: [{ group: 'Peso', value: '20 kg' }],
+      impactPrice: 0,
+      physicalQuantity: 4,
+      available: true,
+      isDefault: true,
+      weightImpactKg: 2.5,
+    });
   });
 
   it('leaves price and stock null when a variant product has no default selection', async () => {
@@ -170,6 +310,7 @@ describe('CatalogApplicationService', () => {
           physicalQuantity: 4,
           available: true,
           isDefault: false,
+          weightImpactKg: 0,
         },
       ],
       defaultCombinationId: null,
@@ -180,7 +321,9 @@ describe('CatalogApplicationService', () => {
     expect(result.attributes).toEqual([]);
     expect(result.pricing).toBeNull();
     expect(result.stock).toBeNull();
+    expect(result.weightKg).toBeNull();
     expect(result.variants).toHaveLength(1);
+    expect(result.variants[0]).not.toHaveProperty('weightImpactKg');
   });
 
   it('rejects an unknown combination', async () => {
@@ -195,6 +338,7 @@ describe('CatalogApplicationService', () => {
           physicalQuantity: 4,
           available: true,
           isDefault: false,
+          weightImpactKg: 0,
         },
       ],
     });
@@ -231,12 +375,14 @@ describe('CatalogApplicationService', () => {
         longDescription: 'Servicio interno',
         linkRewrite: 'servicio-vendedor-pesas-chile',
         active: true,
+        baseWeightKg: 0,
       },
     });
 
     const result = await service.getProduct({ productId: 444, combinationId: 0, quantity: 1 });
 
     expect(result.product.productId).toBe(444);
+    expect(result.weightKg).toBe(0);
     expect(result.product.name).toBe('Servicio vendedor Pesas Chile');
   });
 
@@ -308,6 +454,7 @@ describe('CatalogApplicationService', () => {
                 longDescription: 'Largo',
                 linkRewrite: 'disco-bumper',
                 active: true,
+                baseWeightKg: 20,
               },
       ),
     });
@@ -327,9 +474,13 @@ describe('CatalogApplicationService', () => {
     );
 
     expect(result.items[0]?.ok).toBe(true);
+    if (result.items[0]?.ok) {
+      expect(result.items[0].product.weightKg).toBe(20);
+    }
     expect(result.items[1]?.ok).toBe(false);
     if (!result.items[1]?.ok) {
       expect(result.items[1]?.error.correlationId).toBe('corr-123');
+      expect(result.items[1]?.error).not.toHaveProperty('weightKg');
     }
   });
 
@@ -343,6 +494,7 @@ describe('CatalogApplicationService', () => {
         longDescription: 'Largo',
         linkRewrite: productId === 505 ? 'costo-logistico' : 'disco-bumper',
         active: true,
+        baseWeightKg: productId === 505 ? 0 : 20,
       })),
     });
     const service = new CatalogApplicationService({
@@ -362,6 +514,7 @@ describe('CatalogApplicationService', () => {
     if (result.items[0]?.ok) {
       expect(result.items[0].product.product.productId).toBe(505);
       expect(result.items[0].product.product.name).toBe('Costo logistico');
+      expect(result.items[0].product.weightKg).toBe(0);
     }
   });
 });

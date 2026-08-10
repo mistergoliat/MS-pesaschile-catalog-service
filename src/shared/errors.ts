@@ -7,6 +7,7 @@ export type ErrorCode =
   | 'AMBIGUOUS_PRODUCT'
   | 'PRICE_UNAVAILABLE'
   | 'STOCK_UNAVAILABLE'
+  | 'WEIGHT_UNAVAILABLE'
   | 'DATABASE_UNAVAILABLE'
   | 'CATALOG_QUERY_FAILED'
   | 'INTERNAL_ERROR';
@@ -62,6 +63,12 @@ export class PriceUnavailableError extends CatalogError {
 export class StockUnavailableError extends CatalogError {
   constructor(message = 'Stock is unavailable') {
     super('STOCK_UNAVAILABLE', message, 503);
+  }
+}
+
+export class WeightUnavailableError extends CatalogError {
+  constructor(message = 'Weight is unavailable') {
+    super('WEIGHT_UNAVAILABLE', message, 503);
   }
 }
 

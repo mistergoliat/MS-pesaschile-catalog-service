@@ -15,6 +15,7 @@ export function createRepositoryStub(overrides: Partial<CatalogRepository> = {})
       longDescription: 'Descripción larga',
       linkRewrite: 'disco-bumper-olimpico',
       active: true,
+      baseWeightKg: 20,
     } satisfies ProductCoreRecord),
     getVariants: vi.fn().mockResolvedValue([] as VariantSummary[]),
     getVariant: vi.fn().mockResolvedValue(null),

@@ -19,6 +19,7 @@ type ProductCoreRow = RowDataPacket & {
   description_short: string | null;
   description: string | null;
   link_rewrite: string | null;
+  baseWeight: number;
 };
 
 type VariantRow = RowDataPacket & {
@@ -28,6 +29,7 @@ type VariantRow = RowDataPacket & {
   impactPrice: number;
   physicalQuantity: number;
   isDefault: number;
+  weightImpact: number;
 };
 
 type SearchCandidateRow = RowDataPacket & SearchCandidate;
@@ -98,7 +100,8 @@ export class MySqlCatalogRepository implements CatalogRepository {
           NULLIF(TRIM(p.reference), '') AS sku,
           pl.description_short,
           pl.description,
-          NULLIF(TRIM(pl.link_rewrite), '') AS link_rewrite
+          NULLIF(TRIM(pl.link_rewrite), '') AS link_rewrite,
+          p.weight AS baseWeight
         FROM ${table('product')} p
         INNER JOIN ${table('product_lang')} pl
           ON pl.id_product = p.id_product
@@ -125,6 +128,7 @@ export class MySqlCatalogRepository implements CatalogRepository {
       longDescription: stripHtml(row.description),
       linkRewrite: row.link_rewrite?.trim() || null,
       active: true,
+      baseWeightKg: Number(row.baseWeight ?? 0),
     };
   }
 
@@ -143,7 +147,8 @@ export class MySqlCatalogRepository implements CatalogRepository {
           ) AS label,
           COALESCE(pas.price, pa.price, 0) AS impactPrice,
           sa.physical_quantity AS physicalQuantity,
-          COALESCE(pa.default_on, 0) AS isDefault
+          COALESCE(pa.default_on, 0) AS isDefault,
+          COALESCE(pas.weight, pa.weight, 0) AS weightImpact
         FROM ${table('product')} p
         INNER JOIN ${table('product_attribute')} pa
           ON pa.id_product = p.id_product
@@ -172,7 +177,9 @@ export class MySqlCatalogRepository implements CatalogRepository {
           pa.price,
           pas.price,
           sa.physical_quantity,
-          pa.default_on
+          pa.default_on,
+          pa.weight,
+          pas.weight
         ORDER BY pa.default_on DESC, pa.id_product_attribute ASC
       `,
       [this.scope.shopId, this.scope.shopId, this.scope.langId, this.scope.langId, productId],
@@ -189,6 +196,7 @@ export class MySqlCatalogRepository implements CatalogRepository {
       physicalQuantity: Number(row.physicalQuantity ?? 0),
       available: Number(row.physicalQuantity ?? 0) > 0,
       isDefault: Boolean(row.isDefault),
+      weightImpactKg: Number(row.weightImpact ?? 0),
     }));
   }
 

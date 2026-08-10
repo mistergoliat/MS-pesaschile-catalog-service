@@ -16,6 +16,7 @@ export type ProductCore = {
 
 export type ProductCoreRecord = ProductCore & {
   linkRewrite: string | null;
+  baseWeightKg: number;
 };
 
 export type AttributeValue = {
@@ -32,6 +33,7 @@ export type VariantSummary = {
   physicalQuantity: number;
   available: boolean;
   isDefault: boolean;
+  weightImpactKg: number;
 };
 
 export type SearchMatchType = 'exact_sku' | 'exact_name' | 'partial_name' | 'description';
@@ -53,9 +55,12 @@ export type ProductDetail = {
   publicLink: ProductPublicLink;
   selectedVariant: Pick<VariantSummary, 'combinationId' | 'sku' | 'label' | 'attributes'> | null;
   attributes: AttributeValue[];
-  variants: VariantSummary[];
+  // weightImpactKg is deliberately excluded from the public variants[] contract — it is an
+  // internal delta used only to resolve `weightKg` (CAT-R1-T13B), not a wire field.
+  variants: Array<Omit<VariantSummary, 'weightImpactKg'>>;
   pricing: ProductPricing | null;
   stock: ProductStock | null;
+  weightKg: number | null;
   freshness: {
     productCheckedAt: string;
     priceCalculatedAt: string | null;
