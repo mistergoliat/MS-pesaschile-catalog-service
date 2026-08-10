@@ -49,6 +49,7 @@ function catalogApplicationService() {
       longDescription: 'Detalle comercial del producto',
       linkRewrite: productId === 123 ? 'seguro-barra-olimpica' : 'barra-olimpica-20-kg',
       active: true,
+      baseWeightKg: 20,
     }),
     getVariants: async () => [
       {
@@ -60,6 +61,7 @@ function catalogApplicationService() {
         physicalQuantity: 8,
         available: true,
         isDefault: true,
+        weightImpactKg: 0.2,
       },
     ],
     getDefaultCombinationId: async () => 456,
@@ -159,6 +161,8 @@ describe('SearchProducts V2 client HTTP wiring', () => {
       combinationId: '456',
       stock: { status: 'in_stock', quantity: 8, available: true },
     });
+    // recommend_catalog_products is explicitly out of scope for weight (CAT-R1-T13B §3/§15).
+    expect(search.recommendations[0]?.product).not.toHaveProperty('weightKg');
 
     const candidate = search.recommendations[0]!.product;
     const details = await getProduct({
@@ -171,6 +175,8 @@ describe('SearchProducts V2 client HTTP wiring', () => {
     expect(details.selectedVariant?.combinationId).toBe(456);
     expect(details.pricing?.effectiveUnitPrice).toBe(9990);
     expect(details.stock?.physicalQuantity).toBe(8);
+    // get_product_details resolves base(20) + combination impact(0.2) via the real HTTP + client path.
+    expect(details.weightKg).toBe(20.2);
   });
 
   it('returns a controlled empty result for a CRM term without candidates', async () => {

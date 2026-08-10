@@ -23,6 +23,7 @@ describe('agent flow', () => {
         longDescription: 'Disco bumper de alta densidad',
         linkRewrite: 'disco-bumper-olimpico-20-kg',
         active: true,
+        baseWeightKg: 20,
       }),
       getVariants: async () => [
         {
@@ -34,6 +35,7 @@ describe('agent flow', () => {
           physicalQuantity: 8,
           available: true,
           isDefault: true,
+          weightImpactKg: 0.5,
         },
       ],
       getDefaultCombinationId: async () => 456,
@@ -105,6 +107,10 @@ describe('agent flow', () => {
     expect(product.pricing?.effectiveUnitPrice).toBe(49990);
     expect(product.stock?.physicalQuantity).toBe(8);
     expect(product.selectedVariant?.combinationId).toBe(456);
+    // Real HTTP round trip through Fastify serialization + the client's strict Zod parsing —
+    // exercises the base(20) + combination impact(0.5) formula end to end (CAT-R1-T13B).
+    expect(product.weightKg).toBe(20.5);
+    expect(product.variants[0]).not.toHaveProperty('weightImpactKg');
 
     await app.close();
   });

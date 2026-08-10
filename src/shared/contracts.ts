@@ -114,6 +114,7 @@ export const productResponseSchema = z
     variants: z.array(variantSchema),
     pricing: pricingSchema.nullable(),
     stock: stockSchema.nullable(),
+    weightKg: z.number().nonnegative().nullable(),
     freshness: z
       .object({
         productCheckedAt: z.string(),

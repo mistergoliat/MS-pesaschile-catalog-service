@@ -44,6 +44,7 @@ function productIntentRuntime() {
       longDescription: null,
       linkRewrite: 'barra-olimpica-15-kg',
       active: true,
+      baseWeightKg: 15,
     })),
   });
   const service = new CatalogApplicationService({

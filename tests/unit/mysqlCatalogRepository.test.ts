@@ -130,3 +130,94 @@ describe('MySqlCatalogRepository discovery exclusions', () => {
     expect(fake.calls).toHaveLength(1);
   });
 });
+
+describe('MySqlCatalogRepository product weight (CAT-R1-T13B)', () => {
+  function productCoreRow(overrides: Record<string, unknown> = {}) {
+    return {
+      id_product: 1,
+      name: 'Barra Olimpica 20kg',
+      sku: 'BAR-20',
+      description_short: 'Barra olimpica',
+      description: null,
+      link_rewrite: 'barra-olimpica-20kg',
+      baseWeight: 20,
+      ...overrides,
+    };
+  }
+
+  function variantRow(overrides: Record<string, unknown> = {}) {
+    return {
+      combinationId: 10,
+      sku: 'BAR-20-RED',
+      label: 'Color: Rojo',
+      impactPrice: 0,
+      physicalQuantity: 4,
+      isDefault: 1,
+      weightImpact: 0,
+      ...overrides,
+    };
+  }
+
+  it('reads p.weight as part of the existing product-core query, not a separate one', async () => {
+    const fake = poolWithRows([[productCoreRow({ baseWeight: 20 })]]);
+    const repository = new MySqlCatalogRepository(fake.pool as never);
+
+    const product = await repository.getProductCore(1);
+
+    expect(fake.calls).toHaveLength(1);
+    expect(fake.calls[0]!.sql).toContain('p.weight AS baseWeight');
+    expect(product?.baseWeightKg).toBe(20);
+  });
+
+  it('maps a decimal base weight without precision loss', async () => {
+    const fake = poolWithRows([[productCoreRow({ baseWeight: 0.1 })]]);
+    const repository = new MySqlCatalogRepository(fake.pool as never);
+
+    const product = await repository.getProductCore(1);
+
+    expect(product?.baseWeightKg).toBe(0.1);
+  });
+
+  it('preserves a literal zero base weight (not coerced or dropped)', async () => {
+    const fake = poolWithRows([[productCoreRow({ baseWeight: 0 })]]);
+    const repository = new MySqlCatalogRepository(fake.pool as never);
+
+    const product = await repository.getProductCore(1);
+
+    expect(product?.baseWeightKg).toBe(0);
+  });
+
+  it('reads combination weight impact as part of the existing variants query with shop-override precedence matching price', async () => {
+    const fake = poolWithRows([[variantRow({ weightImpact: 0 })]]);
+    const repository = new MySqlCatalogRepository(fake.pool as never);
+
+    const variants = await repository.getVariants(1);
+
+    // getVariants issues the variants query plus a separate attributes-map query; the weight
+    // impact column lives on the first (variants) query alongside price impact.
+    const sql = fake.calls[0]!.sql;
+    expect(sql).toContain('COALESCE(pas.weight, pa.weight, 0) AS weightImpact');
+    // Same LEFT JOIN ... product_attribute_shop already used for price impact — no new join introduced.
+    expect(sql.match(/product_attribute_shop/gu)).toHaveLength(1);
+    expect(variants[0]?.weightImpactKg).toBe(0);
+  });
+
+  it('maps a non-zero synthetic combination weight impact (production currently has none live)', async () => {
+    const fake = poolWithRows([[variantRow({ weightImpact: 2.5 })]]);
+    const repository = new MySqlCatalogRepository(fake.pool as never);
+
+    const variants = await repository.getVariants(1);
+
+    expect(variants[0]?.weightImpactKg).toBe(2.5);
+  });
+
+  it('does not expose weightImpactKg through the discovery search candidate shape', async () => {
+    const fake = poolWithRows([[searchRow()]]);
+    const repository = new MySqlCatalogRepository(fake.pool as never);
+
+    const [candidate] = await repository.getSearchCandidates('barra olimpica 20kg', false, 5);
+
+    expect(candidate).not.toHaveProperty('weightImpactKg');
+    expect(candidate).not.toHaveProperty('baseWeightKg');
+  });
+});

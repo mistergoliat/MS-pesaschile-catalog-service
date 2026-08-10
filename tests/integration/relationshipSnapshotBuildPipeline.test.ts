@@ -108,6 +108,7 @@ function catalogService() {
       longDescription: null,
       linkRewrite: `producto-${productId}`,
       active: true,
+      baseWeightKg: 1,
     })),
   });
   return {

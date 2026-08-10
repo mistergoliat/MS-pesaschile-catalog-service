@@ -13,6 +13,7 @@
     "test:integration": "vitest run --config vitest.config.ts tests/integration",
     "smoke": "tsx scripts/smoke-test.ts",
     "validate:prices": "tsx scripts/validate-price-parity.ts",
+    "validate:weight": "tsx scripts/validate-weight-parity.ts",
     "relationship:snapshot:build": "tsx src/cli/buildRelationshipSnapshot.ts"
   },
   "dependencies": {
