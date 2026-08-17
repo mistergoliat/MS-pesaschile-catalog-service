@@ -29,6 +29,7 @@ export type PricingProvider = {
     subtotal: number;
     currency: string;
     taxIncluded: true;
+    taxRate: number;
     taxMode: 'configured_rate';
     discountApplied: boolean;
     discountType: 'amount' | 'percentage' | null;

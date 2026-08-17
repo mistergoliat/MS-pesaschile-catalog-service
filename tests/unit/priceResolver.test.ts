@@ -128,4 +128,42 @@ describe('resolvePrice', () => {
 
     expect(result.baseUnitPrice).toBe(11899);
   });
+
+  // SALES-AGENT-R1-T1.1: taxRate must be the exact rate already applied to
+  // derive baseUnitPrice/effectiveUnitPrice - never a second, independently
+  // computed or hardcoded value.
+  it('exposes taxRate as a verbatim passthrough of context.taxRate, never inferred or recomputed', () => {
+    const result = resolvePrice(
+      { baseProductPrice: 10000, combinationImpact: 0, specificPrices: [] },
+      context,
+    );
+
+    expect(result.taxRate).toBe(context.taxRate);
+    expect(result.taxRate).toBe(0.19);
+    expect(result.taxIncluded).toBe(true);
+  });
+
+  it('exposes the same taxRate for a combination/variant lookup as for the base product - tax is never combination-specific', () => {
+    const baseResult = resolvePrice(
+      { baseProductPrice: 10000, combinationImpact: 0, specificPrices: [] },
+      { ...context, combinationId: 0 },
+    );
+    const variantResult = resolvePrice(
+      { baseProductPrice: 10000, combinationImpact: 500, specificPrices: [] },
+      { ...context, combinationId: 20 },
+    );
+
+    expect(baseResult.taxRate).toBe(variantResult.taxRate);
+  });
+
+  it('a different configured taxRate changes the exposed value identically to how it changes the computed price - never a stale/hardcoded 0.19', () => {
+    const alternateContext: PriceContext = { ...context, taxRate: 0.1 };
+    const result = resolvePrice(
+      { baseProductPrice: 10000, combinationImpact: 0, specificPrices: [] },
+      alternateContext,
+    );
+
+    expect(result.taxRate).toBe(0.1);
+    expect(result.baseUnitPrice).toBe(11000);
+  });
 });

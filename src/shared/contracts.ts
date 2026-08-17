@@ -85,6 +85,7 @@ export const pricingSchema = z
     subtotal: z.number().int(),
     currency: z.string(),
     taxIncluded: z.literal(true),
+    taxRate: z.number().nonnegative(),
     taxMode: z.literal('configured_rate'),
     discountApplied: z.boolean(),
     discountType: z.enum(['amount', 'percentage']).nullable(),

@@ -132,6 +132,7 @@ export function resolvePrice(
     subtotal: effectiveUnitPrice * context.quantity,
     currency: context.currencyCode,
     taxIncluded: true,
+    taxRate: context.taxRate,
     taxMode: 'configured_rate',
     discountApplied: effectiveUnitPrice < baseUnitPrice,
     discountType,

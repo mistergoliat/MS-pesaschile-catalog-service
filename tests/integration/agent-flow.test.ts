@@ -70,6 +70,7 @@ describe('agent flow', () => {
           subtotal: 49990,
           currency: 'CLP',
           taxIncluded: true,
+          taxRate: 0.19,
           taxMode: 'configured_rate',
           discountApplied: true,
           discountType: 'percentage',
@@ -105,6 +106,11 @@ describe('agent flow', () => {
     );
 
     expect(product.pricing?.effectiveUnitPrice).toBe(49990);
+    // SALES-AGENT-R1-T1.1: taxRate must survive the real Fastify response
+    // schema (pricingSchema) and the client's strict Zod parsing - not just
+    // exist on the internal PricingProvider result.
+    expect(product.pricing?.taxRate).toBe(0.19);
+    expect(product.pricing?.taxIncluded).toBe(true);
     expect(product.stock?.physicalQuantity).toBe(8);
     expect(product.selectedVariant?.combinationId).toBe(456);
     // Real HTTP round trip through Fastify serialization + the client's strict Zod parsing —

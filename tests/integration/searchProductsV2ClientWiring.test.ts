@@ -84,6 +84,7 @@ function catalogApplicationService() {
           subtotal: 9990,
           currency: 'CLP',
           taxIncluded: true,
+          taxRate: 0.19,
           taxMode: 'configured_rate',
           discountApplied: true,
           discountType: 'amount',

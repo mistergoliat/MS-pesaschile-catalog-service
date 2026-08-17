@@ -36,6 +36,14 @@ export type PriceResolution = {
   subtotal: number;
   currency: string;
   taxIncluded: true;
+  /**
+   * SALES-AGENT-R1-T1.1: the exact rate already applied above to derive
+   * baseUnitPrice/effectiveUnitPrice from the tax-excluded catalog price -
+   * never a second, independently-read value. Same single configured-rate
+   * source (config.pricing.taxRate) the commercial-truth pricing model
+   * (domain/catalog/commercial-truth) already exposes as CatalogCommercialPrice.taxRate.
+   */
+  taxRate: number;
   taxMode: 'configured_rate';
   discountApplied: boolean;
   discountType: 'amount' | 'percentage' | null;

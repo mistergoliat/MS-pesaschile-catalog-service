@@ -55,6 +55,7 @@ export function createPricingProviderStub(overrides: Partial<PricingProvider> = 
       subtotal: 1000,
       currency: 'CLP',
       taxIncluded: true,
+      taxRate: 0.19,
       taxMode: 'configured_rate',
       discountApplied: false,
       discountType: null,

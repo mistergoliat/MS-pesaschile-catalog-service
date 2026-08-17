@@ -15,6 +15,7 @@ function makeService(options?: {
     subtotal: number;
     currency: string;
     taxIncluded: true;
+    taxRate: number;
     taxMode: 'configured_rate';
     discountApplied: boolean;
     discountType: 'amount' | 'percentage' | null;
@@ -48,6 +49,7 @@ function makeService(options?: {
       subtotal: 1000,
       currency: 'CLP',
       taxIncluded: true,
+      taxRate: 0.19,
       taxMode: 'configured_rate',
       discountApplied: false,
       discountType: null,
