@@ -22,7 +22,9 @@ import {
   type ActiveProductRelationshipSnapshotReader,
   type ProductRelationshipRuntimeRefreshResult,
 } from './domain/recommendation/relationship-engine/runtime/index.js';
+import { ProductRelationshipRuntimeError } from './domain/recommendation/relationship-engine/runtime/errors.js';
 import type { ProductRelationshipSnapshotStore } from './domain/recommendation/relationship-engine/publication/index.js';
+import { ProductRelationshipSnapshotStoreError } from './domain/recommendation/relationship-engine/publication/errors.js';
 import { createCorrelationId } from './shared/crypto.js';
 import { CatalogRecommendationCommercialDataProvider } from './infrastructure/recommendation/catalogRecommendationCommercialDataProvider.js';
 
@@ -32,6 +34,29 @@ export type RecommendationRuntime = {
   readonly initialRefreshResult: ProductRelationshipRuntimeRefreshResult | null;
   readonly initialRefreshError: Error | null;
 };
+
+function snapshotLoadFailure(input: {
+  result: ProductRelationshipRuntimeRefreshResult | null;
+  error: Error | null;
+}): { reasonCode: string; retryable: boolean } | null {
+  if (input.result?.status === 'cleared') {
+    return { reasonCode: 'NO_ACTIVE_SNAPSHOT', retryable: false };
+  }
+
+  if (input.error instanceof ProductRelationshipSnapshotStoreError) {
+    return { reasonCode: input.error.code, retryable: false };
+  }
+
+  if (input.error instanceof ProductRelationshipRuntimeError) {
+    return { reasonCode: input.error.code, retryable: false };
+  }
+
+  if (input.error) {
+    return { reasonCode: 'UNKNOWN_SNAPSHOT_LOAD_FAILURE', retryable: true };
+  }
+
+  return null;
+}
 
 export async function createRecommendationRuntime(input: {
   catalogCommercialTruthService: CatalogCommercialTruthService;
@@ -50,6 +75,24 @@ export async function createRecommendationRuntime(input: {
     initialRefreshResult = await relationshipSnapshotReader.refresh();
   } catch (error) {
     initialRefreshError = error instanceof Error ? error : new Error('Relationship snapshot refresh failed');
+  }
+
+  const activeSnapshot = relationshipSnapshotReader.getActiveSnapshotMetadata();
+  if (activeSnapshot) {
+    input.logger?.info('relationship_snapshot_loaded', {
+      snapshotId: activeSnapshot.snapshotId,
+      relationshipCount: activeSnapshot.relationshipCount,
+      modelVersion: activeSnapshot.modelVersion,
+      evidenceWindow: activeSnapshot.evidenceWindow,
+    });
+  } else {
+    const failure = snapshotLoadFailure({
+      result: initialRefreshResult,
+      error: initialRefreshError,
+    });
+    if (failure) {
+      input.logger?.error('relationship_snapshot_load_failed', failure);
+    }
   }
 
   const commercialRecommendationService = new DefaultCommercialProductRecommendationService(

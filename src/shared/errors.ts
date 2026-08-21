@@ -80,7 +80,7 @@ export class DatabaseUnavailableError extends CatalogError {
 
 export class CatalogQueryFailedError extends CatalogError {
   constructor(message = 'Catalog query failed') {
-    super('CATALOG_QUERY_FAILED', message, 502);
+    super('CATALOG_QUERY_FAILED', message, 500);
   }
 }
 

@@ -13,6 +13,11 @@ describe('security helpers', () => {
     expect(isApiKeyAuthorized('wrong', ['test-api-key', 'rotate-me'])).toBe(false);
   });
 
+  it('does not trim outer whitespace from the incoming API key', () => {
+    expect(isApiKeyAuthorized('test-api-key ', ['test-api-key'])).toBe(false);
+    expect(isApiKeyAuthorized('\ntest-api-key', ['test-api-key'])).toBe(false);
+  });
+
   it('sanitizes HTML content', () => {
     expect(stripHtml('<p>Hello <strong>world</strong></p><script>alert(1)</script>')).toBe(
       'Hello world',

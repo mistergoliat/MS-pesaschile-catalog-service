@@ -36,7 +36,7 @@ const envSchema = z.object({
   DB_HOST: z.string().min(1),
   DB_PORT: z.coerce.number().int().positive().default(3306),
   DB_USER: z.string().min(1),
-  DB_PASSWORD: z.string(),
+  DB_PASSWORD: z.string().trim().min(1),
   DB_NAME: z.string().min(1),
   DB_CONNECTION_LIMIT: z.coerce.number().int().min(1).max(50).default(10),
   DB_QUERY_TIMEOUT_MS: z.coerce.number().int().min(100).max(30000).default(3000),
