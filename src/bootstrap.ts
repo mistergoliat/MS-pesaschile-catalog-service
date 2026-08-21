@@ -133,12 +133,6 @@ export async function createRuntime() {
       error: (event, fields) => logger.error({ event, ...fields }, event),
     },
   });
-  if (recommendationRuntime.initialRefreshError) {
-    logger.warn(
-      { error: recommendationRuntime.initialRefreshError },
-      'Relationship snapshot could not be loaded at startup',
-    );
-  }
 
   return {
     pool,

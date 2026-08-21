@@ -2,6 +2,7 @@ import { config } from './shared/config.js';
 import { logger } from './shared/logger.js';
 import { buildApp } from './interfaces/http/app.js';
 import { createRuntime } from './bootstrap.js';
+import { collectRuntimeReadinessChecks } from './shared/readiness.js';
 
 const runtime = await createRuntime();
 
@@ -11,23 +12,12 @@ const app = await buildApp({
   productIntentResolutionService: runtime.productIntentResolutionService,
   searchProductsV2Service: runtime.searchProductsV2Service,
   repository: runtime.repository,
-  readyCheck: async () => {
-    try {
-      await runtime.repository.ping();
-      const redis =
-        config.cache.driver === 'redis'
-          ? (await runtime.cache.ping() ? 'ok' : 'unavailable')
-          : 'ok';
-      const relationshipSnapshot = runtime.relationshipSnapshotReader.getStatus().state === 'ready' ? 'ok' : 'unavailable';
-      return { database: 'ok', redis, relationshipSnapshot };
-    } catch {
-      return {
-        database: 'unavailable',
-        redis: config.cache.driver === 'redis' ? 'unavailable' : 'ok',
-        relationshipSnapshot: runtime.relationshipSnapshotReader.getStatus().state === 'ready' ? 'ok' : 'unavailable',
-      };
-    }
-  },
+  readyCheck: () => collectRuntimeReadinessChecks({
+    repository: runtime.repository,
+    cache: runtime.cache,
+    cacheDriver: config.cache.driver,
+    relationshipSnapshotReader: runtime.relationshipSnapshotReader,
+  }),
 });
 
 const shutdown = async (signal: string) => {

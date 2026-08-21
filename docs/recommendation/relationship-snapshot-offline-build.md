@@ -2,7 +2,7 @@
 
 T11.2 adds an explicit offline command that reads historical PrestaShop orders through the read-only catalog database, transforms them with T02, calculates `same_order` evidence with T03, evaluates reliability with T04, validates relationships with T05, and publishes the resulting active snapshot with T06.
 
-The HTTP service does not run this pipeline at startup. SearchProducts V2 only consumes the active snapshot after it has been published.
+The HTTP service does not run this pipeline at startup. SearchProducts V2 only consumes the active snapshot after it has been published, and the runtime only reloads the active snapshot on process start.
 
 ## Command
 
@@ -92,7 +92,7 @@ To revert to a previous snapshot, update `active.json` atomically to point at an
 }
 ```
 
-Use the same temporary-file-and-rename approach used by the store, then restart or refresh the runtime so T07 reloads the active pointer.
+Use the same temporary-file-and-rename approach used by the store, then restart the runtime so T07 reloads the active pointer. This repository does not expose a separate administrative hot-reload endpoint.
 
 ## Report Fields
 

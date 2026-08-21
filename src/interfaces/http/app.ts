@@ -176,7 +176,7 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
     if (path.startsWith('/health') || path.startsWith('/docs') || path === '/openapi.json') {
       return;
     }
-    if (path === '/metrics' && !config.observability.metricsRequireApiKey) {
+    if (path === '/metrics' && config.observability.enableMetrics && !config.observability.metricsRequireApiKey) {
       return;
     }
     const apiKey = request.headers['x-api-key'];
@@ -185,10 +185,12 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
     }
   });
 
-  app.get('/metrics', async (request, reply) => {
-    reply.type('text/plain; version=0.0.4');
-    return reply.send(await metricsText());
-  });
+  if (config.observability.enableMetrics) {
+    app.get('/metrics', async (_request, reply) => {
+      reply.type('text/plain; version=0.0.4');
+      return reply.send(await metricsText());
+    });
+  }
 
   app.get('/v1/products/search', {
     schema: {

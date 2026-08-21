@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildApp } from '../../src/interfaces/http/app.js';
 import { createRepositoryStub } from '../support/fakes.js';
 import { config } from '../../src/shared/config.js';
+import { CatalogQueryFailedError, DatabaseUnavailableError } from '../../src/shared/errors.js';
 
 afterEach(async () => {
   vi.restoreAllMocks();
@@ -161,6 +162,82 @@ describe('HTTP interface', () => {
     expect(second.statusCode).toBe(429);
     expect(second.json()).toMatchObject({ error: { code: 'RATE_LIMITED' } });
     (config as unknown as { limits: { rateLimitMax: number } }).limits.rateLimitMax = original;
+    await app.close();
+  });
+
+  it('maps database infrastructure errors on GET /v1/products/search to 503', async () => {
+    const app = await makeApp({
+      service: {
+        searchProducts: vi.fn().mockRejectedValue(new DatabaseUnavailableError()),
+        getProduct: vi.fn(),
+        batchGetProducts: vi.fn(),
+      } as unknown as Parameters<typeof buildApp>[0]['service'],
+    });
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/products/search?q=disco%20bumper',
+      headers: { 'x-api-key': 'test-api-key' },
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toMatchObject({ error: { code: 'DATABASE_UNAVAILABLE' } });
+    await app.close();
+  });
+
+  it('maps catalog query defects on GET /v1/products/search to 500', async () => {
+    const app = await makeApp({
+      service: {
+        searchProducts: vi.fn().mockRejectedValue(new CatalogQueryFailedError()),
+        getProduct: vi.fn(),
+        batchGetProducts: vi.fn(),
+      } as unknown as Parameters<typeof buildApp>[0]['service'],
+    });
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/products/search?q=disco%20bumper',
+      headers: { 'x-api-key': 'test-api-key' },
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.json()).toMatchObject({ error: { code: 'CATALOG_QUERY_FAILED' } });
+    await app.close();
+  });
+
+  it('maps database infrastructure errors on GET /v1/products/:productId to 503', async () => {
+    const app = await makeApp({
+      service: {
+        searchProducts: vi.fn(),
+        getProduct: vi.fn().mockRejectedValue(new DatabaseUnavailableError()),
+        batchGetProducts: vi.fn(),
+      } as unknown as Parameters<typeof buildApp>[0]['service'],
+    });
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/products/1',
+      headers: { 'x-api-key': 'test-api-key' },
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toMatchObject({ error: { code: 'DATABASE_UNAVAILABLE' } });
+    await app.close();
+  });
+
+  it('maps catalog query defects on GET /v1/products/:productId to 500', async () => {
+    const app = await makeApp({
+      service: {
+        searchProducts: vi.fn(),
+        getProduct: vi.fn().mockRejectedValue(new CatalogQueryFailedError()),
+        batchGetProducts: vi.fn(),
+      } as unknown as Parameters<typeof buildApp>[0]['service'],
+    });
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/products/1',
+      headers: { 'x-api-key': 'test-api-key' },
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.json()).toMatchObject({ error: { code: 'CATALOG_QUERY_FAILED' } });
     await app.close();
   });
 });
