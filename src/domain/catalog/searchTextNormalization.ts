@@ -43,3 +43,15 @@ export function catalogSearchQueryVariants(query: string): string[] {
 export function tokenizeCatalogSearchText(input: string): string[] {
   return normalizeCatalogSearchText(input).split(/\s+/u).filter((token) => token.length > 0);
 }
+
+// Spanish linking words with no retrieval value on their own (A11.2-B). Kept minimal and
+// conservative: only articles/prepositions with no commercial meaning, never units or brands.
+const CATALOG_SEARCH_STOPWORDS = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'un', 'una']);
+
+// Drops stopwords from a token set used to build a mandatory (AND) SQL filter, so a filler
+// word like "de" can't sink an otherwise-matching query. Falls back to the original tokens if
+// filtering would empty the set, so a fallback query is never built from zero conditions.
+export function filterCatalogSearchStopwords(tokens: readonly string[]): string[] {
+  const significant = tokens.filter((token) => !CATALOG_SEARCH_STOPWORDS.has(token));
+  return significant.length > 0 ? significant : [...tokens];
+}

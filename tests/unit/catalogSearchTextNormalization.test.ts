@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   catalogSearchQueryVariants,
+  filterCatalogSearchStopwords,
   normalizeCatalogSearchText,
   tokenizeCatalogSearchText,
 } from '../../src/domain/catalog/searchTextNormalization.js';
@@ -50,5 +51,47 @@ describe('catalog search text normalization', () => {
 
   it('tokenizes canonical catalog search text', () => {
     expect(tokenizeCatalogSearchText('barra ol\u00edmpica 20 kg')).toEqual(['barra', 'olimpica', '20kg']);
+  });
+});
+
+describe('filterCatalogSearchStopwords (A11.2-B)', () => {
+  it.each([
+    ['de', ['discos', 'olimpicos', 'de', '20kg'], ['discos', 'olimpicos', '20kg']],
+    ['del', ['barra', 'del', 'gimnasio', '20kg'], ['barra', 'gimnasio', '20kg']],
+    ['la', ['disco', 'la', 'olimpico', '20kg'], ['disco', 'olimpico', '20kg']],
+    ['el', ['disco', 'el', 'olimpico', '20kg'], ['disco', 'olimpico', '20kg']],
+    ['los', ['discos', 'los', 'olimpicos'], ['discos', 'olimpicos']],
+    ['las', ['pesas', 'las', 'rusas'], ['pesas', 'rusas']],
+    ['un', ['un', 'disco', 'olimpico'], ['disco', 'olimpico']],
+    ['una', ['una', 'barra', 'olimpica'], ['barra', 'olimpica']],
+  ])('drops the stopword "%s" from the mandatory token set', (_stopword, input, expected) => {
+    expect(filterCatalogSearchStopwords(input)).toEqual(expected);
+  });
+
+  it('never removes commercial tokens that merely resemble stopwords in intent', () => {
+    expect(filterCatalogSearchStopwords(['para', 'con', 'sin', 'pro', 'max', 'mini', 'home']))
+      .toEqual(['para', 'con', 'sin', 'pro', 'max', 'mini', 'home']);
+  });
+
+  it.each([
+    ['20kg'],
+    ['15kg'],
+    ['50mm'],
+    ['2m'],
+    ['olimpico'],
+    ['rubber'],
+    ['bumper'],
+  ])('never removes the significant token %s', (token) => {
+    expect(filterCatalogSearchStopwords(['de', token])).toEqual([token]);
+  });
+
+  it('falls back to the original tokens when every token is a stopword', () => {
+    expect(filterCatalogSearchStopwords(['de', 'la'])).toEqual(['de', 'la']);
+    expect(filterCatalogSearchStopwords(['el'])).toEqual(['el']);
+    expect(filterCatalogSearchStopwords(['una'])).toEqual(['una']);
+  });
+
+  it('returns an empty array unchanged', () => {
+    expect(filterCatalogSearchStopwords([])).toEqual([]);
   });
 });

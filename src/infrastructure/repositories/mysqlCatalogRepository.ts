@@ -6,7 +6,11 @@ import type {
 } from '../../domain/catalog/ports.js';
 import type { AttributeValue, CatalogScope, ProductCoreRecord, VariantSummary } from '../../domain/catalog/types.js';
 import { DISCOVERY_EXCLUDED_PRODUCT_IDS } from '../../domain/catalog/discoveryExclusionPolicy.js';
-import { normalizeCatalogSearchText, tokenizeCatalogSearchText } from '../../domain/catalog/searchTextNormalization.js';
+import {
+  filterCatalogSearchStopwords,
+  normalizeCatalogSearchText,
+  tokenizeCatalogSearchText,
+} from '../../domain/catalog/searchTextNormalization.js';
 import { catalogSearchTextTokenCoverage } from '../../domain/catalog/searchTextRelevance.js';
 import { config } from '../../shared/config.js';
 import { stripHtml } from '../../shared/html.js';
@@ -308,9 +312,12 @@ export class MySqlCatalogRepository implements CatalogRepository {
 
     // Some specific queries are not contiguous phrases in product names. Require every
     // canonical token, keep this name-only, and merge after the historical phrase route.
+    // Linking stopwords (de/la/el/...) are dropped from this mandatory AND set only (A11.2-B) —
+    // they carry no retrieval signal and product names rarely contain them.
+    const mandatoryTokens = filterCatalogSearchStopwords(tokens);
     const tokenCandidates = this.mapSearchCandidateRows(await this.fetchSearchCandidateRows({
-      searchPredicateSql: tokens.map(() => 'pl.name LIKE ?').join(' AND '),
-      searchValues: tokens.map((token) => `%${token}%`),
+      searchPredicateSql: mandatoryTokens.map(() => 'pl.name LIKE ?').join(' AND '),
+      searchValues: mandatoryTokens.map((token) => `%${token}%`),
       includeOutOfStock,
       limit,
     }));

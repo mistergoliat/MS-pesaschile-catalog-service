@@ -131,6 +131,118 @@ describe('MySqlCatalogRepository discovery exclusions', () => {
   });
 });
 
+describe('MySqlCatalogRepository stopword retrieval fallback (A11.2-B)', () => {
+  it('SEARCH01: drops "de" from the mandatory token fallback for "discos olimpicos de 20kg"', async () => {
+    const fake = poolWithRows([
+      [],
+      [searchRow({ productId: 900, productName: 'Par Discos Olimpicos Grip Rubber 20kg | PROmachine' })],
+    ]);
+    const repository = new MySqlCatalogRepository(fake.pool as never);
+
+    const results = await repository.getSearchCandidates('discos olimpicos de 20kg', false, 5);
+
+    expect(results.map((result) => result.productId)).toEqual([900]);
+    expect(fake.calls).toHaveLength(2);
+    expect(fake.calls[1]!.sql).toContain('pl.name LIKE ? AND pl.name LIKE ? AND pl.name LIKE ?');
+    expect(fake.calls[1]!.values.slice(5, 8)).toEqual(['%discos%', '%olimpicos%', '%20kg%']);
+    expect(fake.calls[1]!.values).not.toContain('%de%');
+  });
+
+  it('SEARCH02: drops "de" from the mandatory token fallback for singular "disco olimpico de 20kg"', async () => {
+    const fake = poolWithRows([
+      [],
+      [searchRow({ productId: 901, productName: 'Disco Olimpico Grip Rubber 20kg | PROmachine' })],
+    ]);
+    const repository = new MySqlCatalogRepository(fake.pool as never);
+
+    const results = await repository.getSearchCandidates('disco olimpico de 20kg', false, 5);
+
+    expect(results.map((result) => result.productId)).toEqual([901]);
+    expect(fake.calls[1]!.sql).toContain('pl.name LIKE ? AND pl.name LIKE ? AND pl.name LIKE ?');
+    expect(fake.calls[1]!.values.slice(5, 8)).toEqual(['%disco%', '%olimpico%', '%20kg%']);
+    expect(fake.calls[1]!.values).not.toContain('%de%');
+  });
+
+  it('SEARCH03: keeps the existing all-substantive-token behavior for "discos olimpicos 20kg"', async () => {
+    const fake = poolWithRows([[], [searchRow({ productId: 902 })]]);
+    const repository = new MySqlCatalogRepository(fake.pool as never);
+
+    await repository.getSearchCandidates('discos olimpicos 20kg', false, 5);
+
+    expect(fake.calls[1]!.sql).toContain('pl.name LIKE ? AND pl.name LIKE ? AND pl.name LIKE ?');
+    expect(fake.calls[1]!.values.slice(5, 8)).toEqual(['%discos%', '%olimpicos%', '%20kg%']);
+  });
+
+  it('SEARCH04: keeps the existing behavior for "disco olimpico 20 kg" (non-canonical variant skips fallback)', async () => {
+    const fake = poolWithRows([[]]);
+    const repository = new MySqlCatalogRepository(fake.pool as never);
+
+    const results = await repository.getSearchCandidates('disco olimpico 20 kg', false, 5);
+
+    expect(results).toEqual([]);
+    expect(fake.calls).toHaveLength(1);
+  });
+
+  it('SEARCH07: drops "del" from the mandatory token fallback', async () => {
+    const fake = poolWithRows([[], [searchRow({ productId: 903, productName: 'Barra Gimnasio 20kg' })]]);
+    const repository = new MySqlCatalogRepository(fake.pool as never);
+
+    await repository.getSearchCandidates('barra del gimnasio 20kg', false, 5);
+
+    expect(fake.calls[1]!.sql).toContain('pl.name LIKE ? AND pl.name LIKE ? AND pl.name LIKE ?');
+    expect(fake.calls[1]!.values.slice(5, 8)).toEqual(['%barra%', '%gimnasio%', '%20kg%']);
+    expect(fake.calls[1]!.values).not.toContain('%del%');
+  });
+
+  it.each([
+    ['el', 'disco el olimpico 20kg', ['%disco%', '%olimpico%', '%20kg%']],
+    ['la', 'barra la olimpica 20kg', ['%barra%', '%olimpica%', '%20kg%']],
+  ])('SEARCH08: drops the intermediate stopword "%s"', async (stopword, query, expectedValues) => {
+    const fake = poolWithRows([[], [searchRow({ productId: 904 })]]);
+    const repository = new MySqlCatalogRepository(fake.pool as never);
+
+    await repository.getSearchCandidates(query, false, 5);
+
+    expect(fake.calls[1]!.values.slice(5, 8)).toEqual(expectedValues);
+    expect(fake.calls[1]!.values).not.toContain(`%${stopword}%`);
+  });
+
+  it.each([['de la'], ['el'], ['una']])(
+    'SEARCH09: never runs a mandatory-token fallback for a stopwords-only query "%s"',
+    async (query) => {
+      const fake = poolWithRows([[]]);
+      const repository = new MySqlCatalogRepository(fake.pool as never);
+
+      const results = await repository.getSearchCandidates(query, false, 5);
+
+      expect(results).toEqual([]);
+      expect(fake.calls).toHaveLength(1);
+    },
+  );
+
+  it('SEARCH10: never filters the unit token even when paired only with a stopword', async () => {
+    const fake = poolWithRows([[], [searchRow({ productId: 905, productName: 'Disco 20kg' })]]);
+    const repository = new MySqlCatalogRepository(fake.pool as never);
+
+    await repository.getSearchCandidates('disco de 20kg', false, 5);
+
+    expect(fake.calls[1]!.sql).toContain('pl.name LIKE ? AND pl.name LIKE ?');
+    expect(fake.calls[1]!.values.slice(5, 7)).toEqual(['%disco%', '%20kg%']);
+  });
+
+  it('does not widen the fallback into an OR: still requires every mandatory token to match', async () => {
+    const fake = poolWithRows([[], []]);
+    const repository = new MySqlCatalogRepository(fake.pool as never);
+
+    const results = await repository.getSearchCandidates('producto inexistente de 20kg', false, 5);
+
+    expect(results).toEqual([]);
+    expect(fake.calls).toHaveLength(2);
+    expect(fake.calls[1]!.sql).not.toContain(' OR ');
+    expect(fake.calls[1]!.sql.match(/LIKE \?/gu)).toHaveLength(3);
+  });
+});
+
 describe('MySqlCatalogRepository product weight (CAT-R1-T13B)', () => {
   function productCoreRow(overrides: Record<string, unknown> = {}) {
     return {
