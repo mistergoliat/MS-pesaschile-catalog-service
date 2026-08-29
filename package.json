@@ -14,7 +14,13 @@
     "smoke": "tsx scripts/smoke-runtime.ts",
     "validate:prices": "tsx scripts/validate-price-parity.ts",
     "validate:weight": "tsx scripts/validate-weight-parity.ts",
-    "relationship:snapshot:build": "tsx src/cli/buildRelationshipSnapshot.ts"
+    "relationship:snapshot:build": "tsx src/cli/buildRelationshipSnapshot.ts",
+    "product:semantic:classify": "tsx scripts/product-semantic-classification/classify-catalog.ts",
+    "product:semantic:v2-migration-audit": "tsx scripts/product-semantic-classification/non-product-policy-v2-migration.ts",
+    "product:semantic:acceptance-audit": "tsx scripts/product-semantic-classification/audit-classification-acceptance.ts",
+    "product:semantic:existing-family-miss-adjudication": "tsx scripts/product-semantic-classification/adjudicate-existing-family-misses.ts",
+    "product:semantic:snapshot:build": "tsx scripts/product-semantic-classification/build-semantic-snapshot.ts",
+    "product:semantic:snapshot:inspect": "tsx scripts/product-semantic-classification/inspect-semantic-snapshot.ts"
   },
   "dependencies": {
     "@fastify/rate-limit": "^10.3.0",
