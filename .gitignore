@@ -3,6 +3,12 @@ dist
 .env
 .DS_Store
 data/relationship-snapshots
+data/product-semantic-snapshots
 scripts/customer-profile-audit/outputs/
 scripts/audits/customer-profile/outputs/
 artifacts/
+
+# CUSTOMER-INTELLIGENCE-R2-A00.3.2 product semantic classification outputs are regenerated on demand
+# by `npm run product:semantic:classify` / `npm run product:semantic:v2-migration-audit` — never committed.
+scripts/product-semantic-classification/outputs/*
+!scripts/product-semantic-classification/outputs/.gitkeep
