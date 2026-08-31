@@ -11,6 +11,7 @@ const app = await buildApp({
   exploreProductsService: runtime.exploreProductsService,
   productIntentResolutionService: runtime.productIntentResolutionService,
   searchProductsV2Service: runtime.searchProductsV2Service,
+  productSemanticSnapshotReader: runtime.productSemanticSnapshotReader,
   repository: runtime.repository,
   readyCheck: () => collectRuntimeReadinessChecks({
     repository: runtime.repository,

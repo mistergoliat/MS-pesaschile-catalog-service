@@ -10,6 +10,8 @@ export type ErrorCode =
   | 'WEIGHT_UNAVAILABLE'
   | 'DATABASE_UNAVAILABLE'
   | 'CATALOG_QUERY_FAILED'
+  | 'PRODUCT_SEMANTICS_NOT_FOUND'
+  | 'PRODUCT_SEMANTICS_UNAVAILABLE'
   | 'INTERNAL_ERROR';
 
 export class CatalogError extends Error {
@@ -69,6 +71,18 @@ export class StockUnavailableError extends CatalogError {
 export class WeightUnavailableError extends CatalogError {
   constructor(message = 'Weight is unavailable') {
     super('WEIGHT_UNAVAILABLE', message, 503);
+  }
+}
+
+export class ProductSemanticsNotFoundError extends CatalogError {
+  constructor(message = 'Product is not present in the active product semantic snapshot') {
+    super('PRODUCT_SEMANTICS_NOT_FOUND', message, 404);
+  }
+}
+
+export class ProductSemanticsUnavailableError extends CatalogError {
+  constructor(message = 'Active product semantic snapshot is not loaded') {
+    super('PRODUCT_SEMANTICS_UNAVAILABLE', message, 503);
   }
 }
 

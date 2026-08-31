@@ -35,6 +35,12 @@ import type { CustomerAffinityEvidenceProvider } from './domain/recommendation/c
 import { createRecommendationRuntime } from './recommendationRuntime.js';
 import { logger } from './shared/logger.js';
 import { createCorrelationId } from './shared/crypto.js';
+import { resolveProductSemanticSnapshotDir } from './shared/productSemanticSnapshotConfig.js';
+import { FileProductSemanticSnapshotStore } from './infrastructure/product-semantic/fileProductSemanticSnapshotStore.js';
+import {
+  DefaultActiveProductSemanticSnapshotReader,
+  DefaultProductSemanticRuntimeIndexBuilder,
+} from './domain/product-semantic-snapshot/runtime/index.js';
 
 export function createCustomerAffinityEvidenceProvider(
   mode: typeof config.recommendation.customerAffinityProviderMode,
@@ -134,6 +140,25 @@ export async function createRuntime() {
     },
   });
 
+  // Product semantics is a degradable inspection branch (CATALOG-INTELLIGENCE
+  // A00.5.1): a missing/unloaded snapshot must not fail catalog service boot
+  // or readiness, only make the semantics endpoint report 503.
+  const productSemanticSnapshotReader = new DefaultActiveProductSemanticSnapshotReader(
+    new FileProductSemanticSnapshotStore(resolveProductSemanticSnapshotDir()),
+    new DefaultProductSemanticRuntimeIndexBuilder(),
+  );
+  try {
+    await productSemanticSnapshotReader.refresh();
+    const activeSnapshot = productSemanticSnapshotReader.getActiveSnapshotMetadata();
+    if (activeSnapshot) {
+      logger.info({ snapshotId: activeSnapshot.snapshotId, recordCount: activeSnapshot.recordCount }, 'product_semantic_snapshot_loaded');
+    } else {
+      logger.warn({}, 'product_semantic_snapshot_not_available');
+    }
+  } catch (error) {
+    logger.error({ error }, 'product_semantic_snapshot_load_failed');
+  }
+
   return {
     pool,
     cache,
@@ -145,5 +170,6 @@ export async function createRuntime() {
     searchProductsV2Service: recommendationRuntime.searchProductsV2Service,
     relationshipSnapshotInitialRefresh: recommendationRuntime.initialRefreshResult,
     relationshipSnapshotInitialRefreshError: recommendationRuntime.initialRefreshError,
+    productSemanticSnapshotReader,
   };
 }
