@@ -77,7 +77,7 @@ describe('DefaultProductSemanticSnapshotBuilder', () => {
   });
 
   it('rejects unknown ontology tags', () => {
-    const mutated = clone(semanticFixtureResults);
+    const mutated = [...clone(semanticFixtureResults)];
     mutated[0] = {
       ...mutated[0]!,
       primaryProductFamily: {
