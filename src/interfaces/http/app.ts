@@ -17,11 +17,13 @@ import type { SearchProductsV2Service } from '../../application/recommendation/s
 import type { CatalogRepository } from '../../domain/catalog/ports.js';
 import type { BatchGetInput } from '../../domain/catalog/types.js';
 import type { ActiveProductSemanticSnapshotReader } from '../../domain/product-semantic-snapshot/runtime/index.js';
+import type { ProductSemanticsRegistryService } from '../../application/catalog/product-semantics-registry/index.js';
 import { registerSearchProductsV2Route } from './routes/searchProductsV2Route.js';
 import { registerResolveProductIntentRoute } from './routes/resolveProductIntentRoute.js';
 import { registerExploreProductsRoute } from './routes/exploreProductsRoute.js';
 import { registerGetProductSemanticsRoute } from './routes/getProductSemanticsRoute.js';
 import { registerGetProductSemanticsBatchRoute } from './routes/getProductSemanticsBatchRoute.js';
+import { registerGetProductSemanticsRegistryRoute } from './routes/getProductSemanticsRegistryRoute.js';
 
 export type AppDependencies = {
   service: CatalogApplicationService;
@@ -29,6 +31,7 @@ export type AppDependencies = {
   productIntentResolutionService?: ProductIntentResolutionService;
   searchProductsV2Service?: SearchProductsV2Service;
   productSemanticSnapshotReader?: ActiveProductSemanticSnapshotReader;
+  productSemanticsRegistryService?: ProductSemanticsRegistryService;
   repository: CatalogRepository;
   readyCheck: () => Promise<{
     database: 'ok' | 'unavailable';
@@ -337,6 +340,7 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
   await registerExploreProductsRoute(app as unknown as FastifyInstance, deps.exploreProductsService);
   await registerGetProductSemanticsRoute(app as unknown as FastifyInstance, deps.productSemanticSnapshotReader);
   await registerGetProductSemanticsBatchRoute(app as unknown as FastifyInstance, deps.productSemanticSnapshotReader);
+  await registerGetProductSemanticsRegistryRoute(app as unknown as FastifyInstance, deps.productSemanticsRegistryService);
 
   return app as unknown as FastifyInstance;
 }

@@ -281,6 +281,33 @@ export const productSemanticBatchResponseSchema = z
     }
   });
 
+export const productSemanticsRegistryValueSchema = z
+  .object({
+    code: z.string().trim().min(1),
+    labelEs: z.string(),
+    definition: z.string(),
+    status: z.enum(['ACTIVE', 'RESIDUAL']),
+    residual: z.boolean(),
+  })
+  .strict();
+
+export const productSemanticsRegistryAxisSchema = z
+  .object({
+    axis: z.enum(['PRODUCT_FAMILY', 'DISCIPLINE', 'USE_CONTEXT']),
+    values: z.array(productSemanticsRegistryValueSchema),
+  })
+  .strict();
+
+export const productSemanticsRegistryResponseSchema = z
+  .object({
+    schemaVersion: z.literal('1'),
+    ontologyVersion: z.string().trim().min(1),
+    ontologyHash: z.string().regex(/^[a-f0-9]{64}$/u),
+    status: z.literal('PUBLISHED'),
+    axes: z.array(productSemanticsRegistryAxisSchema),
+  })
+  .strict();
+
 export const searchQueryResponseSchema = searchResponseSchema;
 
 export type SearchResponse = z.infer<typeof searchResponseSchema>;
@@ -289,3 +316,6 @@ export type BatchResponse = z.infer<typeof batchResponseSchema>;
 export type ProductSemanticBatchRequest = z.infer<typeof productSemanticBatchRequestSchema>;
 export type ProductSemanticBatchFact = z.infer<typeof productSemanticBatchFactSchema>;
 export type ProductSemanticBatchResponse = z.infer<typeof productSemanticBatchResponseSchema>;
+export type ProductSemanticsRegistryValue = z.infer<typeof productSemanticsRegistryValueSchema>;
+export type ProductSemanticsRegistryAxis = z.infer<typeof productSemanticsRegistryAxisSchema>;
+export type ProductSemanticsRegistryResponse = z.infer<typeof productSemanticsRegistryResponseSchema>;

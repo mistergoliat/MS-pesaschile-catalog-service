@@ -3,6 +3,7 @@ import { z, type ZodType } from 'zod';
 import {
   batchResponseSchema,
   productSemanticBatchResponseSchema,
+  productSemanticsRegistryResponseSchema,
   productResponseSchema,
   searchResponseSchema,
 } from '../src/shared/contracts.js';
@@ -17,6 +18,7 @@ import type {
   GetProductResult,
   ProductSemanticsBatchInput,
   ProductSemanticsBatchResult,
+  ProductSemanticsRegistryResult,
   SearchProductsResult,
 } from './types.js';
 
@@ -254,6 +256,18 @@ export async function getProductSemanticsBatch(
       }),
     },
     productSemanticBatchResponseSchema,
+    true,
+  );
+}
+
+export async function getProductSemanticsRegistry(
+  context: CatalogClientContext,
+): Promise<ProductSemanticsRegistryResult> {
+  return requestJson(
+    context,
+    buildUrl(context.baseUrl, '/v1/products/semantics/registry'),
+    { method: 'GET' },
+    productSemanticsRegistryResponseSchema,
     true,
   );
 }

@@ -5,6 +5,7 @@ import type {
   ProductSemanticBatchFact,
   ProductSemanticBatchRequest,
   ProductSemanticBatchResponse,
+  ProductSemanticsRegistryResponse,
   SearchResponse,
 } from '../src/shared/contracts.js';
 export type {
@@ -46,6 +47,7 @@ export type ProductSemanticsBatchInput = Omit<ProductSemanticBatchRequest, 'prod
 };
 export type ProductSemanticsBatchFact = ProductSemanticBatchFact;
 export type ProductSemanticsBatchResult = ProductSemanticBatchResponse;
+export type ProductSemanticsRegistryResult = ProductSemanticsRegistryResponse;
 
 export const catalogToolDefinition = {
   name: 'catalog',
