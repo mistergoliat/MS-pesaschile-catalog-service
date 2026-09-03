@@ -2,6 +2,9 @@ import { z } from 'zod';
 import type {
   BatchResponse,
   ProductResponse,
+  ProductSemanticBatchFact,
+  ProductSemanticBatchRequest,
+  ProductSemanticBatchResponse,
   SearchResponse,
 } from '../src/shared/contracts.js';
 export type {
@@ -38,6 +41,11 @@ export type CatalogToolInput = z.infer<typeof catalogToolInputSchema>;
 export type SearchProductsResult = SearchResponse;
 export type GetProductResult = ProductResponse;
 export type BatchGetProductsResult = BatchResponse;
+export type ProductSemanticsBatchInput = Omit<ProductSemanticBatchRequest, 'productIds'> & {
+  readonly productIds: readonly number[];
+};
+export type ProductSemanticsBatchFact = ProductSemanticBatchFact;
+export type ProductSemanticsBatchResult = ProductSemanticBatchResponse;
 
 export const catalogToolDefinition = {
   name: 'catalog',

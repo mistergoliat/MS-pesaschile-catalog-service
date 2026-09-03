@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { z, type ZodType } from 'zod';
 import {
   batchResponseSchema,
+  productSemanticBatchResponseSchema,
   productResponseSchema,
   searchResponseSchema,
 } from '../src/shared/contracts.js';
@@ -14,6 +15,8 @@ import type {
   BatchGetProductsResult,
   CatalogToolInput,
   GetProductResult,
+  ProductSemanticsBatchInput,
+  ProductSemanticsBatchResult,
   SearchProductsResult,
 } from './types.js';
 
@@ -233,6 +236,26 @@ export async function batchGetProducts(
     batchResponseSchema,
     true,
   ) as Promise<BatchGetProductsResult>;
+}
+
+export async function getProductSemanticsBatch(
+  input: ProductSemanticsBatchInput,
+  context: CatalogClientContext,
+): Promise<ProductSemanticsBatchResult> {
+  return requestJson(
+    context,
+    buildUrl(context.baseUrl, '/v1/products/semantics/batch'),
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        productIds: [...input.productIds],
+        ...(input.expectedSnapshotId === undefined ? {} : { expectedSnapshotId: input.expectedSnapshotId }),
+      }),
+    },
+    productSemanticBatchResponseSchema,
+    true,
+  );
 }
 
 export async function executeCatalogTool(

@@ -218,8 +218,74 @@ export const batchRequestSchema = z
   })
   .strict();
 
+export const productSemanticBatchMaxSize = 500;
+
+export const productSemanticBatchTagSchema = z
+  .object({
+    code: z.string().trim().min(1),
+    confidence: z.enum(['EXPLICIT', 'STRONGLY_INFERRED']),
+  })
+  .strict();
+
+export const productSemanticBatchFactSchema = z
+  .object({
+    productId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+    classificationStatus: z.enum([
+      'CLASSIFIED',
+      'PARTIALLY_CLASSIFIED',
+      'OTHER',
+      'EXCLUDED_NON_PRODUCT',
+      'NEEDS_REVIEW',
+    ]),
+    primaryProductFamily: productSemanticBatchTagSchema.nullable(),
+    secondaryProductFamilies: z.array(productSemanticBatchTagSchema),
+    disciplines: z.array(productSemanticBatchTagSchema),
+    useContexts: z.array(productSemanticBatchTagSchema),
+  })
+  .strict();
+
+export const productSemanticBatchRequestSchema = z
+  .object({
+    productIds: z.array(z.number().int().positive().max(Number.MAX_SAFE_INTEGER)).min(1).max(productSemanticBatchMaxSize),
+    expectedSnapshotId: z.string().regex(/^sha256:[a-f0-9]{64}$/u).optional(),
+  })
+  .strict();
+
+export const productSemanticBatchResponseSchema = z
+  .object({
+    schemaVersion: z.literal('1'),
+    snapshotId: z.string().regex(/^sha256:[a-f0-9]{64}$/u),
+    ontologyVersion: z.string().trim().min(1),
+    ontologyHash: z.string().regex(/^[a-f0-9]{64}$/u),
+    classifierVersion: z.string().trim().min(1),
+    semanticChecksum: z.string().regex(/^[a-f0-9]{64}$/u),
+    products: z.array(productSemanticBatchFactSchema),
+    missingProductIds: z.array(z.number().int().positive().max(Number.MAX_SAFE_INTEGER)),
+  })
+  .strict()
+  .superRefine((response, context) => {
+    const productIds = response.products.map((product) => product.productId);
+    const missingIds = response.missingProductIds;
+    if (new Set(productIds).size !== productIds.length) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: 'products must not contain duplicate productIds', path: ['products'] });
+    }
+    if (new Set(missingIds).size !== missingIds.length) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: 'missingProductIds must not contain duplicates', path: ['missingProductIds'] });
+    }
+    const missingSet = new Set(missingIds);
+    for (const productId of productIds) {
+      if (missingSet.has(productId)) {
+        context.addIssue({ code: z.ZodIssueCode.custom, message: 'products and missingProductIds must not overlap', path: ['missingProductIds'] });
+        break;
+      }
+    }
+  });
+
 export const searchQueryResponseSchema = searchResponseSchema;
 
 export type SearchResponse = z.infer<typeof searchResponseSchema>;
 export type ProductResponse = z.infer<typeof productResponseSchema>;
 export type BatchResponse = z.infer<typeof batchResponseSchema>;
+export type ProductSemanticBatchRequest = z.infer<typeof productSemanticBatchRequestSchema>;
+export type ProductSemanticBatchFact = z.infer<typeof productSemanticBatchFactSchema>;
+export type ProductSemanticBatchResponse = z.infer<typeof productSemanticBatchResponseSchema>;

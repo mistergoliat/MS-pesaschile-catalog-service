@@ -21,6 +21,7 @@ import { registerSearchProductsV2Route } from './routes/searchProductsV2Route.js
 import { registerResolveProductIntentRoute } from './routes/resolveProductIntentRoute.js';
 import { registerExploreProductsRoute } from './routes/exploreProductsRoute.js';
 import { registerGetProductSemanticsRoute } from './routes/getProductSemanticsRoute.js';
+import { registerGetProductSemanticsBatchRoute } from './routes/getProductSemanticsBatchRoute.js';
 
 export type AppDependencies = {
   service: CatalogApplicationService;
@@ -335,6 +336,7 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
   await registerSearchProductsV2Route(app as unknown as FastifyInstance, deps.searchProductsV2Service);
   await registerExploreProductsRoute(app as unknown as FastifyInstance, deps.exploreProductsService);
   await registerGetProductSemanticsRoute(app as unknown as FastifyInstance, deps.productSemanticSnapshotReader);
+  await registerGetProductSemanticsBatchRoute(app as unknown as FastifyInstance, deps.productSemanticSnapshotReader);
 
   return app as unknown as FastifyInstance;
 }

@@ -12,6 +12,7 @@ export type ErrorCode =
   | 'CATALOG_QUERY_FAILED'
   | 'PRODUCT_SEMANTICS_NOT_FOUND'
   | 'PRODUCT_SEMANTICS_UNAVAILABLE'
+  | 'PRODUCT_SEMANTIC_SNAPSHOT_MISMATCH'
   | 'INTERNAL_ERROR';
 
 export class CatalogError extends Error {
@@ -83,6 +84,12 @@ export class ProductSemanticsNotFoundError extends CatalogError {
 export class ProductSemanticsUnavailableError extends CatalogError {
   constructor(message = 'Active product semantic snapshot is not loaded') {
     super('PRODUCT_SEMANTICS_UNAVAILABLE', message, 503);
+  }
+}
+
+export class ProductSemanticSnapshotMismatchError extends CatalogError {
+  constructor(message = 'Active product semantic snapshot does not match expectedSnapshotId') {
+    super('PRODUCT_SEMANTIC_SNAPSHOT_MISMATCH', message, 409);
   }
 }
 
