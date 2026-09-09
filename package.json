@@ -21,7 +21,9 @@
     "product:semantic:existing-family-miss-adjudication": "tsx scripts/product-semantic-classification/adjudicate-existing-family-misses.ts",
     "product:semantic:snapshot:build": "tsx scripts/product-semantic-classification/build-semantic-snapshot.ts",
     "product:semantic:snapshot:inspect": "tsx scripts/product-semantic-classification/inspect-semantic-snapshot.ts",
-    "product:semantic:coverage-audit": "tsx scripts/product-semantic-classification/audit-semantic-coverage.ts"
+    "product:semantic:coverage-audit": "tsx scripts/product-semantic-classification/audit-semantic-coverage.ts",
+    "product:training-semantics:classify": "tsx scripts/training-semantic-classification/classify-catalog.ts",
+    "product:training-semantics:adjudicate": "tsx scripts/training-semantic-classification/adjudicate-a00.4.1.ts"
   },
   "dependencies": {
     "@fastify/rate-limit": "^10.3.0",

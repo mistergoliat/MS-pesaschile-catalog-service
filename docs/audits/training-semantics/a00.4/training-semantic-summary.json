@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-09-09T15:27:09.624Z",
+  "productCount": 2011,
+  "classifierVersion": "training-semantic-classifier-v1.1",
+  "registryVersion": "training-semantic-registry-v1",
+  "registryHash": "82fcbe9a014522257ab8b2d460286d0c6ecbeffc6a01814d8d4e2f6b8849023f",
+  "rulesHash": "83007958a40fd29a87eb01d1fe159812587876c5e57295d7344024bda0123248",
+  "coverageCounts": {
+    "NO_CAPABILITY_APPLICABLE": 881,
+    "UNMODELED": 1086,
+    "INSUFFICIENT_EVIDENCE": 44,
+    "NEEDS_REVIEW": 0
+  },
+  "capabilityCounts": {
+    "ABDOMINAL_CRUNCH": 0,
+    "ABDUCTOR": 9,
+    "ADDUCTOR": 7,
+    "CHEST_PRESS": 7,
+    "DIP": 21,
+    "HIP_THRUST": 18,
+    "LAT_PULLDOWN": 24,
+    "LEG_CURL": 20,
+    "LEG_EXTENSION": 11,
+    "PEC_DECK": 1,
+    "PULL_UP": 31,
+    "ROW": 25,
+    "SHOULDER_PRESS": 6
+  },
+  "relationCounts": {
+    "DIRECT": 157,
+    "SUPPORTED": 23
+  },
+  "confidenceCounts": {
+    "HIGH": 35,
+    "EXPLICIT": 145
+  },
+  "reviewCandidateCount": 0,
+  "multiAssignmentCount": 23,
+  "deferredFindingCount": 68,
+  "loaderWarnings": []
+}
