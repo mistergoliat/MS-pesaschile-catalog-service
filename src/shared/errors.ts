@@ -13,6 +13,10 @@ export type ErrorCode =
   | 'PRODUCT_SEMANTICS_NOT_FOUND'
   | 'PRODUCT_SEMANTICS_UNAVAILABLE'
   | 'PRODUCT_SEMANTIC_SNAPSHOT_MISMATCH'
+  | 'INVALID_TRAINING_SEMANTIC_REQUEST'
+  | 'TRAINING_SEMANTIC_PRODUCT_NOT_FOUND'
+  | 'TRAINING_SEMANTIC_SNAPSHOT_MISMATCH'
+  | 'TRAINING_SEMANTICS_UNAVAILABLE'
   | 'INTERNAL_ERROR';
 
 export class CatalogError extends Error {
@@ -90,6 +94,30 @@ export class ProductSemanticsUnavailableError extends CatalogError {
 export class ProductSemanticSnapshotMismatchError extends CatalogError {
   constructor(message = 'Active product semantic snapshot does not match expectedSnapshotId') {
     super('PRODUCT_SEMANTIC_SNAPSHOT_MISMATCH', message, 409);
+  }
+}
+
+export class InvalidTrainingSemanticRequestError extends CatalogError {
+  constructor(message = 'Invalid training semantic request', details?: unknown) {
+    super('INVALID_TRAINING_SEMANTIC_REQUEST', message, 400, details);
+  }
+}
+
+export class TrainingSemanticProductNotFoundError extends CatalogError {
+  constructor(message = 'Product is not present in the active Training Semantic Snapshot V2') {
+    super('TRAINING_SEMANTIC_PRODUCT_NOT_FOUND', message, 404);
+  }
+}
+
+export class TrainingSemanticSnapshotMismatchError extends CatalogError {
+  constructor(message = 'Active Training Semantic Snapshot V2 does not match expectedSnapshotId') {
+    super('TRAINING_SEMANTIC_SNAPSHOT_MISMATCH', message, 409);
+  }
+}
+
+export class TrainingSemanticsUnavailableError extends CatalogError {
+  constructor(message = 'Active Training Semantic Snapshot V2 is not loaded') {
+    super('TRAINING_SEMANTICS_UNAVAILABLE', message, 503);
   }
 }
 

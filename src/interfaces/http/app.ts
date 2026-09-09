@@ -18,12 +18,18 @@ import type { CatalogRepository } from '../../domain/catalog/ports.js';
 import type { BatchGetInput } from '../../domain/catalog/types.js';
 import type { ActiveProductSemanticSnapshotReader } from '../../domain/product-semantic-snapshot/runtime/index.js';
 import type { ProductSemanticsRegistryService } from '../../application/catalog/product-semantics-registry/index.js';
+import type { TrainingSemanticReadService } from '../../application/catalog/training-semantic-read/index.js';
+import type { TrainingSemanticQueryService } from '../../application/catalog/training-semantic-query/index.js';
 import { registerSearchProductsV2Route } from './routes/searchProductsV2Route.js';
 import { registerResolveProductIntentRoute } from './routes/resolveProductIntentRoute.js';
 import { registerExploreProductsRoute } from './routes/exploreProductsRoute.js';
 import { registerGetProductSemanticsRoute } from './routes/getProductSemanticsRoute.js';
 import { registerGetProductSemanticsBatchRoute } from './routes/getProductSemanticsBatchRoute.js';
 import { registerGetProductSemanticsRegistryRoute } from './routes/getProductSemanticsRegistryRoute.js';
+import { registerGetTrainingSemanticProductRoute } from './routes/getTrainingSemanticProductRoute.js';
+import { registerGetTrainingSemanticBatchRoute } from './routes/getTrainingSemanticBatchRoute.js';
+import { registerGetTrainingSemanticRegistryRoute } from './routes/getTrainingSemanticRegistryRoute.js';
+import { registerQueryTrainingSemanticsRoute } from './routes/queryTrainingSemanticsRoute.js';
 
 export type AppDependencies = {
   service: CatalogApplicationService;
@@ -32,6 +38,8 @@ export type AppDependencies = {
   searchProductsV2Service?: SearchProductsV2Service;
   productSemanticSnapshotReader?: ActiveProductSemanticSnapshotReader;
   productSemanticsRegistryService?: ProductSemanticsRegistryService;
+  trainingSemanticReadService?: TrainingSemanticReadService;
+  trainingSemanticQueryService?: TrainingSemanticQueryService;
   repository: CatalogRepository;
   readyCheck: () => Promise<{
     database: 'ok' | 'unavailable';
@@ -341,6 +349,10 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
   await registerGetProductSemanticsRoute(app as unknown as FastifyInstance, deps.productSemanticSnapshotReader);
   await registerGetProductSemanticsBatchRoute(app as unknown as FastifyInstance, deps.productSemanticSnapshotReader);
   await registerGetProductSemanticsRegistryRoute(app as unknown as FastifyInstance, deps.productSemanticsRegistryService);
+  await registerGetTrainingSemanticProductRoute(app as unknown as FastifyInstance, deps.trainingSemanticReadService);
+  await registerGetTrainingSemanticBatchRoute(app as unknown as FastifyInstance, deps.trainingSemanticReadService);
+  await registerGetTrainingSemanticRegistryRoute(app as unknown as FastifyInstance, deps.trainingSemanticReadService);
+  await registerQueryTrainingSemanticsRoute(app as unknown as FastifyInstance, deps.trainingSemanticQueryService);
 
   return app as unknown as FastifyInstance;
 }

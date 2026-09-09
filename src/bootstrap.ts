@@ -1,4 +1,5 @@
 import RedisJs from 'ioredis';
+import path from 'node:path';
 import { config } from './shared/config.js';
 import { createPool } from './infrastructure/database/pool.js';
 import { MemoryCacheProvider } from './infrastructure/cache/memory.js';
@@ -37,6 +38,11 @@ import { logger } from './shared/logger.js';
 import { createCorrelationId } from './shared/crypto.js';
 import { resolveProductSemanticSnapshotDir } from './shared/productSemanticSnapshotConfig.js';
 import { FileProductSemanticSnapshotStore } from './infrastructure/product-semantic/fileProductSemanticSnapshotStore.js';
+import { FileTrainingSemanticSnapshotV2Store } from './infrastructure/training-semantic/fileTrainingSemanticSnapshotV2Store.js';
+import { DefaultActiveTrainingSemanticSnapshotV2Reader } from './domain/training-semantic-snapshot/index.js';
+import { DefaultTrainingSemanticReadService } from './application/catalog/training-semantic-read/index.js';
+import { DefaultTrainingSemanticQueryService } from './application/catalog/training-semantic-query/index.js';
+import { resolveTrainingSemanticSnapshotDir } from './shared/trainingSemanticSnapshotConfig.js';
 import {
   DefaultActiveProductSemanticSnapshotReader,
   DefaultProductSemanticRuntimeIndexBuilder,
@@ -159,6 +165,24 @@ export async function createRuntime() {
     logger.error({ error }, 'product_semantic_snapshot_load_failed');
   }
 
+  // Training Semantics V2 is a degradable, read-only branch. The HTTP layer
+  // remains available when its active snapshot is absent or cannot be loaded;
+  // the dedicated endpoints then return 503 and never classify or query SQL.
+  const trainingSemanticSnapshotV2Reader = new DefaultActiveTrainingSemanticSnapshotV2Reader(
+    new FileTrainingSemanticSnapshotV2Store(path.join(resolveTrainingSemanticSnapshotDir(), 'v2')),
+  );
+  try {
+    await trainingSemanticSnapshotV2Reader.refresh();
+    const activeSnapshot = trainingSemanticSnapshotV2Reader.getMetadata();
+    if (activeSnapshot) {
+      logger.info({ snapshotId: activeSnapshot.snapshotId, recordCount: activeSnapshot.counts.sourceProducts }, 'training_semantic_snapshot_v2_loaded');
+    } else {
+      logger.warn({}, 'training_semantic_snapshot_v2_not_available');
+    }
+  } catch (error) {
+    logger.error({ error }, 'training_semantic_snapshot_v2_load_failed');
+  }
+
   return {
     pool,
     cache,
@@ -171,5 +195,7 @@ export async function createRuntime() {
     relationshipSnapshotInitialRefresh: recommendationRuntime.initialRefreshResult,
     relationshipSnapshotInitialRefreshError: recommendationRuntime.initialRefreshError,
     productSemanticSnapshotReader,
+    trainingSemanticReadService: new DefaultTrainingSemanticReadService(trainingSemanticSnapshotV2Reader),
+    trainingSemanticQueryService: new DefaultTrainingSemanticQueryService(trainingSemanticSnapshotV2Reader),
   };
 }

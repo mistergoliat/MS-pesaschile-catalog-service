@@ -103,6 +103,19 @@ export const errorsTotal = new client.Counter({
   labelNames: ['code'] as const,
 });
 
+export const trainingSemanticQueryRequestsTotal = new client.Counter({
+  name: 'catalog_training_semantic_query_requests_total',
+  help: 'Structured Training Semantic Query requests',
+  labelNames: ['snapshotId', 'requirementCount', 'resultCount', 'truncated'] as const,
+});
+
+export const trainingSemanticQueryDurationSeconds = new client.Histogram({
+  name: 'catalog_training_semantic_query_duration_seconds',
+  help: 'Structured Training Semantic Query duration',
+  labelNames: ['snapshotId'] as const,
+  buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1],
+});
+
 export async function metricsText(): Promise<string> {
   return client.register.metrics();
 }
