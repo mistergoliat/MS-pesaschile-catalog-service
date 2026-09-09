@@ -4,6 +4,7 @@ dist
 .DS_Store
 data/relationship-snapshots
 data/product-semantic-snapshots
+data/training-semantic-snapshots
 scripts/customer-profile-audit/outputs/
 scripts/audits/customer-profile/outputs/
 artifacts/
