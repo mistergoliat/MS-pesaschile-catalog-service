@@ -25,7 +25,12 @@
     "product:training-semantics:classify": "tsx scripts/training-semantic-classification/classify-catalog.ts",
     "product:training-semantics:adjudicate": "tsx scripts/training-semantic-classification/adjudicate-a00.4.1.ts",
     "product:training-semantics:snapshot:build": "tsx scripts/training-semantic-snapshot/build-training-semantic-snapshot.ts",
-    "product:training-semantics:snapshot:inspect": "tsx scripts/training-semantic-snapshot/inspect-training-semantic-snapshot.ts"
+    "product:training-semantics:snapshot:inspect": "tsx scripts/training-semantic-snapshot/inspect-training-semantic-snapshot.ts",
+    "product:training-semantics:coverage:audit": "tsx scripts/training-semantic-snapshot/audit-training-semantic-coverage.ts",
+    "product:training-semantics:resolution:audit": "tsx scripts/training-semantic-snapshot/audit-training-semantic-resolution.ts",
+    "product:training-semantics:ontology:design": "tsx scripts/training-semantic-snapshot/design-training-semantic-ontology-expansion.ts",
+    "product:training-semantics:v2:classify": "tsx scripts/training-semantic-classification-v2/classify-catalog.ts",
+    "product:training-semantics:v2:resolution:audit": "tsx scripts/training-semantic-classification-v2/classify-catalog.ts"
   },
   "dependencies": {
     "@fastify/rate-limit": "^10.3.0",

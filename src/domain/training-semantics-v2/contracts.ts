@@ -6,7 +6,16 @@
  * it never participates in anatomy, movement-pattern or goal derivation.
  */
 
-import type { BodyRegionCode, MuscleGroupCode, TrainingPatternCode } from '../training-semantics/contracts.js';
+import type {
+  BodyRegionCode,
+  MuscleGroupCode,
+  TrainingAssignmentProvenance,
+  TrainingClassificationConfidence,
+  TrainingPatternCode,
+  TrainingRelationType,
+  TrainingReviewState,
+  TrainingSemanticEvidence,
+} from '../training-semantics/contracts.js';
 
 export const trainingSemanticRegistryV2SchemaVersion = '2' as const;
 export type TrainingSemanticRegistryV2SchemaVersion = typeof trainingSemanticRegistryV2SchemaVersion;
@@ -158,8 +167,23 @@ export type ProductTrainingFunctionAssignment = {
   readonly functionCode: TrainingFunctionCode;
   readonly relationType: TrainingFunctionRelationType;
   readonly productFamily?: string;
+  readonly classificationConfidence: TrainingClassificationConfidence;
   readonly evidence: readonly TrainingFunctionEvidence[];
+  readonly reviewState: TrainingReviewState;
   readonly provenance: TrainingFunctionAssignmentProvenance;
 };
 
 export type DerivedExerciseSemanticsV2 = ExerciseDerivedRelationV2;
+
+/** V2 exercise assignment shape; it widens only the capability code union. */
+export type ProductTrainingExerciseCapabilityAssignment = {
+  readonly productId: number;
+  readonly capabilityCode: ExerciseCapabilityCodeV2;
+  readonly relationType: TrainingRelationType;
+  readonly classificationConfidence: TrainingClassificationConfidence;
+  readonly evidence: readonly TrainingSemanticEvidence[];
+  readonly reviewState: TrainingReviewState;
+  readonly moduleId?: string;
+  readonly modifierCodes?: readonly string[];
+  readonly provenance: TrainingAssignmentProvenance;
+};

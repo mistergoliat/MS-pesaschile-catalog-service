@@ -1,0 +1,18 @@
+code,evidenceProductIds,decision,rationale
+EXTERNAL_LOAD,No unique 41-product evidence,DO_NOT_ADD,Too broad; not discriminative for discovery.
+FREE_WEIGHT_LOAD,"BARBELL/DUMBBELL/KETTLEBELL families, no ontology-gap evidence",DO_NOT_ADD,Duplicates Product Family unless modality evidence is added later.
+SELECTORIZED_RESISTANCE,SELECTORIZED_MACHINE family,DO_NOT_ADD,Directly repeats Product Family.
+PLATE_LOADED_RESISTANCE,PLATE_LOADED_MACHINE family,DO_NOT_ADD,Directly repeats Product Family.
+CABLE_RESISTANCE,"1450,1451,1455,1921",ADD,General resistance delivery is useful without inventing an exercise.
+MULTI_DIRECTIONAL_RESISTANCE,"1455,1921",ADD,Only explicit crossover/dual geometry qualifies.
+BODYWEIGHT_SUPPORT,1126,ADD,Represents support/obstacle utility without exercise overclaim.
+BARBELL_SUPPORT,"1121,1535,1539,1544",ADD,"Represents a rack/stand function, not SQUAT."
+GUIDED_BARBELL_SUPPORT,"1274,1922,2068,2133,2134",ADD,Distinguishes Smith/Multipower guided path from open rack.
+SAFETY_SUPPORT,No sufficient structured evidence in the 41,CONDITIONAL,Add only when safety arms/catches are explicit structured Product Truth.
+UNILATERAL_LOAD,2018 wording is insufficient for universal function,DO_NOT_ADD,Keep as a feature/structured attribute until repeated evidence exists.
+BILATERAL_LOAD,No sufficient evidence,DO_NOT_ADD,No material resolution gain.
+BALLISTIC_LOAD,No sufficient evidence,DO_NOT_ADD,No material resolution gain.
+CARRY_LOAD,No sufficient evidence,DO_NOT_ADD,No material resolution gain.
+SUSPENSION_SUPPORT,No sufficient evidence in the 41,DO_NOT_ADD,Revisit only with explicit suspension products.
+DRAG_PUSH_RESISTANCE,"ROPE_SLED is already a verified negative, not an ontology gap",DO_NOT_ADD_IN_MINIMUM,"Potential future discovery concept, no A00.6.4 target gain."
+ANCHOR_SUPPORT,No sufficient evidence,DO_NOT_ADD,No material resolution gain.

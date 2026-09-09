@@ -28,7 +28,7 @@ const EXERCISE_KEYS = new Set([
 const FUNCTION_KEYS = new Set([
   'code', 'canonicalName', 'description', 'status', 'allowedRelationTypes', 'allowedEvidenceKinds',
 ]);
-const FUNCTION_ASSIGNMENT_KEYS = new Set(['productId', 'functionCode', 'relationType', 'productFamily', 'evidence', 'provenance']);
+const FUNCTION_ASSIGNMENT_KEYS = new Set(['productId', 'functionCode', 'relationType', 'productFamily', 'classificationConfidence', 'evidence', 'reviewState', 'provenance']);
 const FUNCTION_EVIDENCE_KEYS = new Set(['kind', 'sourceId', 'matchedText', 'ruleId', 'note']);
 const ANATOMY_KEYS = new Set([
   'bodyRegion', 'bodyRegions', 'derivedBodyRegions', 'muscleGroup', 'muscleGroups',

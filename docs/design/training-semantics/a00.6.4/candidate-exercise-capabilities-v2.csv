@@ -1,0 +1,13 @@
+code,evidenceProductIds,evidenceCount,decision,precisionGate
+HACK_SQUAT,"1229,1272,1654,1660,1661,1884,2019",7,ADD,Explicit dedicated hack/V-squat evidence with mechanism gate.
+LEG_PRESS,"491,1273,1275,1655,1658,1662,2018,2188",8,ADD,Eight active explicit leg-press products.
+CALF_RAISE,"1284,1511",2,ADD,Explicit standing/seated calf-raise machines.
+REAR_DELT_FLY,"1266,1664",2,ADD,Required for exhaustive dual pec-fly/rear-delt products.
+BICEPS_CURL,1507,1,ADD,Explicit dual biceps/triceps product.
+TRICEPS_EXTENSION,"258,1507",2,ADD,One dedicated active product plus one dual machine.
+PENDULUM_SQUAT,1663,1,ADD,Explicit pendulum geometry.
+BELT_SQUAT,2021,1,ADD,Explicit belt-squat product; no generic SQUAT.
+REVERSE_HYPER,2022,1,ADD,Explicit reverse-hyper product.
+DEADLIFT,2026,1,LIMITED_ADD,"Explicit active machine, distinct from the dropped accessory finding."
+PULLOVER,2091,1,ADD,Explicit dedicated pullover machine.
+HIP_THRUST,2089,1,RULE_CLOSURE,Existing V1 concept; classifier fix only.

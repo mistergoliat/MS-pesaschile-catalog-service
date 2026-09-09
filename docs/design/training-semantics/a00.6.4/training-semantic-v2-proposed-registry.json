@@ -1,0 +1,225 @@
+{
+  "proposalVersion": "training-semantic-registry-v2-proposal",
+  "status": "DESIGN_ONLY_NOT_PUBLISHED",
+  "baseRegistry": {
+    "snapshotId": "sha256:63fd41033347c4bd4bcc6382ce432a8a5d0876c8de0a5bec2dd54ac9297ab90d",
+    "semanticChecksum": "08fdd83e95d6f682527187fd6e2caff25f52107dc4bf63edd1abd87511eb741e",
+    "registryVersion": "training-semantic-registry-v1",
+    "registryHash": "82fcbe9a014522257ab8b2d460286d0c6ecbeffc6a01814d8d4e2f6b8849023f",
+    "classifierVersion": "training-semantic-classifier-v1.1",
+    "rulesHash": "83007958a40fd29a87eb01d1fe159812587876c5e57295d7344024bda0123248"
+  },
+  "semanticBoundary": {
+    "exerciseCapability": "specific exercise/function asserted by Product Truth",
+    "trainingFunction": "instrumental/general training utility without exercise, anatomy or goal inference"
+  },
+  "trainingFunctions": [
+    {
+      "code": "CABLE_RESISTANCE",
+      "evidenceProductIds": [
+        1450,
+        1451,
+        1455,
+        1921
+      ],
+      "sourcePolicy": "FAMILY_DERIVED_OR_DIRECT",
+      "relationMode": [
+        "FAMILY_DERIVED",
+        "DIRECT"
+      ],
+      "rationale": "General resistance delivery is useful without inventing an exercise."
+    },
+    {
+      "code": "MULTI_DIRECTIONAL_RESISTANCE",
+      "evidenceProductIds": [
+        1455,
+        1921
+      ],
+      "sourcePolicy": "DIRECT",
+      "relationMode": [
+        "DIRECT"
+      ],
+      "rationale": "Only explicit crossover/dual geometry qualifies."
+    },
+    {
+      "code": "BODYWEIGHT_SUPPORT",
+      "evidenceProductIds": [
+        1126
+      ],
+      "sourcePolicy": "DIRECT",
+      "relationMode": [
+        "DIRECT"
+      ],
+      "rationale": "Represents support/obstacle utility without exercise overclaim."
+    },
+    {
+      "code": "BARBELL_SUPPORT",
+      "evidenceProductIds": [
+        1121,
+        1535,
+        1539,
+        1544
+      ],
+      "sourcePolicy": "DIRECT",
+      "relationMode": [
+        "DIRECT"
+      ],
+      "rationale": "Represents a rack/stand function, not SQUAT."
+    },
+    {
+      "code": "GUIDED_BARBELL_SUPPORT",
+      "evidenceProductIds": [
+        1274,
+        1922,
+        2068,
+        2133,
+        2134
+      ],
+      "sourcePolicy": "DIRECT",
+      "relationMode": [
+        "DIRECT"
+      ],
+      "rationale": "Distinguishes Smith/Multipower guided path from open rack."
+    }
+  ],
+  "exerciseCapabilitiesV2": [
+    {
+      "code": "HACK_SQUAT",
+      "evidenceProductIds": [
+        1229,
+        1272,
+        1654,
+        1660,
+        1661,
+        1884,
+        2019
+      ],
+      "decision": "ADD",
+      "precisionGate": "Explicit dedicated hack/V-squat evidence with mechanism gate."
+    },
+    {
+      "code": "LEG_PRESS",
+      "evidenceProductIds": [
+        491,
+        1273,
+        1275,
+        1655,
+        1658,
+        1662,
+        2018,
+        2188
+      ],
+      "decision": "ADD",
+      "precisionGate": "Eight active explicit leg-press products."
+    },
+    {
+      "code": "CALF_RAISE",
+      "evidenceProductIds": [
+        1284,
+        1511
+      ],
+      "decision": "ADD",
+      "precisionGate": "Explicit standing/seated calf-raise machines."
+    },
+    {
+      "code": "REAR_DELT_FLY",
+      "evidenceProductIds": [
+        1266,
+        1664
+      ],
+      "decision": "ADD",
+      "precisionGate": "Required for exhaustive dual pec-fly/rear-delt products."
+    },
+    {
+      "code": "BICEPS_CURL",
+      "evidenceProductIds": [
+        1507
+      ],
+      "decision": "ADD",
+      "precisionGate": "Explicit dual biceps/triceps product."
+    },
+    {
+      "code": "TRICEPS_EXTENSION",
+      "evidenceProductIds": [
+        258,
+        1507
+      ],
+      "decision": "ADD",
+      "precisionGate": "One dedicated active product plus one dual machine."
+    },
+    {
+      "code": "PENDULUM_SQUAT",
+      "evidenceProductIds": [
+        1663
+      ],
+      "decision": "ADD",
+      "precisionGate": "Explicit pendulum geometry."
+    },
+    {
+      "code": "BELT_SQUAT",
+      "evidenceProductIds": [
+        2021
+      ],
+      "decision": "ADD",
+      "precisionGate": "Explicit belt-squat product; no generic SQUAT."
+    },
+    {
+      "code": "REVERSE_HYPER",
+      "evidenceProductIds": [
+        2022
+      ],
+      "decision": "ADD",
+      "precisionGate": "Explicit reverse-hyper product."
+    },
+    {
+      "code": "DEADLIFT",
+      "evidenceProductIds": [
+        2026
+      ],
+      "decision": "LIMITED_ADD",
+      "precisionGate": "Explicit active machine, distinct from the dropped accessory finding."
+    },
+    {
+      "code": "PULLOVER",
+      "evidenceProductIds": [
+        2091
+      ],
+      "decision": "ADD",
+      "precisionGate": "Explicit dedicated pullover machine."
+    }
+  ],
+  "existingCapabilityClosures": [
+    {
+      "capabilityCode": "HIP_THRUST",
+      "productIds": [
+        2089
+      ],
+      "action": "CLASSIFIER_RULE_CLOSURE"
+    }
+  ],
+  "excludedFromV2Minimum": [
+    "SQUAT",
+    "GLUTE_KICKBACK",
+    "SAFETY_SUPPORT",
+    "FREE_WEIGHT_LOAD",
+    "SELECTORIZED_RESISTANCE",
+    "PLATE_LOADED_RESISTANCE"
+  ],
+  "relationPolicy": {
+    "FAMILY_DERIVED": "Only stable family-level function with incremental discovery meaning.",
+    "DIRECT": "Trusted name/category/structured feature or manual adjudication.",
+    "SUPPORTED": "Explicit module evidence only; no anatomy derivation.",
+    "MANUAL_OVERRIDE": "Documented exception with evidence; never silent fallback."
+  },
+  "migration": {
+    "registryVersion": "training-semantic-registry-v2",
+    "snapshotSchemaVersion": "2",
+    "preserveV1Assignments": true,
+    "v1ArtifactOverwritten": false,
+    "lineageRequired": [
+      "sourceV1SnapshotId",
+      "registryHash",
+      "rulesHash"
+    ]
+  }
+}

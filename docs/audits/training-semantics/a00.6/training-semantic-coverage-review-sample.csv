@@ -1,0 +1,81 @@
+productId,name,active,revenue,productFamily,coverageStatus,assignments,relationTypes,derivedBodyRegions,derivedMuscleGroups,derivedPatterns,reviewBucket,reviewQuestion
+176,Crossover Lat Pulldown ZR Series | PROmachine,true,95687805,CABLE_MACHINE,UNMODELED,LAT_PULLDOWN|PULL_UP,DIRECT|SUPPORTED,UPPER_BODY,BACK|BICEPS,PULL,ASSIGNED_MULTI_ASSIGNMENT,¿La capability asignada describe realmente la función del producto?
+300,Par Barras Paralelas 17cm | HWM®,true,4529464.5,BODYWEIGHT_GYMNASTICS,UNMODELED,DIP,DIRECT,UPPER_BODY,CHEST|TRICEPS,PRESS,ASSIGNED_DIRECT,¿La capability asignada describe realmente la función del producto?
+497,Dual Abductor/Aductor V8 Series | Obelix,false,17472774,SELECTORIZED_MACHINE,UNMODELED,ABDUCTOR|ADDUCTOR,DIRECT|DIRECT,LOWER_BODY,,,ASSIGNED_MULTI_ASSIGNMENT,¿La capability asignada describe realmente la función del producto?
+175,Polea Alta Remo Bajo | PROmachine,false,12121221.2,CABLE_MACHINE,UNMODELED,LAT_PULLDOWN|ROW,DIRECT|DIRECT,UPPER_BODY,BACK|BICEPS,PULL,ASSIGNED_MULTI_ASSIGNMENT,¿La capability asignada describe realmente la función del producto?
+245,Banco Hip Thrust 1.0 | HWM,false,24385746,BENCH,UNMODELED,HIP_THRUST,DIRECT,LOWER_BODY,GLUTES,HIP_EXTENSION,ASSIGNED_DIRECT,¿La capability asignada describe realmente la función del producto?
+280,Extensión de Cuádriceps MO Series | Obelix,false,13707047,SELECTORIZED_MACHINE,UNMODELED,LEG_EXTENSION,DIRECT,LOWER_BODY,QUADRICEPS,KNEE_EXTENSION,ASSIGNED_DIRECT,¿La capability asignada describe realmente la función del producto?
+271,Press de Pectoral MO Series | Obelix,false,6875234,SELECTORIZED_MACHINE,UNMODELED,CHEST_PRESS,DIRECT,UPPER_BODY,CHEST|SHOULDERS|TRICEPS,PRESS,ASSIGNED_DIRECT,¿La capability asignada describe realmente la función del producto?
+272,Contractora de Pectoral MO Series | Obelix,false,6072126,SELECTORIZED_MACHINE,UNMODELED,PEC_DECK,DIRECT,UPPER_BODY,CHEST,PRESS,ASSIGNED_DIRECT,¿La capability asignada describe realmente la función del producto?
+259,Press de Hombro MO Series | Obelix,false,3959963,UNKNOWN,UNMODELED,SHOULDER_PRESS,DIRECT,UPPER_BODY,SHOULDERS|TRICEPS,PRESS,ASSIGNED_DIRECT,¿La capability asignada describe realmente la función del producto?
+18,Banco Preolímpico | PROmachine,false,1696366,BENCH,UNMODELED,LEG_CURL,DIRECT,LOWER_BODY,HAMSTRINGS,KNEE_FLEXION,ASSIGNED_DIRECT,¿La capability asignada describe realmente la función del producto?
+1112,Banco Sentadilla Búlgara | HWM®,true,24458587.5,BENCH,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿La señal deferred corresponde a producto vendible actual o a deuda ontológica?
+723,Pack 10 Palmetas de Caucho 100x100cm 15mm,true,121362549,FLOORING,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un producto multiuso/pack que debe permanecer UNMODELED?
+319,Palmeta de Caucho 100x100cm 15mm (Unidad),true,115669293.5,FLOORING,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+638,Banco Regulable Amarillo Flúor | KONG,true,75856322.5003,BENCH,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+1125,Cajón Hip Thrust Acolchado | FullFit,true,73779695.2,BENCH,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+29,Barra Olímpica 15kg 220cm Eco Serie | PROmachine,true,70996624.375,BARBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+32,Barra Olímpica 20kg Training | HWM®,true,70077693.4998,BARBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+1198,Piso de Caucho Interlock 100x100cm x 15mm (Unidad) Sin Bordes,true,68709024,FLOORING,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+1338,Banco Regulable Negro | KONG,true,68393606.5,BENCH,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+31,Barra Olímpica 20kg Classic Serie | PROmachine,true,56189727.79,BARBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+537,Set 50kg Maletí­n Cast Iron,true,52110614.0002,DUMBBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+366,Set 20kg Maletín Cast Iron,true,47309160,DUMBBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+536,Set 30kg Maletín Cast Iron,true,45008831,DUMBBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+1183,Pack 105kg Mancuernas Hexagonales + Rack Vertical | HWM®,true,44571573,DUMBBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un producto multiuso/pack que debe permanecer UNMODELED?
+1550,Banco Regulable Alpha | HWM®,true,44466534,BENCH,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+611,Barra Olímpica Cerakote Rojo 20kg | KONG,true,42592281,BARBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+33,Barra Olímpica 15kg Training | HWM®,true,42538917.9995,BARBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+788,Banco Sentadilla Búlgara ZR Series | PROmachine,true,12785861.5,BENCH,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿La señal deferred corresponde a producto vendible actual o a deuda ontológica?
+154,Colchoneta Pu Negro 100x50x5cm| HWM®,true,40338911.375,FLOORING,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+230,Par Mancuernas Hexagonales 15kg | HWM®,true,39874342,DUMBBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+506,Palmeta de Caucho 50x50cm x 25mm (Unidad),true,39164602.3,FLOORING,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+229,Par Mancuernas Hexagonales 12.5kg | HWM®,true,38625668,DUMBBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+1322,Tatami Eva Mat Negro/Gris Puzzle c/borde 100x100cm 20mm (Unidad),true,38382902,FLOORING,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+153,Par Colchonetas de Impacto | HWM®,true,37596822.5,FLOORING,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+232,Par Mancuernas Hexagonales 20kg | HWM®,true,37368052,DUMBBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+228,Par Mancuernas Hexagonales 10kg | HWM®,true,37282041.5,DUMBBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+722,Pack 4 Palmetas de Caucho 100x100cm 15mm,true,37128326,FLOORING,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un producto multiuso/pack que debe permanecer UNMODELED?
+7,Pack 4 Bandas de Resistencia | HWM®,true,36058036.8,BAND_SUSPENSION,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un producto multiuso/pack que debe permanecer UNMODELED?
+816,Cinturón de Levantamiento Heavy Duty | HWM,true,35582902,PROTECTIVE_GEAR,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+1652,Barra Olímpica Squat Bar 25kg | KONG,true,6309696.5,BARBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿La señal deferred corresponde a producto vendible actual o a deuda ontológica?
+227,Par Mancuernas Hexagonales 7.5kg | HWM®,true,34103856,DUMBBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+872,Colchoneta Oxford Negro/Rojo 100x50x5cm | FullFit,true,32914740.5,FLOORING,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+1515,Banco Sissy Squat MO 2.0 | Obelix®,true,3059899,BENCH,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿La señal deferred corresponde a producto vendible actual o a deuda ontológica?
+1499,Par Discos Olímpicos Grip Rubber 20kg | PROmachine,true,31643477.5,WEIGHT_PLATE,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+1497,Par Discos Olímpicos Grip Rubber 10kg | PROmachine,true,31590192.6,WEIGHT_PLATE,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+144,Par Discos Preolímpicos 5kg | Barbell,true,31579261.5,WEIGHT_PLATE,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+1825,Banco Sentadilla Búlgara | Rising,true,2471013,BENCH,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿La señal deferred corresponde a producto vendible actual o a deuda ontológica?
+1873,Bíceps Curl Accesorio Banco B814 | PROmachine,true,1908716,BENCH,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿La señal deferred corresponde a producto vendible actual o a deuda ontológica?
+389,Rack de Almacenamiento Mancuernas 3 Niveles | HWM®,true,31354659.75,STORAGE,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+1832,Preacher Pad Biceps Curl | Rising,true,837795,UNKNOWN,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿La señal deferred corresponde a producto vendible actual o a deuda ontológica?
+930,Bulgarian Squat (Accesorio Jaula Hell - MJHWM2) | HWM,true,608686.5,MACHINE_ATTACHMENT,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿La señal deferred corresponde a producto vendible actual o a deuda ontológica?
+35,Barra Olímpica Z 6.5kg | PROmachine,true,29985965.4,BARBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+2303,Banco Sentadilla Búlgara - 2da Selección HWM® (HWM855-SU45-7),true,49495,BENCH,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿La señal deferred corresponde a producto vendible actual o a deuda ontológica?
+610,Barra Olímpica Cerakote Pink 15kg | KONG,true,28871211.5,BARBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+1867,Banco Regulable Multifuncional B814 ZR Series | PROmachine,true,28294896,BENCH,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un producto multiuso/pack que debe permanecer UNMODELED?
+774,Rack de Almacenamiento Discos y Barra Olímpica con ruedas | HWM®,true,28035111.5,STORAGE,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+155,Colchoneta Pu Negro/Rojo 100x50x5cm | FullFit,true,27760359.5,FLOORING,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+575,Par Discos Olímpicos 45lb | Barbell Standard,true,27588455.5,WEIGHT_PLATE,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+1117,Banco Regulable Plegable 1.0 | Forza,true,27549092.5,BENCH,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+2061,Banco Regulable Delta | HWM®,true,27304882,BENCH,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+1548,Banco Regulable Plegable Delta | HWM®,true,27015593,BENCH,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+795,Barra Olímpica Cerakote Black 20kg | KONG,true,26748554,BARBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+545,Barra Olímpica 20kg 220cm Eco Serie | PROmachine,true,26677544.8249,BARBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+145,Par Discos Preolímpicos 10kg | Barbell,true,26572542,WEIGHT_PLATE,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+24,Barra Olímpica Hexagonal 20kg | HWM®,true,25366730,BARBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+226,Par Mancuernas Hexagonales 5kg | HWM®,true,25351547.5,DUMBBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+21,Barra Olímpica 20kg Elite | HWM®,true,24546949.9995,BARBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+231,Par Mancuernas Hexagonales 17.5kg | HWM®,true,23661718.5,DUMBBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+1323,Piso de Caucho Interlock 100x100cm x 10mm (Unidad) Incluye Bordes,true,23310903.5,FLOORING,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+1208,Barra Olímpica Cerakote Black Camo 700lb 20kg | HWM,true,23224007,BARBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+234,Par Mancuernas Hexagonales 25kg | HWM®,true,21752759.5,DUMBBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+1734,Piso de Caucho Interlock 50x50cm x 20mm (Unidad) Incluye 3 Conectores,true,21426787.5,FLOORING,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+233,Par Mancuernas Hexagonales 22.5kg | HWM®,true,21400304.5,DUMBBELL,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+1498,Par Discos Olímpicos Grip Rubber 15kg | PROmachine,true,21381170.5,WEIGHT_PLATE,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+1150,Pack 8 Palmetas de Caucho 50x50cm x 25mm,true,21070656,FLOORING,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un producto multiuso/pack que debe permanecer UNMODELED?
+147,Par Discos Preolímpicos 20kg | Barbell,true,20772641.5,WEIGHT_PLATE,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+898,Banco Plano Amarillo Flúor | KONG,true,20576828,BENCH,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+1199,Piso de Caucho Rollo 10x1mt x 6mm,true,20149235,FLOORING,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Falta una capability V1 explícita o la ausencia representa SAFE_SPARSITY?
+818,Cinturón de Levantamiento Straight Black | HWM,true,20045777,PROTECTIVE_GEAR,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?
+1496,Par Discos Olímpicos Grip Rubber 5kg | PROmachine,true,19638685,WEIGHT_PLATE,NO_CAPABILITY_APPLICABLE,,,,,,NO_CAPABILITY_APPLICABLE,¿Es un accesorio/support que debe permanecer sin capability?

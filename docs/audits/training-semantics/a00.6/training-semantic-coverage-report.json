@@ -1,0 +1,1695 @@
+{
+  "auditVersion": "training-semantic-coverage-review-v1",
+  "decision": "TRAINING_SEMANTIC_COVERAGE_ACCEPTED_WITH_DEBT",
+  "authority": {
+    "snapshotId": "sha256:63fd41033347c4bd4bcc6382ce432a8a5d0876c8de0a5bec2dd54ac9297ab90d",
+    "semanticChecksum": "08fdd83e95d6f682527187fd6e2caff25f52107dc4bf63edd1abd87511eb741e",
+    "registryVersion": "training-semantic-registry-v1",
+    "registryHash": "82fcbe9a014522257ab8b2d460286d0c6ecbeffc6a01814d8d4e2f6b8849023f",
+    "classifierVersion": "training-semantic-classifier-v1.1",
+    "rulesHash": "83007958a40fd29a87eb01d1fe159812587876c5e57295d7344024bda0123248"
+  },
+  "contextualSources": {
+    "catalogExport": "product_catalog_exploration(2).csv",
+    "productFamilyJoin": "Current Product Semantic classifier context only; no Training Semantic classification was rerun or used to replace snapshot records."
+  },
+  "integrity": {
+    "baselineMatched": true,
+    "recordCount": 2011,
+    "assignmentCount": 180,
+    "coverageCounts": {
+      "INSUFFICIENT_EVIDENCE": 44,
+      "NEEDS_REVIEW": 0,
+      "NO_CAPABILITY_APPLICABLE": 881,
+      "UNMODELED": 1086
+    },
+    "assignmentCountsByCapability": {
+      "ABDOMINAL_CRUNCH": 0,
+      "ABDUCTOR": 9,
+      "ADDUCTOR": 7,
+      "CHEST_PRESS": 7,
+      "DIP": 21,
+      "HIP_THRUST": 18,
+      "LAT_PULLDOWN": 24,
+      "LEG_CURL": 20,
+      "LEG_EXTENSION": 11,
+      "PEC_DECK": 1,
+      "PULL_UP": 31,
+      "ROW": 25,
+      "SHOULDER_PRESS": 6
+    }
+  },
+  "globalCoverage": [
+    {
+      "scope": "ALL",
+      "products": 2011,
+      "productsWithAssignments": 157,
+      "productsWithoutAssignments": 1854,
+      "assignmentRate": 7.81,
+      "directAssignments": 157,
+      "supportedAssignments": 23,
+      "directRate": 87.22,
+      "supportedRate": 12.78,
+      "multiAssignmentProducts": 23,
+      "multiAssignmentRate": 1.14,
+      "snapshotAssignmentCount": 180
+    },
+    {
+      "scope": "ACTIVE",
+      "products": 889,
+      "productsWithAssignments": 69,
+      "productsWithoutAssignments": 820,
+      "assignmentRate": 7.76,
+      "directAssignments": 65,
+      "supportedAssignments": 16,
+      "directRate": 80.25,
+      "supportedRate": 19.75,
+      "multiAssignmentProducts": 12,
+      "multiAssignmentRate": 1.35,
+      "snapshotAssignmentCount": 180
+    },
+    {
+      "scope": "INACTIVE_OR_HISTORICAL",
+      "products": 1122,
+      "productsWithAssignments": 88,
+      "productsWithoutAssignments": 1034,
+      "assignmentRate": 7.84,
+      "directAssignments": 92,
+      "supportedAssignments": 7,
+      "directRate": 92.93,
+      "supportedRate": 7.07,
+      "multiAssignmentProducts": 11,
+      "multiAssignmentRate": 0.98,
+      "snapshotAssignmentCount": 180
+    },
+    {
+      "scope": "CURRENT_CATALOG",
+      "products": 1550,
+      "productsWithAssignments": 136,
+      "productsWithoutAssignments": 1414,
+      "assignmentRate": 8.77,
+      "directAssignments": 135,
+      "supportedAssignments": 22,
+      "directRate": 85.99,
+      "supportedRate": 14.01,
+      "multiAssignmentProducts": 21,
+      "multiAssignmentRate": 1.35,
+      "snapshotAssignmentCount": 180
+    }
+  ],
+  "familyCoverage": [
+    {
+      "productFamily": "APPAREL",
+      "totalProducts": 48,
+      "activeProducts": 2,
+      "productsWithTrainingAssignments": 0,
+      "coveragePercent": 0,
+      "directAssignments": 0,
+      "supportedAssignments": 0,
+      "unmodeled": 46,
+      "insufficientEvidence": 0,
+      "noCapabilityApplicable": 2,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "BALL_BAG",
+      "totalProducts": 89,
+      "activeProducts": 50,
+      "productsWithTrainingAssignments": 0,
+      "coveragePercent": 0,
+      "directAssignments": 0,
+      "supportedAssignments": 0,
+      "unmodeled": 85,
+      "insufficientEvidence": 0,
+      "noCapabilityApplicable": 4,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "BAND_SUSPENSION",
+      "totalProducts": 20,
+      "activeProducts": 17,
+      "productsWithTrainingAssignments": 0,
+      "coveragePercent": 0,
+      "directAssignments": 0,
+      "supportedAssignments": 0,
+      "unmodeled": 6,
+      "insufficientEvidence": 0,
+      "noCapabilityApplicable": 14,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "BARBELL",
+      "totalProducts": 132,
+      "activeProducts": 62,
+      "productsWithTrainingAssignments": 0,
+      "coveragePercent": 0,
+      "directAssignments": 0,
+      "supportedAssignments": 0,
+      "unmodeled": 0,
+      "insufficientEvidence": 0,
+      "noCapabilityApplicable": 132,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "BENCH",
+      "totalProducts": 141,
+      "activeProducts": 64,
+      "productsWithTrainingAssignments": 15,
+      "coveragePercent": 10.64,
+      "directAssignments": 15,
+      "supportedAssignments": 0,
+      "unmodeled": 15,
+      "insufficientEvidence": 0,
+      "noCapabilityApplicable": 126,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "BODYWEIGHT_GYMNASTICS",
+      "totalProducts": 50,
+      "activeProducts": 26,
+      "productsWithTrainingAssignments": 23,
+      "coveragePercent": 46,
+      "directAssignments": 24,
+      "supportedAssignments": 0,
+      "unmodeled": 45,
+      "insufficientEvidence": 0,
+      "noCapabilityApplicable": 5,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "CABLE_MACHINE",
+      "totalProducts": 77,
+      "activeProducts": 39,
+      "productsWithTrainingAssignments": 21,
+      "coveragePercent": 27.27,
+      "directAssignments": 32,
+      "supportedAssignments": 1,
+      "unmodeled": 30,
+      "insufficientEvidence": 17,
+      "noCapabilityApplicable": 30,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "CARDIO_MACHINE",
+      "totalProducts": 78,
+      "activeProducts": 33,
+      "productsWithTrainingAssignments": 0,
+      "coveragePercent": 0,
+      "directAssignments": 0,
+      "supportedAssignments": 0,
+      "unmodeled": 75,
+      "insufficientEvidence": 3,
+      "noCapabilityApplicable": 0,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "DUMBBELL",
+      "totalProducts": 205,
+      "activeProducts": 80,
+      "productsWithTrainingAssignments": 0,
+      "coveragePercent": 0,
+      "directAssignments": 0,
+      "supportedAssignments": 0,
+      "unmodeled": 0,
+      "insufficientEvidence": 0,
+      "noCapabilityApplicable": 205,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "FLOORING",
+      "totalProducts": 61,
+      "activeProducts": 24,
+      "productsWithTrainingAssignments": 0,
+      "coveragePercent": 0,
+      "directAssignments": 0,
+      "supportedAssignments": 0,
+      "unmodeled": 0,
+      "insufficientEvidence": 0,
+      "noCapabilityApplicable": 61,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "KETTLEBELL",
+      "totalProducts": 40,
+      "activeProducts": 25,
+      "productsWithTrainingAssignments": 0,
+      "coveragePercent": 0,
+      "directAssignments": 0,
+      "supportedAssignments": 0,
+      "unmodeled": 40,
+      "insufficientEvidence": 0,
+      "noCapabilityApplicable": 0,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "MACHINE_ATTACHMENT",
+      "totalProducts": 53,
+      "activeProducts": 31,
+      "productsWithTrainingAssignments": 0,
+      "coveragePercent": 0,
+      "directAssignments": 0,
+      "supportedAssignments": 0,
+      "unmodeled": 19,
+      "insufficientEvidence": 0,
+      "noCapabilityApplicable": 34,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "PLATE_LOADED_MACHINE",
+      "totalProducts": 87,
+      "activeProducts": 45,
+      "productsWithTrainingAssignments": 31,
+      "coveragePercent": 35.63,
+      "directAssignments": 26,
+      "supportedAssignments": 6,
+      "unmodeled": 81,
+      "insufficientEvidence": 4,
+      "noCapabilityApplicable": 2,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "PROTECTIVE_GEAR",
+      "totalProducts": 140,
+      "activeProducts": 99,
+      "productsWithTrainingAssignments": 0,
+      "coveragePercent": 0,
+      "directAssignments": 0,
+      "supportedAssignments": 0,
+      "unmodeled": 0,
+      "insufficientEvidence": 0,
+      "noCapabilityApplicable": 140,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "RACK_CAGE",
+      "totalProducts": 64,
+      "activeProducts": 19,
+      "productsWithTrainingAssignments": 12,
+      "coveragePercent": 18.75,
+      "directAssignments": 0,
+      "supportedAssignments": 14,
+      "unmodeled": 61,
+      "insufficientEvidence": 1,
+      "noCapabilityApplicable": 2,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "RECOVERY_TOOL",
+      "totalProducts": 22,
+      "activeProducts": 17,
+      "productsWithTrainingAssignments": 0,
+      "coveragePercent": 0,
+      "directAssignments": 0,
+      "supportedAssignments": 0,
+      "unmodeled": 22,
+      "insufficientEvidence": 0,
+      "noCapabilityApplicable": 0,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "ROPE_SLED",
+      "totalProducts": 25,
+      "activeProducts": 14,
+      "productsWithTrainingAssignments": 0,
+      "coveragePercent": 0,
+      "directAssignments": 0,
+      "supportedAssignments": 0,
+      "unmodeled": 23,
+      "insufficientEvidence": 0,
+      "noCapabilityApplicable": 2,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "SELECTORIZED_MACHINE",
+      "totalProducts": 52,
+      "activeProducts": 23,
+      "productsWithTrainingAssignments": 34,
+      "coveragePercent": 65.38,
+      "directAssignments": 36,
+      "supportedAssignments": 2,
+      "unmodeled": 42,
+      "insufficientEvidence": 10,
+      "noCapabilityApplicable": 0,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "STORAGE",
+      "totalProducts": 32,
+      "activeProducts": 30,
+      "productsWithTrainingAssignments": 0,
+      "coveragePercent": 0,
+      "directAssignments": 0,
+      "supportedAssignments": 0,
+      "unmodeled": 0,
+      "insufficientEvidence": 0,
+      "noCapabilityApplicable": 32,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "UNKNOWN",
+      "totalProducts": 330,
+      "activeProducts": 89,
+      "productsWithTrainingAssignments": 21,
+      "coveragePercent": 6.36,
+      "directAssignments": 24,
+      "supportedAssignments": 0,
+      "unmodeled": 293,
+      "insufficientEvidence": 9,
+      "noCapabilityApplicable": 28,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "WEIGHT_PLATE",
+      "totalProducts": 248,
+      "activeProducts": 91,
+      "productsWithTrainingAssignments": 0,
+      "coveragePercent": 0,
+      "directAssignments": 0,
+      "supportedAssignments": 0,
+      "unmodeled": 186,
+      "insufficientEvidence": 0,
+      "noCapabilityApplicable": 62,
+      "needsReview": 0
+    },
+    {
+      "productFamily": "YOGA_PILATES",
+      "totalProducts": 17,
+      "activeProducts": 9,
+      "productsWithTrainingAssignments": 0,
+      "coveragePercent": 0,
+      "directAssignments": 0,
+      "supportedAssignments": 0,
+      "unmodeled": 17,
+      "insufficientEvidence": 0,
+      "noCapabilityApplicable": 0,
+      "needsReview": 0
+    }
+  ],
+  "capabilityCoverage": [
+    {
+      "capabilityCode": "LEG_EXTENSION",
+      "totalAssignments": 11,
+      "directAssignments": 11,
+      "supportedAssignments": 0,
+      "activeProducts": 4,
+      "inactiveOrHistoricalProducts": 7,
+      "productFamilies": "PLATE_LOADED_MACHINE|SELECTORIZED_MACHINE|UNKNOWN",
+      "multiAssignmentProducts": 2,
+      "highRevenueExamples": "1269:Extensión de Cuádriceps MO 2.0 Obelix®:22226866 | 492:Extensión de Cuadriceps V8 Series | Obelix:14498902 | 280:Extensión de Cuádriceps MO Series | Obelix:13707047",
+      "unmatchedExplicitCandidates": 0,
+      "classification": "HEALTHY",
+      "note": ""
+    },
+    {
+      "capabilityCode": "LEG_CURL",
+      "totalAssignments": 20,
+      "directAssignments": 20,
+      "supportedAssignments": 0,
+      "activeProducts": 8,
+      "inactiveOrHistoricalProducts": 12,
+      "productFamilies": "BENCH|PLATE_LOADED_MACHINE|SELECTORIZED_MACHINE|UNKNOWN",
+      "multiAssignmentProducts": 1,
+      "highRevenueExamples": "1551:Banco Multifunción Leg/Curl Extension ZR Series | PROmachine:48012738 | 1118:Banco Preolímpico Multifuncional Pro | Forza:31337249 | 1619:Pack Dúo Leg Curl/Extension MO 2.0 | Obelix:11474915",
+      "unmatchedExplicitCandidates": 0,
+      "classification": "HEALTHY",
+      "note": ""
+    },
+    {
+      "capabilityCode": "HIP_THRUST",
+      "totalAssignments": 18,
+      "directAssignments": 18,
+      "supportedAssignments": 0,
+      "activeProducts": 9,
+      "inactiveOrHistoricalProducts": 9,
+      "productFamilies": "BENCH|PLATE_LOADED_MACHINE|UNKNOWN",
+      "multiAssignmentProducts": 0,
+      "highRevenueExamples": "245:Banco Hip Thrust 1.0 | HWM:24385746 | 1337:Banco Hip Thrust 2.0 | HWM®:24362002 | 1234:Hip Thrust V8 Series | Obelix:13765563",
+      "unmatchedExplicitCandidates": 0,
+      "classification": "HEALTHY",
+      "note": ""
+    },
+    {
+      "capabilityCode": "CHEST_PRESS",
+      "totalAssignments": 7,
+      "directAssignments": 7,
+      "supportedAssignments": 0,
+      "activeProducts": 2,
+      "inactiveOrHistoricalProducts": 5,
+      "productFamilies": "PLATE_LOADED_MACHINE|SELECTORIZED_MACHINE|UNKNOWN",
+      "multiAssignmentProducts": 0,
+      "highRevenueExamples": "271:Press de Pectoral MO Series | Obelix:6875234 | 1265:Press de Pectoral MO 2.0 Obelix®:3314975 | 486:Press de Pectoral V8 Series | Obelix:2127985",
+      "unmatchedExplicitCandidates": 0,
+      "classification": "SPARSE_BUT_VALID",
+      "note": ""
+    },
+    {
+      "capabilityCode": "PEC_DECK",
+      "totalAssignments": 1,
+      "directAssignments": 1,
+      "supportedAssignments": 0,
+      "activeProducts": 0,
+      "inactiveOrHistoricalProducts": 1,
+      "productFamilies": "SELECTORIZED_MACHINE",
+      "multiAssignmentProducts": 0,
+      "highRevenueExamples": "272:Contractora de Pectoral MO Series | Obelix:6072126",
+      "unmatchedExplicitCandidates": 0,
+      "classification": "SPARSE_BUT_VALID",
+      "note": "Low observed count; inspect the single positive and catalog candidates manually."
+    },
+    {
+      "capabilityCode": "LAT_PULLDOWN",
+      "totalAssignments": 24,
+      "directAssignments": 24,
+      "supportedAssignments": 0,
+      "activeProducts": 8,
+      "inactiveOrHistoricalProducts": 16,
+      "productFamilies": "CABLE_MACHINE|PLATE_LOADED_MACHINE|UNKNOWN",
+      "multiAssignmentProducts": 13,
+      "highRevenueExamples": "176:Crossover Lat Pulldown ZR Series | PROmachine:95687805 | 899:Lat Pulldown Heavy Duty Series | HWM®:41480004 | 1506:Dual Polea Alta / Remo Bajo MO 2.0 | Obelix®:40319086",
+      "unmatchedExplicitCandidates": 0,
+      "classification": "HEALTHY",
+      "note": ""
+    },
+    {
+      "capabilityCode": "ROW",
+      "totalAssignments": 25,
+      "directAssignments": 25,
+      "supportedAssignments": 0,
+      "activeProducts": 9,
+      "inactiveOrHistoricalProducts": 16,
+      "productFamilies": "CABLE_MACHINE|PLATE_LOADED_MACHINE|SELECTORIZED_MACHINE|UNKNOWN",
+      "multiAssignmentProducts": 11,
+      "highRevenueExamples": "1506:Dual Polea Alta / Remo Bajo MO 2.0 | Obelix®:40319086 | 1025:Dual Polea Alta/Remo V8 Series | Obelix:16776670 | 1207:Multi Estación 4 Stacks V8 Series | Obelix:13964972",
+      "unmatchedExplicitCandidates": 1,
+      "classification": "POTENTIAL_GAP",
+      "note": ""
+    },
+    {
+      "capabilityCode": "SHOULDER_PRESS",
+      "totalAssignments": 6,
+      "directAssignments": 6,
+      "supportedAssignments": 0,
+      "activeProducts": 2,
+      "inactiveOrHistoricalProducts": 4,
+      "productFamilies": "PLATE_LOADED_MACHINE|SELECTORIZED_MACHINE|UNKNOWN",
+      "multiAssignmentProducts": 0,
+      "highRevenueExamples": "259:Press de Hombro MO Series | Obelix:3959963 | 1500:Press de Hombro MO 2.0 Obelix®:3669971 | 485:Press de Hombro V8 Series | Obelix:839994",
+      "unmatchedExplicitCandidates": 0,
+      "classification": "SPARSE_BUT_VALID",
+      "note": ""
+    },
+    {
+      "capabilityCode": "PULL_UP",
+      "totalAssignments": 31,
+      "directAssignments": 13,
+      "supportedAssignments": 18,
+      "activeProducts": 19,
+      "inactiveOrHistoricalProducts": 12,
+      "productFamilies": "BENCH|BODYWEIGHT_GYMNASTICS|CABLE_MACHINE|PLATE_LOADED_MACHINE|RACK_CAGE|SELECTORIZED_MACHINE|UNKNOWN",
+      "multiAssignmentProducts": 5,
+      "highRevenueExamples": "176:Crossover Lat Pulldown ZR Series | PROmachine:95687805 | 343:Jaula Smith Machine | PROmachine:51307860.9999 | 1543:Power Rack Alpha | HWM®:43590098",
+      "unmatchedExplicitCandidates": 0,
+      "classification": "HEALTHY",
+      "note": ""
+    },
+    {
+      "capabilityCode": "DIP",
+      "totalAssignments": 21,
+      "directAssignments": 16,
+      "supportedAssignments": 5,
+      "activeProducts": 13,
+      "inactiveOrHistoricalProducts": 8,
+      "productFamilies": "BODYWEIGHT_GYMNASTICS|PLATE_LOADED_MACHINE|RACK_CAGE|UNKNOWN",
+      "multiAssignmentProducts": 4,
+      "highRevenueExamples": "1543:Power Rack Alpha | HWM®:43590098 | 934:Barras Paralelas Ajustables 77-98cm (Par) | HWM:18748638.5 | 1059:Multifuncional Smith ZR Series | PROmachine:15421831",
+      "unmatchedExplicitCandidates": 0,
+      "classification": "HEALTHY",
+      "note": ""
+    },
+    {
+      "capabilityCode": "ABDOMINAL_CRUNCH",
+      "totalAssignments": 0,
+      "directAssignments": 0,
+      "supportedAssignments": 0,
+      "activeProducts": 0,
+      "inactiveOrHistoricalProducts": 0,
+      "productFamilies": "",
+      "multiAssignmentProducts": 0,
+      "highRevenueExamples": "",
+      "unmatchedExplicitCandidates": 0,
+      "classification": "SPARSE_BUT_VALID",
+      "note": "Active capability with no published assignments; no assignment was invented."
+    },
+    {
+      "capabilityCode": "ADDUCTOR",
+      "totalAssignments": 7,
+      "directAssignments": 7,
+      "supportedAssignments": 0,
+      "activeProducts": 3,
+      "inactiveOrHistoricalProducts": 4,
+      "productFamilies": "SELECTORIZED_MACHINE|UNKNOWN",
+      "multiAssignmentProducts": 5,
+      "highRevenueExamples": "1505:Dual Abductor / Aductor MO 2.0 | Obelix®:61567529 | 497:Dual Abductor/Aductor V8 Series | Obelix:17472774 | 1620:Pack Dúo Abductor/Aductor MO 2.0 | Obelix:10199915",
+      "unmatchedExplicitCandidates": 0,
+      "classification": "SPARSE_BUT_VALID",
+      "note": "Sparse but valid; registry muscle/pattern mapping remains intentionally pending."
+    },
+    {
+      "capabilityCode": "ABDUCTOR",
+      "totalAssignments": 9,
+      "directAssignments": 9,
+      "supportedAssignments": 0,
+      "activeProducts": 4,
+      "inactiveOrHistoricalProducts": 5,
+      "productFamilies": "PLATE_LOADED_MACHINE|SELECTORIZED_MACHINE|UNKNOWN",
+      "multiAssignmentProducts": 5,
+      "highRevenueExamples": "1505:Dual Abductor / Aductor MO 2.0 | Obelix®:61567529 | 497:Dual Abductor/Aductor V8 Series | Obelix:17472774 | 1620:Pack Dúo Abductor/Aductor MO 2.0 | Obelix:10199915",
+      "unmatchedExplicitCandidates": 0,
+      "classification": "SPARSE_BUT_VALID",
+      "note": "Sparse but valid; registry muscle/pattern mapping remains intentionally pending."
+    }
+  ],
+  "lowCoverageReview": [
+    {
+      "capabilityCode": "CHEST_PRESS",
+      "assignments": 7,
+      "activeAssignments": 2,
+      "explicitUnassignedCandidates": 0,
+      "candidateProductIds": "",
+      "assessment": "SPARSE_BUT_VALID",
+      "explanation": "Observed count is small, but no unassigned trusted V1 signal establishes a material missing rule in this audit."
+    },
+    {
+      "capabilityCode": "PEC_DECK",
+      "assignments": 1,
+      "activeAssignments": 0,
+      "explicitUnassignedCandidates": 0,
+      "candidateProductIds": "",
+      "assessment": "SPARSE_BUT_VALID",
+      "explanation": "Observed count is small, but no unassigned trusted V1 signal establishes a material missing rule in this audit."
+    },
+    {
+      "capabilityCode": "SHOULDER_PRESS",
+      "assignments": 6,
+      "activeAssignments": 2,
+      "explicitUnassignedCandidates": 0,
+      "candidateProductIds": "",
+      "assessment": "SPARSE_BUT_VALID",
+      "explanation": "Observed count is small, but no unassigned trusted V1 signal establishes a material missing rule in this audit."
+    },
+    {
+      "capabilityCode": "ABDOMINAL_CRUNCH",
+      "assignments": 0,
+      "activeAssignments": 0,
+      "explicitUnassignedCandidates": 0,
+      "candidateProductIds": "",
+      "assessment": "SPARSE_BUT_VALID",
+      "explanation": "No published assignment and no trustworthy dedicated V1 candidate identified; abdominal benches/accessories remain excluded."
+    },
+    {
+      "capabilityCode": "ADDUCTOR",
+      "assignments": 7,
+      "activeAssignments": 3,
+      "explicitUnassignedCandidates": 0,
+      "candidateProductIds": "",
+      "assessment": "SPARSE_BUT_VALID",
+      "explanation": "Observed count is small, but no unassigned trusted V1 signal establishes a material missing rule in this audit."
+    },
+    {
+      "capabilityCode": "ABDUCTOR",
+      "assignments": 9,
+      "activeAssignments": 4,
+      "explicitUnassignedCandidates": 0,
+      "candidateProductIds": "",
+      "assessment": "SPARSE_BUT_VALID",
+      "explanation": "Observed count is small, but no unassigned trusted V1 signal establishes a material missing rule in this audit."
+    }
+  ],
+  "activeCoverage": {
+    "eligibilityDefinition": "A product is TRAINING_SEMANTICS_ELIGIBLE_PRODUCT when it has a V1 assignment, a training-equipment Product Family, a trusted V1 capability signal, a deferred capability signal, or trusted training-equipment wording; clearly non-training families are excluded.",
+    "eligibleProducts": 532,
+    "activeEligibleProducts": 240,
+    "activeProductsWithAssignment": 69,
+    "activeTrainingRelevantCoveragePercent": 28.75,
+    "activeTrainingRelevantUnmodeled": 181,
+    "activeTrainingRelevantInsufficientEvidence": 12,
+    "activeAllProducts": 889
+  },
+  "commercialCoverage": [
+    {
+      "scope": "ALL",
+      "eligibleProducts": 532,
+      "productsWithAssignment": 157,
+      "revenue": 3811539265.55,
+      "assignedRevenue": 1201787317.1,
+      "revenueCoveragePercent": 31.53,
+      "orderLines": 20695,
+      "assignedOrderLines": 4704,
+      "orderLineCoveragePercent": 22.73,
+      "units": 24530,
+      "assignedUnits": 5086,
+      "unitsCoveragePercent": 20.73,
+      "revenueDataAvailable": true
+    },
+    {
+      "scope": "ACTIVE_ONLY",
+      "eligibleProducts": 240,
+      "productsWithAssignment": 69,
+      "revenue": 2366419174.12,
+      "assignedRevenue": 784450622.9,
+      "revenueCoveragePercent": 33.15,
+      "orderLines": 16390,
+      "assignedOrderLines": 3790,
+      "orderLineCoveragePercent": 23.12,
+      "units": 19712,
+      "assignedUnits": 4138,
+      "unitsCoveragePercent": 20.99,
+      "revenueDataAvailable": true
+    }
+  ],
+  "unmodeledBuckets": [
+    {
+      "bucket": "ACCESSORY_OR_SUPPORT",
+      "count": 99,
+      "safeSparsity": true
+    },
+    {
+      "bucket": "CAPABILITY_NOT_IN_V1",
+      "count": 20,
+      "safeSparsity": true
+    },
+    {
+      "bucket": "GENERAL_MULTIUSE",
+      "count": 101,
+      "safeSparsity": true
+    },
+    {
+      "bucket": "HISTORICAL_ONLY",
+      "count": 238,
+      "safeSparsity": true
+    },
+    {
+      "bucket": "INSUFFICIENT_METADATA",
+      "count": 142,
+      "safeSparsity": true
+    },
+    {
+      "bucket": "MISSING_RULE",
+      "count": 81,
+      "safeSparsity": false
+    },
+    {
+      "bucket": "NON_TRAINING_PRODUCT",
+      "count": 87,
+      "safeSparsity": true
+    },
+    {
+      "bucket": "PACK_OR_MULTIFUNCTION_AMBIGUITY",
+      "count": 141,
+      "safeSparsity": true
+    },
+    {
+      "bucket": "UNKNOWN",
+      "count": 177,
+      "safeSparsity": false
+    }
+  ],
+  "insufficientEvidence": [
+    {
+      "productId": 256,
+      "name": "Curl de Bíceps MO Series | Obelix",
+      "active": false,
+      "revenue": 6520854,
+      "productFamily": "SELECTORIZED_MACHINE",
+      "likelyCapability": "BICEPS_CURL",
+      "whyEvidenceIsInsufficient": "Signal belongs to a deferred capability outside V1.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 257,
+      "name": "Press de Tríceps MO Series | Obelix",
+      "active": false,
+      "revenue": 3699963,
+      "productFamily": "SELECTORIZED_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 258,
+      "name": "Extensión de Tríceps MO Series | Obelix",
+      "active": true,
+      "revenue": 4299957,
+      "productFamily": "UNKNOWN",
+      "likelyCapability": "TRICEPS_EXTENSION",
+      "whyEvidenceIsInsufficient": "Signal belongs to a deferred capability outside V1.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 288,
+      "name": "Polea Cruzada MO Series | Obelix",
+      "active": false,
+      "revenue": 9009948,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 289,
+      "name": "Polea Cruzada Corta MO Series | Obelix",
+      "active": false,
+      "revenue": 22671887,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 344,
+      "name": "Abdominal / Fondo PROmachine",
+      "active": false,
+      "revenue": 0,
+      "productFamily": "UNKNOWN",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 345,
+      "name": "Polea Cruzada PROmachine",
+      "active": false,
+      "revenue": 0,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 350,
+      "name": "Abdominal / Fondo Multi Press PROmachine",
+      "active": false,
+      "revenue": 0,
+      "productFamily": "UNKNOWN",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 355,
+      "name": "Polea Cruzada JR Serie PROmachine",
+      "active": false,
+      "revenue": 0,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 451,
+      "name": "Leg Press 45° V8 Series | Obelix",
+      "active": false,
+      "revenue": 13344910,
+      "productFamily": "PLATE_LOADED_MACHINE",
+      "likelyCapability": "LEG_PRESS",
+      "whyEvidenceIsInsufficient": "Signal belongs to a deferred capability outside V1.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 488,
+      "name": "Curl de Bíceps V8 Series | Obelix",
+      "active": false,
+      "revenue": 2519981,
+      "productFamily": "SELECTORIZED_MACHINE",
+      "likelyCapability": "BICEPS_CURL",
+      "whyEvidenceIsInsufficient": "Signal belongs to a deferred capability outside V1.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 490,
+      "name": "Press de Tríceps V8 Series | Obelix",
+      "active": false,
+      "revenue": 3494974,
+      "productFamily": "SELECTORIZED_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 493,
+      "name": "Abdominal V8 Series | Obelix",
+      "active": false,
+      "revenue": 0,
+      "productFamily": "UNKNOWN",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 494,
+      "name": "Polea Cruzada Corta V8 Series | Obelix",
+      "active": true,
+      "revenue": 17920935,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": true,
+      "classification": "HUMAN_REVIEW_WORTHY",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 495,
+      "name": "Polea Cruzada V8 Series | Obelix",
+      "active": true,
+      "revenue": 15319928,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": true,
+      "classification": "HUMAN_REVIEW_WORTHY",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 534,
+      "name": "Polea de Muro 2.0 ZR Series | PROmachine",
+      "active": false,
+      "revenue": 113925554.5,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 889,
+      "name": "ACCESORIOS DE LEG PRESS PARA JAULA",
+      "active": false,
+      "revenue": 0,
+      "productFamily": "RACK_CAGE",
+      "likelyCapability": "LEG_PRESS",
+      "whyEvidenceIsInsufficient": "Signal belongs to a deferred capability outside V1.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 990,
+      "name": "PACK POLEA MURO MALETIN 50KG",
+      "active": false,
+      "revenue": 0,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 991,
+      "name": "PACK POLEA MURO MALETIN 50KG BANCO",
+      "active": false,
+      "revenue": 0,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1011,
+      "name": "Pendulum Leg Press | Obelix",
+      "active": false,
+      "revenue": 1259994,
+      "productFamily": "UNKNOWN",
+      "likelyCapability": "LEG_PRESS",
+      "whyEvidenceIsInsufficient": "Signal belongs to a deferred capability outside V1.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1020,
+      "name": "TOBILLERA PARA POLEA LONA",
+      "active": false,
+      "revenue": 0,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1023,
+      "name": "MAQUINA CUADRICEPS",
+      "active": false,
+      "revenue": 0,
+      "productFamily": "UNKNOWN",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1070,
+      "name": "Linear Leg Press PL Series | Obelix",
+      "active": false,
+      "revenue": 4249990,
+      "productFamily": "PLATE_LOADED_MACHINE",
+      "likelyCapability": "LEG_PRESS",
+      "whyEvidenceIsInsufficient": "Signal belongs to a deferred capability outside V1.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1162,
+      "name": "Remo de Aire Magnético Lite Series | Obelix",
+      "active": false,
+      "revenue": 13733661,
+      "productFamily": "CARDIO_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1227,
+      "name": "Leg Press Solid Rock | BODYTONE",
+      "active": false,
+      "revenue": 7839972,
+      "productFamily": "PLATE_LOADED_MACHINE",
+      "likelyCapability": "LEG_PRESS",
+      "whyEvidenceIsInsufficient": "Signal belongs to a deferred capability outside V1.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1241,
+      "name": "Remo de Agua 1.0 | PROmachine",
+      "active": false,
+      "revenue": 1367964,
+      "productFamily": "CARDIO_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1270,
+      "name": "Curl de Femoral Acostado MO 2.0 Obelix®",
+      "active": true,
+      "revenue": 13182901,
+      "productFamily": "SELECTORIZED_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": true,
+      "classification": "HUMAN_REVIEW_WORTHY",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1378,
+      "name": "Seated Leg Press Forza Bold | BODYTONE",
+      "active": false,
+      "revenue": 0,
+      "productFamily": "SELECTORIZED_MACHINE",
+      "likelyCapability": "LEG_PRESS",
+      "whyEvidenceIsInsufficient": "Signal belongs to a deferred capability outside V1.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1427,
+      "name": "Polea de Muro 1.0 ZR Series | PROmachine",
+      "active": true,
+      "revenue": 107054339.5,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": true,
+      "classification": "HUMAN_REVIEW_WORTHY",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1504,
+      "name": "Dual Cuádriceps / Femoral Sentado MO 2.0 | Obelix®",
+      "active": true,
+      "revenue": 74825638,
+      "productFamily": "SELECTORIZED_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": true,
+      "classification": "HUMAN_REVIEW_WORTHY",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1508,
+      "name": "Dual Press Pectoral / Hombros MO 2.0 | Obelix®",
+      "active": true,
+      "revenue": 19407474,
+      "productFamily": "SELECTORIZED_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": true,
+      "classification": "HUMAN_REVIEW_WORTHY",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1516,
+      "name": "Polea Cruzada MO 2.0 | Obelix®",
+      "active": true,
+      "revenue": 10299947,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": true,
+      "classification": "HUMAN_REVIEW_WORTHY",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1517,
+      "name": "Polea Cruzada Corta MO 2.0 | Obelix®",
+      "active": true,
+      "revenue": 51724165,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": true,
+      "classification": "HUMAN_REVIEW_WORTHY",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1692,
+      "name": "Polea Cruzada Corta V8 Series | Obelix | 2da Selección",
+      "active": false,
+      "revenue": 1619994,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1699,
+      "name": "Remo de Aire Magnético Lite Series | Obelix | 2da Selección",
+      "active": false,
+      "revenue": 194995,
+      "productFamily": "CARDIO_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1823,
+      "name": "Core Roller | Rising",
+      "active": true,
+      "revenue": 3536430.5,
+      "productFamily": "UNKNOWN",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": true,
+      "classification": "HUMAN_REVIEW_WORTHY",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 1984,
+      "name": "Polea de Muro 1.0 - 2da Selección | PROmachine",
+      "active": false,
+      "revenue": 231588,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 2011,
+      "name": "Dual Pectoral/Hombros MO 2.0 - 2da Selección | Obelix",
+      "active": false,
+      "revenue": 839994,
+      "productFamily": "UNKNOWN",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 2025,
+      "name": "Multi Hip Extension | Peach Builder",
+      "active": true,
+      "revenue": 2477081,
+      "productFamily": "PLATE_LOADED_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": true,
+      "classification": "HUMAN_REVIEW_WORTHY",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 2076,
+      "name": "Dual Femoral/Cuádriceps MO 2.0 - 2da Selección | Obelix",
+      "active": false,
+      "revenue": 839994,
+      "productFamily": "SELECTORIZED_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 2139,
+      "name": "Polea Dual Multifuncional 70kg ZR Series | PROmachine",
+      "active": true,
+      "revenue": 7113272,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": true,
+      "classification": "HUMAN_REVIEW_WORTHY",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 2203,
+      "name": "Dual Cuádriceps / Femoral Acostado MO 2.0 | Obelix®",
+      "active": true,
+      "revenue": 979994,
+      "productFamily": "SELECTORIZED_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": true,
+      "classification": "HUMAN_REVIEW_WORTHY",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 2231,
+      "name": "Polea Dual Multifuncional 70kg ZR Series - 2da Selección | PROmachine (PM-M853A-SU45-2)",
+      "active": false,
+      "revenue": 219995,
+      "productFamily": "CABLE_MACHINE",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    },
+    {
+      "productId": 2280,
+      "name": "Dual Press Pectoral / Hombros MO 2.0 - 2da Selección | Obelix® (OB-MO2-S35-SU40-2)",
+      "active": false,
+      "revenue": 839994,
+      "productFamily": "UNKNOWN",
+      "likelyCapability": "",
+      "whyEvidenceIsInsufficient": "No sufficient trusted name/category/semantic-feature evidence for a V1 assignment.",
+      "humanReviewWorthwhile": false,
+      "classification": "SAFE_TO_LEAVE",
+      "reviewQuestion": "¿Existe evidencia estructurada adicional que permita resolver una capability sin inferencia libre?"
+    }
+  ],
+  "deferredPressure": [
+    {
+      "candidateCode": "BICEPS_CURL",
+      "observedProducts": 5,
+      "activeProducts": 2,
+      "activeRevenue": 2746511,
+      "dedicatedMachineActive": 0,
+      "adjudicationRecommendation": "KEEP_DEFERRED",
+      "action": "NO_ACTION",
+      "blocking": false,
+      "bucketCounts": {
+        "ACCESSORY": 3,
+        "DEDICATED_MACHINE": 2
+      },
+      "rationale": "A00.4.1 authority keeps this candidate deferred; no current snapshot assignment is changed."
+    },
+    {
+      "candidateCode": "DEADLIFT",
+      "observedProducts": 1,
+      "activeProducts": 1,
+      "activeRevenue": 4008362,
+      "dedicatedMachineActive": 0,
+      "adjudicationRecommendation": "DROP",
+      "action": "NO_ACTION",
+      "blocking": false,
+      "bucketCounts": {
+        "ACCESSORY": 1
+      },
+      "rationale": "A00.4.1 authority keeps this candidate deferred; no current snapshot assignment is changed."
+    },
+    {
+      "candidateCode": "GLUTE_KICKBACK",
+      "observedProducts": 2,
+      "activeProducts": 0,
+      "activeRevenue": 0,
+      "dedicatedMachineActive": 0,
+      "adjudicationRecommendation": "KEEP_DEFERRED",
+      "action": "NO_ACTION",
+      "blocking": false,
+      "bucketCounts": {
+        "DEDICATED_MACHINE": 1,
+        "TEXTUAL_FALSE_POSITIVE": 1
+      },
+      "rationale": "A00.4.1 authority keeps this candidate deferred; no current snapshot assignment is changed."
+    },
+    {
+      "candidateCode": "LEG_PRESS",
+      "observedProducts": 6,
+      "activeProducts": 0,
+      "activeRevenue": 0,
+      "dedicatedMachineActive": 0,
+      "adjudicationRecommendation": "KEEP_DEFERRED",
+      "action": "NO_ACTION",
+      "blocking": false,
+      "bucketCounts": {
+        "DEDICATED_MACHINE": 5,
+        "TEXTUAL_FALSE_POSITIVE": 1
+      },
+      "rationale": "A00.4.1 authority keeps this candidate deferred; no current snapshot assignment is changed."
+    },
+    {
+      "candidateCode": "SQUAT",
+      "observedProducts": 53,
+      "activeProducts": 20,
+      "activeRevenue": 158491536.7,
+      "dedicatedMachineActive": 6,
+      "adjudicationRecommendation": "REDEFINE",
+      "action": "FUTURE_ONTOLOGY_CANDIDATE",
+      "blocking": false,
+      "bucketCounts": {
+        "ACCESSORY": 4,
+        "BENCH_OR_SUPPORT": 11,
+        "DEDICATED_MACHINE": 11,
+        "PACK": 4,
+        "RACK_CAGE": 14,
+        "TEXTUAL_FALSE_POSITIVE": 9
+      },
+      "rationale": "A00.4.1 authority keeps generic SQUAT out of V1 and points to a narrower future HACK_SQUAT-style ontology slice."
+    },
+    {
+      "candidateCode": "TRICEPS_EXTENSION",
+      "observedProducts": 1,
+      "activeProducts": 1,
+      "activeRevenue": 4299957,
+      "dedicatedMachineActive": 1,
+      "adjudicationRecommendation": "KEEP_DEFERRED",
+      "action": "NO_ACTION",
+      "blocking": false,
+      "bucketCounts": {
+        "DEDICATED_MACHINE": 1
+      },
+      "rationale": "A00.4.1 authority keeps this candidate deferred; no current snapshot assignment is changed."
+    }
+  ],
+  "squatAnalysis": {
+    "candidateCode": "SQUAT",
+    "observedProducts": 53,
+    "activeProducts": 20,
+    "activeRevenue": 158491536.7,
+    "dedicatedMachineActive": 6,
+    "adjudicationRecommendation": "REDEFINE",
+    "action": "FUTURE_ONTOLOGY_CANDIDATE",
+    "blocking": false,
+    "bucketCounts": {
+      "ACCESSORY": 4,
+      "BENCH_OR_SUPPORT": 11,
+      "DEDICATED_MACHINE": 11,
+      "PACK": 4,
+      "RACK_CAGE": 14,
+      "TEXTUAL_FALSE_POSITIVE": 9
+    },
+    "rationale": "A00.4.1 authority keeps generic SQUAT out of V1 and points to a narrower future HACK_SQUAT-style ontology slice.",
+    "requiredSlices": [
+      "hack_squat_machine",
+      "squat_rack",
+      "smith_or_multipower",
+      "pack",
+      "accessory",
+      "text_false_positive",
+      "dedicated_squat_station"
+    ],
+    "interpretation": "The A00.4.1 adjudication separates generic/rack/bench/accessory/text cases from dedicated machines. This audit emits FUTURE_ONTOLOGY_CANDIDATE for the deferred SQUAT family; no SQUAT assignment is promoted."
+  },
+  "precisionSample": {
+    "sampleSize": 60,
+    "assignmentObservations": 71,
+    "directObservations": 62,
+    "supportedObservations": 9,
+    "directProducts": 55,
+    "supportedProducts": 6,
+    "manuallyAdjudicated": 0,
+    "correct": null,
+    "incorrect": null,
+    "ambiguous": null,
+    "status": "NOT_MEASURED",
+    "productIds": [
+      1505,
+      1620,
+      1278,
+      2023,
+      497,
+      1383,
+      2107,
+      1375,
+      1382,
+      1271,
+      1376,
+      1265,
+      486,
+      271,
+      447,
+      2106,
+      1360,
+      1364,
+      1543,
+      934,
+      1059,
+      302,
+      2058,
+      1707,
+      301,
+      300,
+      1856,
+      388,
+      1454,
+      1453,
+      1452,
+      786,
+      785,
+      1776,
+      2161,
+      2129,
+      2284,
+      1634,
+      321,
+      1337,
+      2020,
+      2140,
+      2024,
+      2141,
+      2088,
+      1653,
+      2143,
+      2302,
+      245,
+      1234,
+      1226,
+      1659,
+      1072,
+      1985,
+      1785,
+      2064,
+      1911,
+      176,
+      899,
+      1506
+    ]
+  },
+  "overclassificationAudit": {
+    "status": "LOW",
+    "knownBoundaryChecks": [
+      {
+        "check": "HIP_THRUST_BOUNDARY",
+        "capability": "HIP_THRUST",
+        "matchedProducts": 87,
+        "violations": 0,
+        "violationProductIds": ""
+      },
+      {
+        "check": "ABDOMINAL_BENCH_BOUNDARY",
+        "capability": "ABDOMINAL_CRUNCH",
+        "matchedProducts": 6,
+        "violations": 0,
+        "violationProductIds": ""
+      },
+      {
+        "check": "CARDIO_ROW_BOUNDARY",
+        "capability": "ROW",
+        "matchedProducts": 2,
+        "violations": 0,
+        "violationProductIds": ""
+      },
+      {
+        "check": "GENERIC_CABLE_BOUNDARY",
+        "capability": "LAT_PULLDOWN",
+        "matchedProducts": 3,
+        "violations": 0,
+        "violationProductIds": ""
+      }
+    ],
+    "knownBoundaryViolations": 0
+  },
+  "underclassificationAudit": {
+    "status": "MEDIUM",
+    "candidateCount": 1,
+    "candidates": [
+      {
+        "productId": 2092,
+        "name": "T-Bar Row Beast | Obelix",
+        "active": true,
+        "revenue": 2104978,
+        "productFamily": "PLATE_LOADED_MACHINE",
+        "coverageStatus": "UNMODELED",
+        "candidateCapabilities": "ROW",
+        "reason": "Trusted name/category/semantic-feature wording resembles a V1 capability but no snapshot assignment exists; requires human review before any rule change."
+      }
+    ]
+  },
+  "derivedSemantics": {
+    "rows": [
+      {
+        "capabilityCode": "LEG_EXTENSION",
+        "bodyRegions": "LOWER_BODY",
+        "primaryMuscleGroups": "QUADRICEPS",
+        "secondaryMuscleGroups": "",
+        "trainingPatterns": "KNEE_EXTENSION",
+        "valid": true,
+        "mappingDebt": ""
+      },
+      {
+        "capabilityCode": "LEG_CURL",
+        "bodyRegions": "LOWER_BODY",
+        "primaryMuscleGroups": "HAMSTRINGS",
+        "secondaryMuscleGroups": "",
+        "trainingPatterns": "KNEE_FLEXION",
+        "valid": true,
+        "mappingDebt": ""
+      },
+      {
+        "capabilityCode": "HIP_THRUST",
+        "bodyRegions": "LOWER_BODY",
+        "primaryMuscleGroups": "GLUTES",
+        "secondaryMuscleGroups": "",
+        "trainingPatterns": "HIP_EXTENSION",
+        "valid": true,
+        "mappingDebt": ""
+      },
+      {
+        "capabilityCode": "CHEST_PRESS",
+        "bodyRegions": "UPPER_BODY",
+        "primaryMuscleGroups": "CHEST",
+        "secondaryMuscleGroups": "TRICEPS|SHOULDERS",
+        "trainingPatterns": "PRESS",
+        "valid": true,
+        "mappingDebt": ""
+      },
+      {
+        "capabilityCode": "PEC_DECK",
+        "bodyRegions": "UPPER_BODY",
+        "primaryMuscleGroups": "CHEST",
+        "secondaryMuscleGroups": "",
+        "trainingPatterns": "PRESS",
+        "valid": true,
+        "mappingDebt": ""
+      },
+      {
+        "capabilityCode": "LAT_PULLDOWN",
+        "bodyRegions": "UPPER_BODY",
+        "primaryMuscleGroups": "BACK",
+        "secondaryMuscleGroups": "BICEPS",
+        "trainingPatterns": "PULL",
+        "valid": true,
+        "mappingDebt": ""
+      },
+      {
+        "capabilityCode": "ROW",
+        "bodyRegions": "UPPER_BODY",
+        "primaryMuscleGroups": "BACK",
+        "secondaryMuscleGroups": "BICEPS",
+        "trainingPatterns": "PULL",
+        "valid": true,
+        "mappingDebt": ""
+      },
+      {
+        "capabilityCode": "SHOULDER_PRESS",
+        "bodyRegions": "UPPER_BODY",
+        "primaryMuscleGroups": "SHOULDERS",
+        "secondaryMuscleGroups": "TRICEPS",
+        "trainingPatterns": "PRESS",
+        "valid": true,
+        "mappingDebt": ""
+      },
+      {
+        "capabilityCode": "PULL_UP",
+        "bodyRegions": "UPPER_BODY",
+        "primaryMuscleGroups": "BACK",
+        "secondaryMuscleGroups": "BICEPS",
+        "trainingPatterns": "PULL",
+        "valid": true,
+        "mappingDebt": ""
+      },
+      {
+        "capabilityCode": "DIP",
+        "bodyRegions": "UPPER_BODY",
+        "primaryMuscleGroups": "TRICEPS",
+        "secondaryMuscleGroups": "CHEST",
+        "trainingPatterns": "PRESS",
+        "valid": true,
+        "mappingDebt": ""
+      },
+      {
+        "capabilityCode": "ABDOMINAL_CRUNCH",
+        "bodyRegions": "CORE",
+        "primaryMuscleGroups": "CORE",
+        "secondaryMuscleGroups": "",
+        "trainingPatterns": "",
+        "valid": true,
+        "mappingDebt": "INTENTIONAL_OR_PENDING"
+      },
+      {
+        "capabilityCode": "ADDUCTOR",
+        "bodyRegions": "LOWER_BODY",
+        "primaryMuscleGroups": "",
+        "secondaryMuscleGroups": "",
+        "trainingPatterns": "",
+        "valid": true,
+        "mappingDebt": "INTENTIONAL_OR_PENDING"
+      },
+      {
+        "capabilityCode": "ABDUCTOR",
+        "bodyRegions": "LOWER_BODY",
+        "primaryMuscleGroups": "",
+        "secondaryMuscleGroups": "",
+        "trainingPatterns": "",
+        "valid": true,
+        "mappingDebt": "INTENTIONAL_OR_PENDING"
+      }
+    ],
+    "quality": "NEEDS_REVIEW",
+    "debt": [
+      "ABDOMINAL_CRUNCH",
+      "ADDUCTOR",
+      "ABDUCTOR"
+    ]
+  },
+  "safeSparsityPolicy": {
+    "safeBuckets": [
+      "ACCESSORY_OR_SUPPORT",
+      "CAPABILITY_NOT_IN_V1",
+      "GENERAL_MULTIUSE",
+      "HISTORICAL_ONLY",
+      "INSUFFICIENT_METADATA",
+      "NON_TRAINING_PRODUCT",
+      "PACK_OR_MULTIFUNCTION_AMBIGUITY"
+    ],
+    "nonSafeBuckets": [
+      "MISSING_RULE",
+      "UNKNOWN"
+    ],
+    "rationale": "Sparse coverage is accepted when absence is explained by non-training products, accessories/support, historical-only rows, deferred capabilities, generic/multifunction ambiguity, or intentionally insufficient trusted evidence. Explicit active V1-like signals remain debt."
+  },
+  "safeSparsitySummary": {
+    "safeUnmodeledProducts": 828,
+    "totalUnmodeledProducts": 1086,
+    "safeSparsityPercent": 76.24
+  },
+  "semanticGaps": [
+    {
+      "type": "RULE_GAP",
+      "productId": 2092,
+      "active": true,
+      "revenue": 2104978,
+      "recommendedAction": "HUMAN_REVIEW_BEFORE_CLASSIFIER_CHANGE",
+      "blocking": false
+    }
+  ],
+  "coverageMatrix": {
+    "globalCoverage": "ACCEPTABLE",
+    "activeTrainingRelevantCoverage": "WEAK",
+    "commercialWeightedCoverage": "WEAK",
+    "directPrecision": "NOT_MEASURED",
+    "supportedPrecision": "NOT_MEASURED",
+    "overclassification": "LOW",
+    "underclassification": "MEDIUM",
+    "deferredCapabilityPressure": "MEDIUM",
+    "derivedRelationQuality": "NEEDS_REVIEW"
+  },
+  "preApiDebt": [
+    {
+      "item": "Product 2092 ROW",
+      "action": "Human review before any classifier change",
+      "blocking": false
+    },
+    {
+      "item": "ABDOMINAL_CRUNCH, ADDUCTOR, ABDUCTOR derived mapping",
+      "action": "Resolve intentional registry mapping debt in a future ontology/review slice",
+      "blocking": false
+    },
+    {
+      "item": "SQUAT and other deferred capabilities",
+      "action": "Keep deferred until explicit ontology decision; do not infer in API",
+      "blocking": false
+    },
+    {
+      "item": "DIRECT/SUPPORTED precision",
+      "action": "Complete manual precision review before relying on quality claims",
+      "blocking": false
+    }
+  ],
+  "changes": {
+    "registryChanged": false,
+    "classifierChanged": false,
+    "snapshotChanged": false,
+    "apiChanged": false,
+    "salesAgentChanged": false,
+    "customerProfileChanged": false
+  },
+  "reviewSampleSize": 80
+}

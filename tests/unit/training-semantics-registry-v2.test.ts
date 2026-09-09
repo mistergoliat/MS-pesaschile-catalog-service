@@ -77,7 +77,9 @@ describe('Training Semantic Registry V2', () => {
       functionCode: 'CABLE_RESISTANCE',
       relationType: 'FAMILY_DERIVED',
       productFamily: 'RACK_CAGE',
+      classificationConfidence: 'HIGH',
       evidence: [{ kind: 'FAMILY_DERIVATION', sourceId: 'RACK_CAGE' }],
+      reviewState: 'AUTO',
       provenance: { classifierVersion: 'future-v2', generatedAt: '2026-09-09T00:00:00.000Z' },
     })).toThrow(/no approved family derivation/);
   });
@@ -142,4 +144,3 @@ describe('Training Semantic Registry V2', () => {
     expect(parsed.records[0]?.trainingFunctions).toEqual([]);
   });
 });
-
