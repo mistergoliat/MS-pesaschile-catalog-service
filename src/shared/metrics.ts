@@ -116,6 +116,19 @@ export const trainingSemanticQueryDurationSeconds = new client.Histogram({
   buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1],
 });
 
+export const semanticDiscoveryRequestsTotal = new client.Counter({
+  name: 'catalog_semantic_discovery_requests_total',
+  help: 'Combined structured Product and Training Semantic Discovery requests',
+  labelNames: ['axes', 'sources', 'productSnapshotId', 'trainingSnapshotId', 'requirementCount', 'candidateCount', 'resultCount', 'truncated'] as const,
+});
+
+export const semanticDiscoveryDurationSeconds = new client.Histogram({
+  name: 'catalog_semantic_discovery_duration_seconds',
+  help: 'Combined structured Product and Training Semantic Discovery duration',
+  labelNames: ['productSnapshotId', 'trainingSnapshotId'] as const,
+  buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1],
+});
+
 export async function metricsText(): Promise<string> {
   return client.register.metrics();
 }

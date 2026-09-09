@@ -17,6 +17,7 @@ export type ErrorCode =
   | 'TRAINING_SEMANTIC_PRODUCT_NOT_FOUND'
   | 'TRAINING_SEMANTIC_SNAPSHOT_MISMATCH'
   | 'TRAINING_SEMANTICS_UNAVAILABLE'
+  | 'INVALID_SEMANTIC_DISCOVERY_REQUEST'
   | 'INTERNAL_ERROR';
 
 export class CatalogError extends Error {
@@ -118,6 +119,12 @@ export class TrainingSemanticSnapshotMismatchError extends CatalogError {
 export class TrainingSemanticsUnavailableError extends CatalogError {
   constructor(message = 'Active Training Semantic Snapshot V2 is not loaded') {
     super('TRAINING_SEMANTICS_UNAVAILABLE', message, 503);
+  }
+}
+
+export class InvalidSemanticDiscoveryRequestError extends CatalogError {
+  constructor(message = 'Invalid semantic discovery request', details?: unknown) {
+    super('INVALID_SEMANTIC_DISCOVERY_REQUEST', message, 400, details);
   }
 }
 

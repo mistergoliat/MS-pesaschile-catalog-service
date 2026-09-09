@@ -20,6 +20,7 @@ import type { ActiveProductSemanticSnapshotReader } from '../../domain/product-s
 import type { ProductSemanticsRegistryService } from '../../application/catalog/product-semantics-registry/index.js';
 import type { TrainingSemanticReadService } from '../../application/catalog/training-semantic-read/index.js';
 import type { TrainingSemanticQueryService } from '../../application/catalog/training-semantic-query/index.js';
+import type { SemanticDiscoveryService } from '../../application/catalog/semantic-discovery/index.js';
 import { registerSearchProductsV2Route } from './routes/searchProductsV2Route.js';
 import { registerResolveProductIntentRoute } from './routes/resolveProductIntentRoute.js';
 import { registerExploreProductsRoute } from './routes/exploreProductsRoute.js';
@@ -30,6 +31,7 @@ import { registerGetTrainingSemanticProductRoute } from './routes/getTrainingSem
 import { registerGetTrainingSemanticBatchRoute } from './routes/getTrainingSemanticBatchRoute.js';
 import { registerGetTrainingSemanticRegistryRoute } from './routes/getTrainingSemanticRegistryRoute.js';
 import { registerQueryTrainingSemanticsRoute } from './routes/queryTrainingSemanticsRoute.js';
+import { registerSemanticDiscoveryQueryRoute } from './routes/semanticDiscoveryQueryRoute.js';
 
 export type AppDependencies = {
   service: CatalogApplicationService;
@@ -40,6 +42,7 @@ export type AppDependencies = {
   productSemanticsRegistryService?: ProductSemanticsRegistryService;
   trainingSemanticReadService?: TrainingSemanticReadService;
   trainingSemanticQueryService?: TrainingSemanticQueryService;
+  semanticDiscoveryService?: SemanticDiscoveryService;
   repository: CatalogRepository;
   readyCheck: () => Promise<{
     database: 'ok' | 'unavailable';
@@ -353,6 +356,7 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
   await registerGetTrainingSemanticBatchRoute(app as unknown as FastifyInstance, deps.trainingSemanticReadService);
   await registerGetTrainingSemanticRegistryRoute(app as unknown as FastifyInstance, deps.trainingSemanticReadService);
   await registerQueryTrainingSemanticsRoute(app as unknown as FastifyInstance, deps.trainingSemanticQueryService);
+  await registerSemanticDiscoveryQueryRoute(app as unknown as FastifyInstance, deps.semanticDiscoveryService);
 
   return app as unknown as FastifyInstance;
 }

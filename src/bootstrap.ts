@@ -42,6 +42,7 @@ import { FileTrainingSemanticSnapshotV2Store } from './infrastructure/training-s
 import { DefaultActiveTrainingSemanticSnapshotV2Reader } from './domain/training-semantic-snapshot/index.js';
 import { DefaultTrainingSemanticReadService } from './application/catalog/training-semantic-read/index.js';
 import { DefaultTrainingSemanticQueryService } from './application/catalog/training-semantic-query/index.js';
+import { DefaultSemanticDiscoveryService } from './application/catalog/semantic-discovery/index.js';
 import { resolveTrainingSemanticSnapshotDir } from './shared/trainingSemanticSnapshotConfig.js';
 import {
   DefaultActiveProductSemanticSnapshotReader,
@@ -197,5 +198,6 @@ export async function createRuntime() {
     productSemanticSnapshotReader,
     trainingSemanticReadService: new DefaultTrainingSemanticReadService(trainingSemanticSnapshotV2Reader),
     trainingSemanticQueryService: new DefaultTrainingSemanticQueryService(trainingSemanticSnapshotV2Reader),
+    semanticDiscoveryService: new DefaultSemanticDiscoveryService(productSemanticSnapshotReader, trainingSemanticSnapshotV2Reader),
   };
 }
