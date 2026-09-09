@@ -8,6 +8,11 @@ import {
   searchResponseSchema,
 } from '../src/shared/contracts.js';
 import {
+  semanticDiscoveryResponseSchema,
+  semanticDiscoveryTrainingRegistrySchema,
+} from './semanticDiscoveryContracts.js';
+import type { SemanticDiscoveryCatalogResponse } from './semanticDiscoveryContracts.js';
+import {
   searchProductsV2ResultSchema,
   type SearchProductsV2Request,
   type SearchProductsV2Result,
@@ -20,6 +25,7 @@ import type {
   ProductSemanticsBatchResult,
   ProductSemanticsRegistryResult,
   SearchProductsResult,
+  TrainingSemanticRegistryResult,
 } from './types.js';
 
 export type CatalogClientContext = {
@@ -62,6 +68,9 @@ const catalogErrorResponseSchema = z
 function normalizeTransportError(error: unknown, context: CatalogClientContext): CatalogClientError {
   if (error instanceof CatalogClientError) {
     return error;
+  }
+  if (error instanceof Error && error.name === 'ZodError') {
+    return new CatalogClientError('Invalid Catalog response', 502, 'INVALID_RESPONSE', context.correlationId, false);
   }
   if (error instanceof Error && error.name === 'AbortError') {
     return new CatalogClientError('Request timed out', 408, 'TIMEOUT', context.correlationId, false);
@@ -268,6 +277,40 @@ export async function getProductSemanticsRegistry(
     buildUrl(context.baseUrl, '/v1/products/semantics/registry'),
     { method: 'GET' },
     productSemanticsRegistryResponseSchema,
+    true,
+  );
+}
+
+export async function getTrainingSemanticRegistry(
+  context: CatalogClientContext,
+): Promise<TrainingSemanticRegistryResult> {
+  return requestJson(
+    context,
+    buildUrl(context.baseUrl, '/v1/products/training-semantics/registry'),
+    { method: 'GET' },
+    semanticDiscoveryTrainingRegistrySchema,
+    true,
+  );
+}
+
+/**
+ * Infrastructure-only request. Planner code should use
+ * `searchProductsBySemantics`, which validates the planner contract and maps
+ * the result into a compact capability projection first.
+ */
+export async function querySemanticDiscovery(
+  request: unknown,
+  context: CatalogClientContext,
+): Promise<SemanticDiscoveryCatalogResponse> {
+  return requestJson(
+    context,
+    buildUrl(context.baseUrl, '/v1/products/semantic-discovery/query'),
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(request),
+    },
+    semanticDiscoveryResponseSchema,
     true,
   );
 }

@@ -8,6 +8,7 @@ import type {
   ProductSemanticsRegistryResponse,
   SearchResponse,
 } from '../src/shared/contracts.js';
+import type { SemanticDiscoveryTrainingRegistry } from './semanticDiscoveryContracts.js';
 export type {
   SearchProductsV2Request,
   SearchProductsV2Result,
@@ -48,6 +49,7 @@ export type ProductSemanticsBatchInput = Omit<ProductSemanticBatchRequest, 'prod
 export type ProductSemanticsBatchFact = ProductSemanticBatchFact;
 export type ProductSemanticsBatchResult = ProductSemanticBatchResponse;
 export type ProductSemanticsRegistryResult = ProductSemanticsRegistryResponse;
+export type TrainingSemanticRegistryResult = SemanticDiscoveryTrainingRegistry;
 
 export const catalogToolDefinition = {
   name: 'catalog',
