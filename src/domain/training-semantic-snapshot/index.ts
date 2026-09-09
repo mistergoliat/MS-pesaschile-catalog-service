@@ -5,3 +5,4 @@ export * from './defaultSnapshotPublisher.js';
 export * from './errors.js';
 export * from './inMemorySnapshotStore.js';
 export * from './runtime.js';
+export * from './v2-contracts.js';
