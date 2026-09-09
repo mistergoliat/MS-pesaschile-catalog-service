@@ -32,7 +32,10 @@
     "product:training-semantics:v2:classify": "tsx scripts/training-semantic-classification-v2/classify-catalog.ts",
     "product:training-semantics:v2:resolution:audit": "tsx scripts/training-semantic-classification-v2/classify-catalog.ts",
     "product:training-semantics:v2.1:classify": "tsx scripts/training-semantic-classification-v2-1/audit-a00.6.7.ts",
-    "product:training-semantics:v2.1:resolution:audit": "tsx scripts/training-semantic-classification-v2-1/audit-a00.6.7.ts"
+    "product:training-semantics:v2.1:resolution:audit": "tsx scripts/training-semantic-classification-v2-1/audit-a00.6.7.ts",
+    "product:training-semantics:v2:snapshot:build": "tsx scripts/training-semantic-snapshot/build-training-semantic-snapshot-v2.ts",
+    "product:training-semantics:v2:snapshot:inspect": "tsx scripts/training-semantic-snapshot/inspect-training-semantic-snapshot-v2.ts",
+    "product:training-semantics:v2:snapshot:resolution:audit": "tsx scripts/training-semantic-snapshot/audit-training-semantic-snapshot-v2.ts"
   },
   "dependencies": {
     "@fastify/rate-limit": "^10.3.0",

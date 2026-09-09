@@ -6,3 +6,5 @@ export * from './errors.js';
 export * from './inMemorySnapshotStore.js';
 export * from './runtime.js';
 export * from './v2-contracts.js';
+export * from './v2SnapshotBuilder.js';
+export * from './v2Runtime.js';
