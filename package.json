@@ -30,7 +30,9 @@
     "product:training-semantics:resolution:audit": "tsx scripts/training-semantic-snapshot/audit-training-semantic-resolution.ts",
     "product:training-semantics:ontology:design": "tsx scripts/training-semantic-snapshot/design-training-semantic-ontology-expansion.ts",
     "product:training-semantics:v2:classify": "tsx scripts/training-semantic-classification-v2/classify-catalog.ts",
-    "product:training-semantics:v2:resolution:audit": "tsx scripts/training-semantic-classification-v2/classify-catalog.ts"
+    "product:training-semantics:v2:resolution:audit": "tsx scripts/training-semantic-classification-v2/classify-catalog.ts",
+    "product:training-semantics:v2.1:classify": "tsx scripts/training-semantic-classification-v2-1/audit-a00.6.7.ts",
+    "product:training-semantics:v2.1:resolution:audit": "tsx scripts/training-semantic-classification-v2-1/audit-a00.6.7.ts"
   },
   "dependencies": {
     "@fastify/rate-limit": "^10.3.0",

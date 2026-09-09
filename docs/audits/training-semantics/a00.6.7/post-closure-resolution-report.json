@@ -1,0 +1,192 @@
+{
+  "auditVersion": "training-semantic-gap-closure-a00.6.7-v1",
+  "decision": "TRAINING_SEMANTIC_95_PERCENT_TARGET_REACHED",
+  "authority": {
+    "registryVersion": "training-semantic-registry-v2",
+    "registryHash": "7f7c6e88f31a7e4be4fb03761b58b380c6b37070297172a713b2d8a5ba9f14f8",
+    "classifierVersion": "training-semantic-classifier-v2.1",
+    "rulesHash": "5e4e591b45e7704975552f305d59d73535c3889ed655754aa0113844c9c03b6d",
+    "priorClassifierVersion": "training-semantic-classifier-v2",
+    "priorRulesHash": "a619932df9f2c4241330826cdd4b728164df7fa1672b2941e04fab621da8a78a",
+    "v1AssignmentsPreserved": 180,
+    "v1RegistryHash": "82fcbe9a014522257ab8b2d460286d0c6ecbeffc6a01814d8d4e2f6b8849023f",
+    "v1SnapshotId": "sha256:63fd41033347c4bd4bcc6382ce432a8a5d0876c8de0a5bec2dd54ac9297ab90d"
+  },
+  "denominator": {
+    "activeTrainingRelevant": 240
+  },
+  "counts": {
+    "resolvedBefore": 224,
+    "resolvedAfter": 234,
+    "resolutionRateBefore": 93.33,
+    "resolutionRateAfter": 97.5,
+    "dataGapBefore": 8,
+    "dataGapAfter": 2,
+    "ambiguousBefore": 5,
+    "ambiguousAfter": 4,
+    "needsReviewBefore": 3,
+    "needsReviewAfter": 0,
+    "newExerciseCapabilityAssignments": 5,
+    "newTrainingFunctionAssignments": 6,
+    "newlyClosedProducts": 10,
+    "remainingUnresolved": 6
+  },
+  "MAX_SAFE_RESOLUTION_ACHIEVED": {
+    "resolved": 234,
+    "denominator": 240,
+    "rate": 97.5
+  },
+  "resolutionStateCounts": {
+    "SEMANTIC_COMPLETE": 122,
+    "VERIFIED_NO_APPLICABLE_CAPABILITY": 112,
+    "DATA_GAP": 2,
+    "AMBIGUOUS": 4,
+    "NEEDS_REVIEW": 0
+  },
+  "adjudicatedUnresolvedProducts": [
+    {
+      "productId": 494,
+      "decision": "RESOLVED_COMPLETE",
+      "postResolutionState": "SEMANTIC_COMPLETE"
+    },
+    {
+      "productId": 495,
+      "decision": "RESOLVED_COMPLETE",
+      "postResolutionState": "SEMANTIC_COMPLETE"
+    },
+    {
+      "productId": 1122,
+      "decision": "KEEP_DATA_GAP",
+      "postResolutionState": "PRODUCT_SEMANTICS_DATA_GAP"
+    },
+    {
+      "productId": 1427,
+      "decision": "RESOLVED_COMPLETE",
+      "postResolutionState": "SEMANTIC_COMPLETE"
+    },
+    {
+      "productId": 1504,
+      "decision": "RESOLVED_COMPLETE",
+      "postResolutionState": "SEMANTIC_COMPLETE"
+    },
+    {
+      "productId": 1508,
+      "decision": "RESOLVED_COMPLETE",
+      "postResolutionState": "SEMANTIC_COMPLETE"
+    },
+    {
+      "productId": 1516,
+      "decision": "RESOLVED_COMPLETE",
+      "postResolutionState": "SEMANTIC_COMPLETE"
+    },
+    {
+      "productId": 1517,
+      "decision": "RESOLVED_COMPLETE",
+      "postResolutionState": "SEMANTIC_COMPLETE"
+    },
+    {
+      "productId": 1604,
+      "decision": "RESOLVED_COMPLETE",
+      "postResolutionState": "SEMANTIC_COMPLETE"
+    },
+    {
+      "productId": 1945,
+      "decision": "KEEP_AMBIGUOUS",
+      "postResolutionState": "AMBIGUOUS"
+    },
+    {
+      "productId": 1946,
+      "decision": "KEEP_AMBIGUOUS",
+      "postResolutionState": "AMBIGUOUS"
+    },
+    {
+      "productId": 1947,
+      "decision": "KEEP_AMBIGUOUS",
+      "postResolutionState": "AMBIGUOUS"
+    },
+    {
+      "productId": 1948,
+      "decision": "KEEP_AMBIGUOUS",
+      "postResolutionState": "AMBIGUOUS"
+    },
+    {
+      "productId": 2025,
+      "decision": "KEEP_DATA_GAP",
+      "postResolutionState": "DATA_GAP"
+    },
+    {
+      "productId": 2139,
+      "decision": "RESOLVED_COMPLETE",
+      "postResolutionState": "SEMANTIC_COMPLETE"
+    },
+    {
+      "productId": 2203,
+      "decision": "RESOLVED_COMPLETE",
+      "postResolutionState": "SEMANTIC_COMPLETE"
+    }
+  ],
+  "remainingUnresolved": [
+    {
+      "productId": 1122,
+      "name": "Multiestación de Poder 1.0 | Forza",
+      "resolutionState": "DATA_GAP",
+      "exactBlocker": "Product Family is UNKNOWN and the trusted structured input has no station/module/mechanism declaration.",
+      "requiredFutureEvidenceOrAction": "Enrich Product Semantic classification with canonical family and explicit station/module components."
+    },
+    {
+      "productId": 1945,
+      "name": "Pack Delta Basics | HWM®",
+      "resolutionState": "AMBIGUOUS",
+      "exactBlocker": "The pack exposes component labels but no governed component product IDs or configuration relationship.",
+      "requiredFutureEvidenceOrAction": "Add trusted component membership/SKU relationships and a governed bundle projection policy."
+    },
+    {
+      "productId": 1946,
+      "name": "Pack Delta Pro | HWM®",
+      "resolutionState": "AMBIGUOUS",
+      "exactBlocker": "The pack exposes component labels but no governed component product IDs or configuration relationship.",
+      "requiredFutureEvidenceOrAction": "Add trusted component membership/SKU relationships and a governed bundle projection policy."
+    },
+    {
+      "productId": 1947,
+      "name": "Pack Alpha Essentials | HWM®",
+      "resolutionState": "AMBIGUOUS",
+      "exactBlocker": "The pack exposes component labels but no governed component product IDs or configuration relationship.",
+      "requiredFutureEvidenceOrAction": "Add trusted component membership/SKU relationships and a governed bundle projection policy."
+    },
+    {
+      "productId": 1948,
+      "name": "Pack Alpha Premium | HWM®",
+      "resolutionState": "AMBIGUOUS",
+      "exactBlocker": "The pack exposes component labels but no governed component product IDs or configuration relationship.",
+      "requiredFutureEvidenceOrAction": "Add trusted component membership/SKU relationships and a governed bundle projection policy."
+    },
+    {
+      "productId": 2025,
+      "name": "Multi Hip Extension | Peach Builder",
+      "resolutionState": "DATA_GAP",
+      "exactBlocker": "The trusted structured input names hip extension but lacks the mechanism needed to distinguish hip thrust, reverse hyper or another current capability.",
+      "requiredFutureEvidenceOrAction": "Obtain trusted mechanism/module metadata; if it is a distinct movement, evaluate a future ontology change."
+    }
+  ],
+  "precisionReview": {
+    "reviewedNewClosures": 10,
+    "correct": 10,
+    "incorrect": 0,
+    "ambiguous": 0,
+    "sampleCoverage": [
+      "DIRECT ExerciseCapability",
+      "DIRECT TrainingFunction",
+      "FAMILY_DERIVED TrainingFunction",
+      "multifunction ExerciseCapability"
+    ]
+  },
+  "changes": {
+    "registryChanged": false,
+    "classifierChanged": true,
+    "v2SnapshotBuilt": false,
+    "apiChanged": false,
+    "customerProfileChanged": false
+  },
+  "loaderWarnings": 0
+}
