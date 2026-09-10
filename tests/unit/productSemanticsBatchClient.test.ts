@@ -6,7 +6,7 @@ afterEach(() => vi.unstubAllGlobals());
 const response = {
   schemaVersion: '1', snapshotId: `sha256:${'a'.repeat(64)}`, ontologyVersion: 'commercial-product-ontology-v3',
   ontologyHash: 'b'.repeat(64), classifierVersion: 'product-semantic-classifier-v1', semanticChecksum: 'c'.repeat(64),
-  products: [{ productId: 29, classificationStatus: 'CLASSIFIED', primaryProductFamily: { code: 'BARBELL', confidence: 'EXPLICIT' }, secondaryProductFamilies: [], disciplines: [], useContexts: [] }],
+  products: [{ productId: 29, catalogPresence: 'current_catalog', classificationStatus: 'CLASSIFIED', primaryProductFamily: { code: 'BARBELL', confidence: 'EXPLICIT' }, secondaryProductFamilies: [], disciplines: [], useContexts: [] }],
   missingProductIds: [],
 };
 

@@ -49,6 +49,7 @@ A successful response is `200` and always contains one batch-level lineage:
   "products": [
     {
       "productId": 29,
+      "catalogPresence": "current_catalog",
       "classificationStatus": "CLASSIFIED",
       "primaryProductFamily": { "code": "BARBELL", "confidence": "EXPLICIT" },
       "secondaryProductFamilies": [],
@@ -60,7 +61,7 @@ A successful response is `200` and always contains one batch-level lineage:
 }
 ```
 
-Each product fact contains only the public semantic projection. `ruleId`,
+Each product fact contains only the public semantic projection and its catalog scope. `ruleId`,
 evidence, exclusion provenance, and `needsReviewCandidates` are deliberately
 not part of this batch contract. The single-product inspection endpoint may
 expose provenance separately.
@@ -149,4 +150,3 @@ meaning, semantic status, and snapshot lineage.
 
 `productId` is the semantic identity and maps to `ps_product.id_product`.
 `productAttributeId` is not part of this contract or semantic identity.
-

@@ -3,6 +3,7 @@ import type { ProductSemanticClassificationResult } from '../../src/domain/produ
 import {
   DefaultProductSemanticSnapshotBuilder,
   ProductSemanticSnapshotBuildError,
+  productSemanticSnapshotSchema,
 } from '../../src/domain/product-semantic-snapshot/index.js';
 import { clone, semanticFixtureResults } from '../fixtures/productSemanticSnapshot.js';
 
@@ -37,6 +38,21 @@ describe('DefaultProductSemanticSnapshotBuilder', () => {
     expect(snapshot.ontologyHash).toMatch(/^[a-f0-9]{64}$/u);
     expect(snapshot.semanticChecksum).toMatch(/^[a-f0-9]{64}$/u);
     expect(snapshot.classifierVersion).toBe('product-semantic-classifier-v1');
+  });
+
+  it('propagates catalog presence into each snapshot fact', () => {
+    expect(build().snapshot.records.find((record) => record.productId === '1')?.catalogPresence).toBe('current_catalog');
+    expect(build().snapshot.records.find((record) => record.productId === '2')?.catalogPresence).toBe('historical_order_detail_only');
+  });
+
+  it('fails closed when reading a legacy fact without catalog presence', () => {
+    const snapshot = build().snapshot;
+    const legacySnapshot = {
+      ...snapshot,
+      records: snapshot.records.map(({ catalogPresence: _catalogPresence, ...record }) => record),
+    };
+    const parsed = productSemanticSnapshotSchema.parse(legacySnapshot);
+    expect(parsed.records.every((record) => record.catalogPresence === 'historical_order_detail_only')).toBe(true);
   });
 
   it('same semantic content produces the same snapshotId even when builtAt changes', () => {

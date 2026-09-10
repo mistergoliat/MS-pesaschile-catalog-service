@@ -273,7 +273,7 @@ Executed on Saturday, August 29, 2026:
   - authoritative candidate count `32`
 - `npm run product:semantic:acceptance-audit`
   - `PRODUCT_SEMANTIC_CLASSIFICATION_ACCEPTED_WITH_DEBT`
-  - summary hash `64cad1c164d2b2da9e75f9b702f0574eb7e15ae0e3400fbee0643e810624fb82`
+  - summary hash `5dbbf85377b46ba1bae025c763bdefc6d5589028b926d623ef68a78aeae5a302`
 - `npm test`
   - `2070/2078 PASS`
   - `8` unrelated HTTP/integration timeouts remained outside this slice

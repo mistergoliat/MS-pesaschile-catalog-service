@@ -177,6 +177,7 @@ export function classifyProduct(
   if (exclusion.excluded) {
     return {
       productId: input.productId,
+      catalogPresence: input.catalogPresence,
       registryVersion: registry.registryVersion,
       registryHash: hash,
       classificationStatus: 'EXCLUDED_NON_PRODUCT',
@@ -235,6 +236,7 @@ export function classifyProduct(
 
   return {
     productId: input.productId,
+    catalogPresence: input.catalogPresence,
     registryVersion: registry.registryVersion,
     registryHash: hash,
     classificationStatus,

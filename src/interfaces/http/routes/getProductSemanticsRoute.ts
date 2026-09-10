@@ -52,6 +52,7 @@ const responseSchema = {
   additionalProperties: false,
   required: [
     'productId',
+    'catalogPresence',
     'classificationStatus',
     'primaryProductFamily',
     'secondaryProductFamilies',
@@ -65,6 +66,7 @@ const responseSchema = {
   ],
   properties: {
     productId: { type: 'integer' },
+    catalogPresence: { type: 'string', enum: ['current_catalog', 'historical_order_detail_only'] },
     classificationStatus: {
       type: 'string',
       enum: ['CLASSIFIED', 'PARTIALLY_CLASSIFIED', 'OTHER', 'EXCLUDED_NON_PRODUCT', 'NEEDS_REVIEW'],
@@ -148,6 +150,7 @@ export async function registerGetProductSemanticsRoute(
     reply.type('application/json');
     return reply.code(200).send({
       productId,
+      catalogPresence: fact.catalogPresence,
       classificationStatus: fact.classificationStatus,
       primaryProductFamily: fact.primaryProductFamily,
       secondaryProductFamilies: fact.secondaryProductFamilies,

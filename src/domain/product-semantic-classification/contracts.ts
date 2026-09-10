@@ -96,6 +96,7 @@ export const productSemanticClassificationStatuses: readonly ProductSemanticClas
 
 export type ProductSemanticClassificationResult = {
   readonly productId: string;
+  readonly catalogPresence: CatalogPresence;
   readonly registryVersion: string;
   readonly registryHash: string;
   readonly classificationStatus: ProductSemanticClassificationStatus;

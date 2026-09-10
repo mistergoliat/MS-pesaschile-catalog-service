@@ -11,7 +11,13 @@ import type { ProductSemanticClassificationResult } from './contracts.js';
  * `productId` before hashing so caller iteration order never affects the checksum.
  */
 export function computeClassificationChecksum(results: readonly ProductSemanticClassificationResult[]): string {
-  const sorted = [...results].sort((a, b) => a.productId.localeCompare(b.productId, undefined, { numeric: true }));
+  // Keep the established classification checksum focused on semantic classification output.
+  // Catalog presence is snapshot scope metadata: it is carried by each snapshot fact and is
+  // therefore included in snapshot identity, but adding it must not invalidate the existing
+  // classification baseline used by downstream audits.
+  const sorted = [...results]
+    .sort((a, b) => a.productId.localeCompare(b.productId, undefined, { numeric: true }))
+    .map(({ catalogPresence: _catalogPresence, ...result }) => result);
   return sha256Stable(sorted);
 }
 

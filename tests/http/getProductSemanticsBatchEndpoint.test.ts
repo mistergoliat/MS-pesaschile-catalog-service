@@ -32,6 +32,7 @@ function metadata(overrides: Partial<ProductSemanticActiveSnapshotMetadata> = {}
 function fact(productId: string, classificationStatus: ProductSemanticSnapshotFact['classificationStatus']): ProductSemanticSnapshotFact {
   return {
     productId,
+    catalogPresence: 'current_catalog',
     classificationStatus,
     primaryProductFamily: classificationStatus === 'CLASSIFIED'
       ? { axis: 'PRODUCT_FAMILY', code: 'BARBELL', confidence: 'EXPLICIT', ruleId: 'rule' }
@@ -83,9 +84,9 @@ describe('POST /v1/products/semantics/batch', () => {
       schemaVersion: '1', snapshotId: SNAPSHOT_ID, ontologyVersion: 'commercial-product-ontology-v3',
       ontologyHash: ONTOLOGY_HASH, classifierVersion: 'product-semantic-classifier-v1', semanticChecksum: SEMANTIC_CHECKSUM,
       products: [
-        { productId: 31, classificationStatus: 'OTHER', primaryProductFamily: null, secondaryProductFamilies: [], disciplines: [], useContexts: [] },
-        { productId: 29, classificationStatus: 'CLASSIFIED', primaryProductFamily: { code: 'BARBELL', confidence: 'EXPLICIT' }, secondaryProductFamilies: [], disciplines: [], useContexts: [] },
-        { productId: 332, classificationStatus: 'EXCLUDED_NON_PRODUCT', primaryProductFamily: null, secondaryProductFamilies: [], disciplines: [], useContexts: [] },
+        { productId: 31, catalogPresence: 'current_catalog', classificationStatus: 'OTHER', primaryProductFamily: null, secondaryProductFamilies: [], disciplines: [], useContexts: [] },
+        { productId: 29, catalogPresence: 'current_catalog', classificationStatus: 'CLASSIFIED', primaryProductFamily: { code: 'BARBELL', confidence: 'EXPLICIT' }, secondaryProductFamilies: [], disciplines: [], useContexts: [] },
+        { productId: 332, catalogPresence: 'current_catalog', classificationStatus: 'EXCLUDED_NON_PRODUCT', primaryProductFamily: null, secondaryProductFamilies: [], disciplines: [], useContexts: [] },
       ],
       missingProductIds: [999999],
     });

@@ -30,10 +30,11 @@ function productMetadata(overrides: Partial<ProductSemanticActiveSnapshotMetadat
   };
 }
 
-function productFact(productId: string, input: { family?: string; discipline?: string; useContext?: string }): ProductSemanticSnapshotFact {
+function productFact(productId: string, input: { family?: string; discipline?: string; useContext?: string; catalogPresence?: ProductSemanticSnapshotFact['catalogPresence'] }): ProductSemanticSnapshotFact {
   const tag = (axis: 'PRODUCT_FAMILY' | 'DISCIPLINE' | 'USE_CONTEXT', code: string) => ({ axis, code, confidence: 'EXPLICIT' as const, ruleId: `TEST_${axis}` });
   return {
     productId,
+    catalogPresence: input.catalogPresence ?? 'current_catalog',
     classificationStatus: 'CLASSIFIED',
     primaryProductFamily: input.family ? tag('PRODUCT_FAMILY', input.family) : null,
     secondaryProductFamilies: [],
@@ -61,6 +62,7 @@ function productReader(facts: readonly ProductSemanticSnapshotFact[], metadata: 
 async function appWith(input: { productReader?: ActiveProductSemanticSnapshotReader; trainingReader?: DefaultActiveTrainingSemanticSnapshotV2Reader }) {
   return buildApp({
     service: { searchProducts: async () => ({ query: '', items: [], freshness: { cached: false, generatedAt: new Date().toISOString() } }), getProduct: async () => { throw new Error('not exercised'); }, batchGetProducts: async () => ({ items: [] }) } as never,
+    productSemanticSnapshotReader: input.productReader,
     semanticDiscoveryService: new DefaultSemanticDiscoveryService(input.productReader, input.trainingReader),
     repository: createRepositoryStub(),
     readyCheck: async () => ({ database: 'ok', redis: 'ok' }),
@@ -74,6 +76,32 @@ async function trainingReader() {
 }
 
 describe('Combined Semantic Discovery Query', () => {
+  it('excludes historical-only product IDs from commercial discovery while retaining their semantic facts', async () => {
+    const product = productReader([
+      productFact('197', { family: 'DUMBBELL', catalogPresence: 'historical_order_detail_only' }),
+      productFact('198', { family: 'DUMBBELL' }),
+    ]);
+    const app = await appWith({ productReader: product });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/products/semantic-discovery/query',
+      headers: { 'x-api-key': 'test-api-key' },
+      payload: { requirements: [{ axis: 'PRODUCT_FAMILY', codes: ['DUMBBELL'], mode: 'required', match: 'any' }] },
+    });
+    const historicalSemantics = await app.inject({
+      method: 'GET',
+      url: '/v1/products/197/semantics',
+      headers: { 'x-api-key': 'test-api-key' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().results.map((result: { productId: number }) => result.productId)).toEqual([198]);
+    expect(historicalSemantics.statusCode).toBe(200);
+    expect(historicalSemantics.json()).toMatchObject({ productId: 197, catalogPresence: 'historical_order_detail_only' });
+    await app.close();
+  });
+
   it('queries product axes, training axes, and their required intersection', async () => {
     const training = await trainingReader();
     const product = productReader([

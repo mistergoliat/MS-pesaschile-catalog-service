@@ -70,6 +70,7 @@ async function main(): Promise<void> {
 
   const csvRows = results.map((result) => ({
     productId: result.productId,
+    catalogPresence: result.catalogPresence,
     classificationStatus: result.classificationStatus,
     primaryProductFamily: result.primaryProductFamily?.code ?? '',
     primaryProductFamilyConfidence: result.primaryProductFamily?.confidence ?? '',
@@ -83,7 +84,7 @@ async function main(): Promise<void> {
   await writeFile(
     path.join(args.outputDir, 'product_semantic_classifications.csv'),
     writeCsv(
-      ['productId', 'classificationStatus', 'primaryProductFamily', 'primaryProductFamilyConfidence', 'primaryProductFamilyRuleId', 'secondaryProductFamilies', 'disciplines', 'useContexts', 'exclusionReason', 'warnings'],
+      ['productId', 'catalogPresence', 'classificationStatus', 'primaryProductFamily', 'primaryProductFamilyConfidence', 'primaryProductFamilyRuleId', 'secondaryProductFamilies', 'disciplines', 'useContexts', 'exclusionReason', 'warnings'],
       csvRows,
     ),
     'utf8',

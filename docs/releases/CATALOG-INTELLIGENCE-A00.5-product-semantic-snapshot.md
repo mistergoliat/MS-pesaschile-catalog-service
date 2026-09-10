@@ -64,6 +64,7 @@ Catalog Service remains the owner of product truth only.
 The runtime fact contract contains:
 
 - `productId`
+- `catalogPresence` (`current_catalog` or `historical_order_detail_only`)
 - `classificationStatus`
 - `primaryProductFamily`
 - `secondaryProductFamilies`

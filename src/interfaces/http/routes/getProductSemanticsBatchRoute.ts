@@ -49,6 +49,7 @@ const publicFactSchema = {
   additionalProperties: false,
   required: [
     'productId',
+    'catalogPresence',
     'classificationStatus',
     'primaryProductFamily',
     'secondaryProductFamilies',
@@ -57,6 +58,7 @@ const publicFactSchema = {
   ],
   properties: {
     productId: { type: 'integer', minimum: 1 },
+    catalogPresence: { type: 'string', enum: ['current_catalog', 'historical_order_detail_only'] },
     classificationStatus: { type: 'string', enum: [...classificationStatuses] },
     primaryProductFamily: { anyOf: [publicTagSchema, { type: 'null' }] },
     secondaryProductFamilies: { type: 'array', items: publicTagSchema },
@@ -123,6 +125,7 @@ function publicTag(tag: { readonly code: string; readonly confidence: string }) 
 
 function publicFact(fact: {
   readonly productId: string;
+  readonly catalogPresence: 'current_catalog' | 'historical_order_detail_only';
   readonly classificationStatus: (typeof classificationStatuses)[number];
   readonly primaryProductFamily: { readonly code: string; readonly confidence: string } | null;
   readonly secondaryProductFamilies: readonly { readonly code: string; readonly confidence: string }[];
@@ -131,6 +134,7 @@ function publicFact(fact: {
 }) {
   return {
     productId: Number(fact.productId),
+    catalogPresence: fact.catalogPresence,
     classificationStatus: fact.classificationStatus,
     primaryProductFamily: fact.primaryProductFamily ? publicTag(fact.primaryProductFamily) : null,
     secondaryProductFamilies: fact.secondaryProductFamilies.map(publicTag),

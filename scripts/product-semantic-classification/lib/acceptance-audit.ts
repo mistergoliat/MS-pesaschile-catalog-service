@@ -302,6 +302,7 @@ export async function buildAcceptanceAudit(paths: ProductSemanticInputPaths, aud
         knownExcludedProductIds: [...registry.globalRules.nonProductExclusion.knownExcludedProductIds],
         classifierOutputFields: [
           'productId',
+          'catalogPresence',
           'registryVersion',
           'registryHash',
           'classificationStatus',

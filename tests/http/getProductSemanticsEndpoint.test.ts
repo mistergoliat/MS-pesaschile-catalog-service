@@ -36,6 +36,7 @@ function metadata(overrides: Partial<ProductSemanticActiveSnapshotMetadata> = {}
 
 function fact(overrides: Partial<ProductSemanticSnapshotFact> & { productId: string }): ProductSemanticSnapshotFact {
   return {
+    catalogPresence: 'current_catalog',
     classificationStatus: 'CLASSIFIED',
     primaryProductFamily: null,
     secondaryProductFamilies: [],

@@ -7,7 +7,7 @@ describe('product semantic acceptance audit', () => {
     const paths = await resolveProductSemanticInputPaths();
     const audit = await buildAcceptanceAudit(paths, '2026-08-29');
 
-    expect(auditSummaryStableHash(audit.summary)).toBe('64cad1c164d2b2da9e75f9b702f0574eb7e15ae0e3400fbee0643e810624fb82');
+    expect(auditSummaryStableHash(audit.summary)).toBe('5dbbf85377b46ba1bae025c763bdefc6d5589028b926d623ef68a78aeae5a302');
     expect(audit.summary.reproducibility).toMatchObject({
       expectedChecksum: 'dfc5c5b6fe774e20e64f271bace51c3b54dd6ee983cb8e71ce4bd166e993b97e',
       run1Checksum: 'dfc5c5b6fe774e20e64f271bace51c3b54dd6ee983cb8e71ce4bd166e993b97e',

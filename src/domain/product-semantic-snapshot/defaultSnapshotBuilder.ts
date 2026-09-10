@@ -272,6 +272,7 @@ function validateResult(result: ProductSemanticClassificationResult, index: numb
 function toSnapshotFact(result: ProductSemanticClassificationResult): ProductSemanticSnapshotFact {
   return {
     productId: result.productId,
+    catalogPresence: result.catalogPresence,
     classificationStatus: result.classificationStatus,
     primaryProductFamily: result.primaryProductFamily ? toSnapshotTag(result.primaryProductFamily) : null,
     secondaryProductFamilies: result.secondaryProductFamilies.map(toSnapshotTag),

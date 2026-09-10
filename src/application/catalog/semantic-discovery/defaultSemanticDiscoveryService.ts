@@ -131,7 +131,11 @@ function productTags(fact: ProductFact, axis: 'PRODUCT_FAMILY' | 'DISCIPLINE' | 
 function addProductFacts(buckets: Map<string, Set<number>>, factsById: Map<number, ProductFact>, facts: readonly ProductFact[]): void {
   for (const fact of facts) {
     const productId = numericProductId(fact.productId);
-    if (productId === null || fact.classificationStatus === 'EXCLUDED_NON_PRODUCT') continue;
+    if (
+      productId === null ||
+      fact.classificationStatus === 'EXCLUDED_NON_PRODUCT' ||
+      fact.catalogPresence !== 'current_catalog'
+    ) continue;
     factsById.set(productId, fact);
     for (const axis of semanticDiscoveryProductAxes) {
       for (const tag of productTags(fact, axis)) {

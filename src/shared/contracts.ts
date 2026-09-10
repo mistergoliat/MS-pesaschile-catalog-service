@@ -230,6 +230,7 @@ export const productSemanticBatchTagSchema = z
 export const productSemanticBatchFactSchema = z
   .object({
     productId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+    catalogPresence: z.enum(['current_catalog', 'historical_order_detail_only']),
     classificationStatus: z.enum([
       'CLASSIFIED',
       'PARTIALLY_CLASSIFIED',

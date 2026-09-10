@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   type ClassifiedOntologyTag,
   type ClassificationEvidenceRecord,
+  type CatalogPresence,
   type ProductSemanticClassificationResult,
   type ProductSemanticClassificationStatus,
 } from '../product-semantic-classification/index.js';
@@ -21,6 +22,9 @@ export const productSemanticClassificationStatusSchema = z.enum([
   'EXCLUDED_NON_PRODUCT',
   'NEEDS_REVIEW',
 ]);
+
+export const catalogPresenceSchema = z.enum(['current_catalog', 'historical_order_detail_only']);
+export type ProductSemanticCatalogPresence = CatalogPresence;
 
 export const ontologyAxisSchema = z.enum(['PRODUCT_FAMILY', 'DISCIPLINE', 'USE_CONTEXT']);
 export const ontologyConfidenceSchema = z.enum(['EXPLICIT', 'STRONGLY_INFERRED']);
@@ -62,6 +66,9 @@ export const productSemanticSnapshotExclusionSchema = z
 export const productSemanticSnapshotFactSchema = z
   .object({
     productId: z.string().trim().min(1),
+    // Missing presence on a pre-R1 snapshot fails closed: it remains readable for
+    // intelligence consumers but is never eligible for commercial discovery.
+    catalogPresence: catalogPresenceSchema.default('historical_order_detail_only'),
     classificationStatus: productSemanticClassificationStatusSchema,
     primaryProductFamily: productSemanticSnapshotTagSchema.nullable(),
     secondaryProductFamilies: z.array(productSemanticSnapshotTagSchema),
