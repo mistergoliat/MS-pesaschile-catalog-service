@@ -179,11 +179,20 @@ Offline pipeline:
 ```text
 fixture-resolved source universe
 -> deterministic classifier
+-> current Catalog commercial-truth presence enrichment
 -> snapshot builder validation
 -> immutable snapshot write
 -> atomic active pointer publish
 -> runtime reader / inspect CLI
 ```
+
+Classification remains reproducible and offline, but the fixture's `catalogPresence` is not a
+publication authority. Before a snapshot is published, every classified product ID is looked up
+through `CatalogCommercialTruthService`; only an active, resolvable commercial product is written
+as `current_catalog`. Missing or inactive IDs are written as `historical_order_detail_only`,
+preserving their semantic facts for non-commercial consumers. The default build therefore fails if
+the current commercial truth source cannot be reached instead of silently publishing stale fixture
+scope.
 
 Primary CLI:
 
@@ -206,6 +215,9 @@ Build validation rejects:
 - missing or invalid evidence provenance
 - invalid exclusion provenance
 - malformed snapshot metadata
+
+Unknown fixture `catalogPresence` values fail closed to `historical_order_detail_only`; they cannot
+be promoted to `current_catalog` by a default value.
 
 The builder validates semantic tags against the active ontology registry rather than local
 hardcoded tables.
@@ -301,6 +313,10 @@ Added:
 
 - `npm run product:semantic:snapshot:build`
 - `npm run product:semantic:snapshot:inspect -- --product-id=<id>`
+
+The build resolves commercial presence from the live catalog truth source by default. Tests may
+pass `--current-catalog-ids=<json-file>` with an independently controlled current-ID export to
+avoid a database dependency; this is not the production default or the audit fixture input.
 
 `inspect` reads the active snapshot only. It does not rerun classification.
 

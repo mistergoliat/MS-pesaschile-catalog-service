@@ -96,8 +96,8 @@ export async function loadProductSemanticClassificationInputs(args: {
 
 function coerceCatalogPresence(raw: string, warnings: string[], productId: string): CatalogPresence {
   if (raw === 'current_catalog' || raw === 'historical_order_detail_only') return raw;
-  warnings.push(`productId ${productId}: unrecognized catalogPresence "${raw}"; defaulting to current_catalog.`);
-  return 'current_catalog';
+  warnings.push(`productId ${productId}: unrecognized catalogPresence "${raw}"; defaulting to historical_order_detail_only.`);
+  return 'historical_order_detail_only';
 }
 
 function coerceCategoryTrustClass(raw: string, warnings: string[], categoryId: string): CategoryTrustClass {

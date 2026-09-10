@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -5,8 +6,18 @@ import {
   DefaultProductSemanticSnapshotPublisher,
   productSemanticClassifierVersion,
 } from '../../src/domain/product-semantic-snapshot/index.js';
+import { CatalogCommercialTruthService, type CatalogCommercialContext } from '../../src/domain/catalog/commercial-truth/index.js';
+import { MySqlCatalogCommercialDataReader } from '../../src/infrastructure/catalog/mysqlCatalogCommercialDataReader.js';
+import { createPool } from '../../src/infrastructure/database/pool.js';
+import { config } from '../../src/shared/config.js';
 import { FileProductSemanticSnapshotStore } from '../../src/infrastructure/product-semantic/fileProductSemanticSnapshotStore.js';
 import { resolveProductSemanticSnapshotDir } from '../../src/shared/productSemanticSnapshotConfig.js';
+import {
+  CatalogCommercialTruthPresenceSource,
+  reconcileProductSemanticCatalogPresence,
+  StaticCurrentCatalogPresenceSource,
+  type CurrentCatalogPresenceSource,
+} from './lib/catalog-presence.js';
 import { resolveProductSemanticInputPaths } from './lib/fixture-paths.js';
 import { runProductSemanticClassification } from './lib/classification-run.js';
 
@@ -19,6 +30,7 @@ type CliArgs = {
   readonly featureTrustMapCsvPath?: string;
   readonly snapshotDir?: string;
   readonly builtAt?: string;
+  readonly currentCatalogIdsPath?: string;
 };
 
 function parseArgs(argv: readonly string[]): CliArgs {
@@ -35,6 +47,57 @@ function parseArgs(argv: readonly string[]): CliArgs {
     featureTrustMapCsvPath: values['feature-trust-map'],
     snapshotDir: values['snapshot-dir'],
     builtAt: values['built-at'],
+    currentCatalogIdsPath: values['current-catalog-ids'],
+  };
+}
+
+function commercialContext(): CatalogCommercialContext {
+  return {
+    shopId: config.prestashop.shopId,
+    currencyId: config.prestashop.currencyId,
+    currencyCode: config.prestashop.currencyCode,
+    countryId: config.prestashop.countryId,
+    customerGroupId: config.prestashop.customerGroupId,
+    customerId: 0,
+    quantity: 1,
+    taxRate: config.pricing.taxRate,
+  };
+}
+
+async function readCurrentCatalogIds(pathname: string): Promise<readonly string[]> {
+  const raw = JSON.parse(await readFile(pathname, 'utf8')) as unknown;
+  if (!Array.isArray(raw) || raw.some((value) => typeof value !== 'string' || !/^\d+$/u.test(value) || Number(value) <= 0)) {
+    throw new Error(`Current catalog product ID source must be a JSON array of positive numeric strings: ${pathname}`);
+  }
+  return [...new Set(raw)];
+}
+
+async function createPresenceSource(currentCatalogIdsPath?: string): Promise<{
+  readonly source: CurrentCatalogPresenceSource;
+  readonly close: () => Promise<void>;
+  readonly description: string;
+}> {
+  if (currentCatalogIdsPath) {
+    const ids = await readCurrentCatalogIds(path.resolve(currentCatalogIdsPath));
+    return {
+      source: new StaticCurrentCatalogPresenceSource(ids),
+      close: async () => {},
+      description: path.resolve(currentCatalogIdsPath),
+    };
+  }
+
+  const pool = createPool();
+  const source = new CatalogCommercialTruthPresenceSource(
+    new CatalogCommercialTruthService({
+      dataReader: new MySqlCatalogCommercialDataReader(pool),
+      publicBaseUrl: config.catalog.publicBaseUrl,
+    }),
+    commercialContext(),
+  );
+  return {
+    source,
+    close: () => pool.end(),
+    description: 'catalog-commercial-truth',
   };
 }
 
@@ -50,18 +113,25 @@ async function main(): Promise<void> {
     directory: args.snapshotDir,
   });
   const run = await runProductSemanticClassification(inputPaths);
-  const publisher = new DefaultProductSemanticSnapshotPublisher(
-    new DefaultProductSemanticSnapshotBuilder(),
-    new FileProductSemanticSnapshotStore(snapshotDirectory),
-  );
-  const publication = await publisher.publish({
-    results: run.results,
-    parameters: {
-      sourceProductCount: run.inputs.length,
-      classifierVersion: productSemanticClassifierVersion,
-      ...(args.builtAt ? { builtAt: args.builtAt } : {}),
-    },
-  });
+  const presence = await createPresenceSource(args.currentCatalogIdsPath);
+  let publication;
+  try {
+    const results = await reconcileProductSemanticCatalogPresence(run.results, presence.source);
+    const publisher = new DefaultProductSemanticSnapshotPublisher(
+      new DefaultProductSemanticSnapshotBuilder(),
+      new FileProductSemanticSnapshotStore(snapshotDirectory),
+    );
+    publication = await publisher.publish({
+      results,
+      parameters: {
+        sourceProductCount: run.inputs.length,
+        classifierVersion: productSemanticClassifierVersion,
+        ...(args.builtAt ? { builtAt: args.builtAt } : {}),
+      },
+    });
+  } finally {
+    await presence.close();
+  }
 
   console.log(JSON.stringify({
     status: 'ok',
@@ -78,6 +148,7 @@ async function main(): Promise<void> {
     saveStatus: publication.saveStatus,
     snapshotPath: snapshotPath(snapshotDirectory, publication.snapshot.snapshotId),
     activePointerPath: path.join(snapshotDirectory, 'active.json'),
+    currentCatalogPresenceSource: presence.description,
     fixtureInputs: inputPaths,
     loaderWarnings: run.loaderWarnings,
   }, null, 2));

@@ -1,4 +1,4 @@
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
@@ -36,9 +36,15 @@ type SnapshotBuildSummary = {
 };
 
 async function runBuild(snapshotDir: string): Promise<SnapshotBuildSummary> {
+  const currentCatalogIdsPath = path.join(snapshotDir, 'current-catalog-product-ids.json');
+  await writeFile(currentCatalogIdsPath, JSON.stringify([]), 'utf8');
   const { stdout } = await execFileAsync(
     process.execPath,
-    [TSX_CLI, 'scripts/product-semantic-classification/build-semantic-snapshot.ts'],
+    [
+      TSX_CLI,
+      'scripts/product-semantic-classification/build-semantic-snapshot.ts',
+      `--current-catalog-ids=${currentCatalogIdsPath}`,
+    ],
     {
       cwd: REPO_ROOT,
       env: {
@@ -73,6 +79,7 @@ async function runInspect(snapshotDir: string, productId: string) {
     readonly fact: {
       readonly productId: string;
       readonly classificationStatus: string;
+      readonly catalogPresence: string;
     };
   };
 }
@@ -94,7 +101,7 @@ describe.sequential('Product semantic snapshot CLI', () => {
     expect(summary.saveStatus).toBe('created');
 
     for (const value of Object.values(summary.fixtureInputs)) {
-      expect(value).toContain('MS-pesaschile-catalog-service');
+      expect(path.resolve(value)).toContain(REPO_ROOT);
       expect(value.toLowerCase()).not.toContain('customer-profile');
     }
 
@@ -120,12 +127,15 @@ describe.sequential('Product semantic snapshot CLI', () => {
   it('inspect reads the active snapshot instead of rerunning classification', async () => {
     const snapshotDir = await mkdtemp(path.join(tmpdir(), 'product-semantic-snapshot-cli-'));
     const build = await runBuild(snapshotDir);
-    for (const productId of ['29', '1023', '1619', '2134']) {
+    for (const productId of ['29', '1023', '1619', '197', '2134']) {
       const inspection = await runInspect(snapshotDir, productId);
       expect(inspection.status).toBe('ok');
       expect(inspection.snapshot.snapshotId).toBe(build.snapshotId);
       expect(inspection.snapshot.recordCount).toBe(acceptedProductSemanticBaseline.sourceProducts);
       expect(inspection.fact.productId).toBe(productId);
+      if (productId === '197') {
+        expect(inspection.fact.catalogPresence).toBe('historical_order_detail_only');
+      }
     }
   }, 45_000);
 });
