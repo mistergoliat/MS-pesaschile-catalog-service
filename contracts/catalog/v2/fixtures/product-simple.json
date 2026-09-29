@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "status": "found",
+  "itemKey": "P10",
+  "ref": { "productId": "10", "variantId": null },
+  "facts": {
+    "name": "Barra olímpica",
+    "sku": "BAR-10",
+    "shortDescription": "Barra comercial",
+    "category": { "id": "3", "name": "Barras" },
+    "brand": null,
+    "weightKg": 20,
+    "specifications": [{ "name": "Largo", "value": "220 cm" }],
+    "status": { "active": true, "listed": true, "orderable": true },
+    "variantOptions": [],
+    "stock": { "availableQuantity": 4, "scope": "variant" }
+  },
+  "derived": {
+    "pricing": { "status": "available", "basis": { "taxIncluded": true, "taxRate": 0.19, "taxBasis": "configured_flat_rate" }, "quantity": 1, "regularGross": { "amount": 119000, "currency": "CLP" }, "finalGross": { "amount": 119000, "currency": "CLP" }, "promotion": null, "engineVersion": "catalog-commercial-v2.0.0" },
+    "availability": { "sellability": "sellable", "reason": "in_stock", "leadTime": null },
+    "publicUrl": "https://pesaschile.cl/categories/10-barra-olimpica.html"
+  },
+  "inferred": { "frequentlyBoughtTogether": { "status": "unavailable", "reason": "snapshot_unavailable" } },
+  "provenance": { "source": "prestashop", "service": "catalog-service", "serviceBuildRef": "catalog-service@local", "sourceUpdatedAt": null },
+  "freshness": { "asOf": "2026-09-29T12:00:00.000Z", "cache": { "hit": false, "ageMs": 0 }, "validUntil": "2026-09-29T12:00:15.000Z" }
+}

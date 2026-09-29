@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pesaschile.cl/contracts/catalog/v2/catalog-v2.schema.json",
+  "title": "Catalog commercial contract v2",
+  "schemaVersion": 1,
+  "description": "The executable source of truth is src/domain/catalog/v2/contracts.ts.",
+  "$defs": {
+    "itemKey": { "type": "string", "pattern": "^P[0-9]+(?:-V[0-9]+)?$" },
+    "productKey": { "type": "string", "pattern": "^P[0-9]+$" },
+    "money": { "type": "object", "required": ["amount", "currency"], "additionalProperties": false, "properties": { "amount": { "type": "integer", "minimum": 0 }, "currency": { "const": "CLP" } } },
+    "freshness": { "type": "object", "required": ["asOf", "cache", "validUntil"], "additionalProperties": false, "properties": { "asOf": { "type": "string", "format": "date-time" }, "cache": { "type": "object", "required": ["hit", "ageMs"], "additionalProperties": false, "properties": { "hit": { "type": "boolean" }, "ageMs": { "type": "integer", "minimum": 0 } } }, "validUntil": { "type": ["string", "null"], "format": "date-time" } } },
+    "sellability": { "enum": ["sellable", "backorder", "not_sellable", "check_with_staff"] },
+    "reason": { "enum": ["in_stock", "backorder_allowed", "inactive", "not_listed", "not_orderable", "out_of_stock", "stock_unknown", "variant_required", "backorder_policy_unknown"] }
+  },
+  "endpoints": {
+    "search": { "method": "POST", "path": "/v2/catalog/search", "request": "CatalogSearchRequest", "response": "CatalogSearchResponse" },
+    "productContext": { "method": "GET", "path": "/v2/catalog/products/{productKey}/context", "response": "ProductContextResponse" },
+    "itemContext": { "method": "GET", "path": "/v2/catalog/items/{itemKey}/context", "response": "ItemContextResponse" }
+  },
+  "failureSemantics": {
+    "400": "invalid_request",
+    "503": { "code": "catalog_source_unavailable", "retryable": true },
+    "429": "rate_limited"
+  }
+}

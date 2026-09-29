@@ -243,7 +243,8 @@ describe('CommercialPriceCalculator', () => {
       context,
       evaluatedAt: evaluatedAt.toISOString(),
     });
-    expect(result.price?.baseGrossAmount).toBe(595);
+    // The regular price remains the catalog base; a specific price changes only finalGrossAmount.
+    expect(result.price?.baseGrossAmount).toBe(1190);
   });
 
   it('applies percentage reduction over gross price', () => {

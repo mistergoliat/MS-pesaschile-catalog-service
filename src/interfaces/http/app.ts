@@ -32,6 +32,8 @@ import { registerGetTrainingSemanticBatchRoute } from './routes/getTrainingSeman
 import { registerGetTrainingSemanticRegistryRoute } from './routes/getTrainingSemanticRegistryRoute.js';
 import { registerQueryTrainingSemanticsRoute } from './routes/queryTrainingSemanticsRoute.js';
 import { registerSemanticDiscoveryQueryRoute } from './routes/semanticDiscoveryQueryRoute.js';
+import { registerCatalogV2Routes } from './routes/catalogV2Routes.js';
+import type { CatalogContractService } from '../../application/catalog/v2/catalogContractService.js';
 
 export type AppDependencies = {
   service: CatalogApplicationService;
@@ -43,6 +45,7 @@ export type AppDependencies = {
   trainingSemanticReadService?: TrainingSemanticReadService;
   trainingSemanticQueryService?: TrainingSemanticQueryService;
   semanticDiscoveryService?: SemanticDiscoveryService;
+  catalogContractService?: CatalogContractService;
   repository: CatalogRepository;
   readyCheck: () => Promise<{
     database: 'ok' | 'unavailable';
@@ -145,12 +148,24 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
 
     const candidate = error as { statusCode?: number; validation?: unknown; code?: string };
     if (candidate.validation || candidate.code === 'FST_ERR_VALIDATION' || candidate.statusCode === 400) {
+      if ((request.routeOptions.url ?? '').startsWith('/v2/catalog')) {
+        errorsTotal.inc({ code: 'invalid_request' });
+        return reply.code(400).send({
+          error: { code: 'invalid_request', message: 'Invalid request', correlationId },
+        });
+      }
       const normalized = new InvalidInputError('Invalid request', candidate.validation);
       errorsTotal.inc({ code: normalized.code });
       return reply.code(400).send(errorPayload(normalized, correlationId));
     }
 
     if (candidate.statusCode === 429 || candidate.code === 'FST_ERR_RATE_LIMIT' || candidate.code === 'FST_RATE_LIMIT') {
+      if ((request.routeOptions.url ?? '').startsWith('/v2/catalog')) {
+        errorsTotal.inc({ code: 'rate_limited' });
+        return reply.code(429).send({
+          error: { code: 'rate_limited', message: 'Rate limit exceeded', correlationId, retryable: true },
+        });
+      }
       const normalized = new RateLimitedError();
       errorsTotal.inc({ code: normalized.code });
       return reply.code(429).send(errorPayload(normalized, correlationId));
@@ -357,6 +372,7 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
   await registerGetTrainingSemanticRegistryRoute(app as unknown as FastifyInstance, deps.trainingSemanticReadService);
   await registerQueryTrainingSemanticsRoute(app as unknown as FastifyInstance, deps.trainingSemanticQueryService);
   await registerSemanticDiscoveryQueryRoute(app as unknown as FastifyInstance, deps.semanticDiscoveryService);
+  await registerCatalogV2Routes(app as unknown as FastifyInstance, deps.catalogContractService);
 
   return app as unknown as FastifyInstance;
 }

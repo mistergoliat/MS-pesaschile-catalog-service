@@ -36,11 +36,12 @@ export class CommercialPriceCalculator {
     }
 
     const selected = input.selectedSpecificPrice;
-    const selectedBaseNet = selected && selected.price >= 0
+    const effectiveBaseNet = selected && selected.price >= 0
       ? decimal(selected.price).plus(input.rawProduct.combinationImpactNet ?? 0)
       : catalogBaseNet;
-    const positiveBaseNet = Decimal.max(selectedBaseNet, 0);
-    const baseGrossAmount = toCurrencyInteger(positiveBaseNet.mul(decimal(1).plus(input.context.taxRate)));
+    const positiveCatalogBaseNet = Decimal.max(catalogBaseNet, 0);
+    let effectiveNet = Decimal.max(effectiveBaseNet, 0);
+    const baseGrossAmount = toCurrencyInteger(positiveCatalogBaseNet.mul(decimal(1).plus(input.context.taxRate)));
 
     let finalGrossAmount = baseGrossAmount;
     let discountType: CatalogCommercialPrice['discountType'] = null;
@@ -53,7 +54,8 @@ export class CommercialPriceCalculator {
             specificPriceId: selected.idSpecificPrice,
           }));
         } else {
-          finalGrossAmount = toCurrencyInteger(decimal(baseGrossAmount).mul(decimal(1).minus(selected.reduction)));
+          effectiveNet = effectiveNet.mul(decimal(1).minus(selected.reduction));
+          finalGrossAmount = toCurrencyInteger(effectiveNet.mul(decimal(1).plus(input.context.taxRate)));
           discountType = 'percentage';
           discountValue = selected.reduction;
         }
@@ -63,7 +65,10 @@ export class CommercialPriceCalculator {
             specificPriceId: selected.idSpecificPrice,
           }));
         } else {
-          const grossReduction = toCurrencyInteger(selected.reduction);
+          const reductionNet = selected.reductionTax === 1
+            ? decimal(selected.reduction).div(decimal(1).plus(input.context.taxRate))
+            : decimal(selected.reduction);
+          const grossReduction = toCurrencyInteger(reductionNet.mul(decimal(1).plus(input.context.taxRate)));
           if (grossReduction > baseGrossAmount) {
             warnings.push(warning('SPECIFIC_PRICE_EXCEEDS_BASE_PRICE', input.product, {
               specificPriceId: selected.idSpecificPrice,
@@ -71,9 +76,10 @@ export class CommercialPriceCalculator {
               reductionGrossAmount: grossReduction,
             }));
           }
-          finalGrossAmount = Math.max(baseGrossAmount - grossReduction, 0);
+          effectiveNet = effectiveNet.minus(reductionNet);
+          finalGrossAmount = toCurrencyInteger(Decimal.max(effectiveNet, 0).mul(decimal(1).plus(input.context.taxRate)));
           discountType = 'amount';
-          discountValue = grossReduction;
+          discountValue = selected.reduction;
         }
       } else {
         warnings.push(warning('SPECIFIC_PRICE_UNSUPPORTED_REDUCTION_TYPE', input.product, {

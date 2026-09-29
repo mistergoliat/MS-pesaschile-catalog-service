@@ -48,6 +48,8 @@ import {
   DefaultActiveProductSemanticSnapshotReader,
   DefaultProductSemanticRuntimeIndexBuilder,
 } from './domain/product-semantic-snapshot/runtime/index.js';
+import { MySqlCatalogV2DataReader } from './infrastructure/catalog/mysqlCatalogV2DataReader.js';
+import { CatalogContractService } from './application/catalog/v2/catalogContractService.js';
 
 export function createCustomerAffinityEvidenceProvider(
   mode: typeof config.recommendation.customerAffinityProviderMode,
@@ -98,6 +100,10 @@ export async function createRuntime() {
     stockProvider,
     pricingProvider,
     cache,
+  });
+  const catalogContractService = new CatalogContractService({
+    reader: new MySqlCatalogV2DataReader(pool),
+    publicBaseUrl: config.catalog.publicBaseUrl,
   });
   const catalogCommercialTruthService = new CatalogCommercialTruthService({
     dataReader: new MySqlCatalogCommercialDataReader(pool),
@@ -199,5 +205,6 @@ export async function createRuntime() {
     trainingSemanticReadService: new DefaultTrainingSemanticReadService(trainingSemanticSnapshotV2Reader),
     trainingSemanticQueryService: new DefaultTrainingSemanticQueryService(trainingSemanticSnapshotV2Reader),
     semanticDiscoveryService: new DefaultSemanticDiscoveryService(productSemanticSnapshotReader, trainingSemanticSnapshotV2Reader),
+    catalogContractService,
   };
 }

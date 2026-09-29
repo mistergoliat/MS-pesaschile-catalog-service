@@ -276,6 +276,20 @@ npm run smoke
 
 `npm run smoke` requires a running service, a valid local API key, and reachable dependencies for catalog endpoints. The full suite count should be taken from the latest local `npm test` run rather than assumed from this document.
 
+## Catalog commercial contract v2
+
+The R4-facing read-only contract is published under `contracts/catalog/v2/` and is implemented by
+three routes:
+
+- `POST /v2/catalog/search`
+- `GET /v2/catalog/products/{productKey}/context`
+- `GET /v2/catalog/items/{itemKey}/context?quantity=N`
+
+These routes use canonical `itemKey` values (`P{id}` or `P{id}-V{variantId}`), a public fixed
+pricing context, `stock_available.quantity`, explicit sellability reasons, and owner-provided
+freshness. Existing v1 and discovery routes remain for CRM compatibility and are not the R4
+contract.
+
 ## Current Status
 
 | Task | Capability | Status |

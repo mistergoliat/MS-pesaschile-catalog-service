@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "results": [],
+  "completeness": { "totalMatches": 0, "truncated": false },
+  "searchMode": "lexical",
+  "freshness": { "asOf": "2026-09-29T12:00:00.000Z", "cache": { "hit": false, "ageMs": 0 }, "validUntil": "2026-09-29T12:00:15.000Z" }
+}

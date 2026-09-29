@@ -27,7 +27,7 @@ function specificityScore(row: SpecificPriceCandidate, context: PriceContext): n
     row.id_customer === context.customerId ? 1 : 0,
     row.from_quantity,
     row.priority ?? 0,
-    -row.id_specific_price,
+    row.id_specific_price,
   ];
 }
 
@@ -114,9 +114,7 @@ export function resolvePrice(
         : decimal(selected.reduction);
       effectiveTaxExcluded = effectiveTaxExcluded.minus(reductionTaxExcluded);
       discountType = 'amount';
-      discountValue = selected.reduction_tax === 1
-        ? toCurrencyInteger(reductionTaxExcluded)
-        : toCurrencyInteger(selected.reduction);
+      discountValue = toCurrencyInteger(selected.reduction);
     }
   }
 

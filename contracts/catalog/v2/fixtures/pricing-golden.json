@@ -1,0 +1,12 @@
+[
+  { "name": "without discount", "specificPrices": [], "expected": { "regularGross": 119000, "finalGross": 119000 } },
+  { "name": "percentage", "specificPrices": [{ "idSpecificPrice": 1, "price": -1, "fromQuantity": 1, "reduction": 0.1, "reductionTax": 0, "reductionType": "percentage", "from": null, "to": null }], "expected": { "regularGross": 119000, "finalGross": 107100 } },
+  { "name": "amount reduction_tax=1", "specificPrices": [{ "idSpecificPrice": 2, "price": -1, "fromQuantity": 1, "reduction": 10000, "reductionTax": 1, "reductionType": "amount", "from": null, "to": null }], "expected": { "regularGross": 119000, "finalGross": 109000 } },
+  { "name": "amount reduction_tax=0", "specificPrices": [{ "idSpecificPrice": 3, "price": -1, "fromQuantity": 1, "reduction": 10000, "reductionTax": 0, "reductionType": "amount", "from": null, "to": null }], "expected": { "regularGross": 119000, "finalGross": 107100 } },
+  { "name": "specificity tie chooses deterministic higher id", "specificPrices": [{ "idSpecificPrice": 5, "price": -1, "fromQuantity": 1, "reduction": 0.1, "reductionTax": 0, "reductionType": "percentage", "from": null, "to": null }, { "idSpecificPrice": 9, "price": -1, "fromQuantity": 1, "reduction": 0.2, "reductionTax": 0, "reductionType": "percentage", "from": null, "to": null }], "expected": { "regularGross": 119000, "finalGross": 95200 } },
+  { "name": "from quantity", "specificPrices": [{ "idSpecificPrice": 6, "price": -1, "fromQuantity": 2, "reduction": 0.1, "reductionTax": 0, "reductionType": "percentage", "from": null, "to": null }], "quantity": 2, "expected": { "regularGross": 119000, "finalGross": 107100 } },
+  { "name": "future promotion is inactive", "specificPrices": [{ "idSpecificPrice": 7, "price": -1, "fromQuantity": 1, "reduction": 0.1, "reductionTax": 0, "reductionType": "percentage", "from": "2099-01-01T00:00:00.000Z", "to": null }], "expected": { "regularGross": 119000, "finalGross": 119000 } },
+  { "name": "expired promotion is inactive", "specificPrices": [{ "idSpecificPrice": 8, "price": -1, "fromQuantity": 1, "reduction": 0.1, "reductionTax": 0, "reductionType": "percentage", "from": null, "to": "2020-01-01T00:00:00.000Z" }], "expected": { "regularGross": 119000, "finalGross": 119000 } },
+  { "name": "variant impact", "variantImpactNet": 10000, "specificPrices": [], "expected": { "regularGross": 130900, "finalGross": 130900 } },
+  { "name": "quantity greater than one", "quantity": 3, "specificPrices": [], "expected": { "regularGross": 119000, "finalGross": 119000 } }
+]

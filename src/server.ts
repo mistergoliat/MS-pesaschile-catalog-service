@@ -15,6 +15,7 @@ const app = await buildApp({
   trainingSemanticReadService: runtime.trainingSemanticReadService,
   trainingSemanticQueryService: runtime.trainingSemanticQueryService,
   semanticDiscoveryService: runtime.semanticDiscoveryService,
+  catalogContractService: runtime.catalogContractService,
   repository: runtime.repository,
   readyCheck: () => collectRuntimeReadinessChecks({
     repository: runtime.repository,
