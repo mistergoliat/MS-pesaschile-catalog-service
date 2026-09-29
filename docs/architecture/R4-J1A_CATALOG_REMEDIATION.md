@@ -197,7 +197,7 @@ clasifican como deferred en la tabla.
 
 ## 12. Commit
 
-No se creó commit: no se recibió autorización explícita para commit/push.
+La implementación quedó publicada en `main` mediante el commit `7097db2` y el push a `origin/main`.
 
 ## 13. Confirmación
 
