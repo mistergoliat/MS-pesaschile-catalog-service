@@ -1507,3 +1507,20 @@ Added by R4-J1D (Production Catalog Closure). These are concrete residuals found
 | H4 | Search candidate retrieval is unbounded | v2 retrieval ranks the full candidate set (correct, no pre-ranking truncation) but has no row cap; latency to be observed in the J1D production smoke | retrieval architecture, operational bounds |
 | H5 | Two price engines | v1 `priceResolver` and v2 `commercialEngine` coexist; v2 is the J1 truth | §"J1 v2 engine becomes the only target commercial truth engine", legacy retirement |
 | H6 | Singular/plural and unit spellings are the only equivalences | explicit, deterministic (gold `supported_synonyms`); anything conceptual (e.g. "pesa rusa" → kettlebell) is out of `catalog.search` | `catalog.discover`, concept lexicon |
+
+# Appendix J1D-R1 — Items handed over after the production smoke (2026-09-30)
+
+Found in the R4-J1D Step 5 production smokes (Catalog `47875d5`, `fea0dc5`). None blocks R4-J1; none is
+part of the R4 ↔ Catalog contract gate.
+
+| # | Item | Evidence | CAT-V2 home |
+|---|---|---|---|
+| H7 | Typo tolerance (live) | live Gold v0: `typo` 0/4 (measured), all hard classes 100 % | as H1 |
+| H8 | Broad search latency | `barra` (213 matches) ≈ 1.1–1.3 s server-side on every cache miss; exact/multi-token ≈ 0.1–0.3 s | as H4 |
+| H9 | `frequentlyBoughtTogether` never wired in v2 | `bootstrap.ts` passes no provider to `CatalogContractService`: always `unavailable/snapshot_unavailable` while the relationship snapshot is loaded | relationship projection in v2 context |
+| H10 | `provenance.serviceBuildRef` | reports `catalog-service@local`; `CATALOG_SERVICE_BUILD_REF` unset in the deployment | operations / deployment metadata |
+| H11 | Canonical `publicUrl` | built as `/categories/{id}-{rewrite}.html`; the storefront redirects to `/categorias/…` | Human Browse API / URL projection |
+| H12 | Unknown search-body fields | stripped by Fastify instead of rejected (`{query, foo}` → 200) | contract strictness at the HTTP boundary |
+| H13 | Relationship snapshot freshness | active snapshot evidence ends 2026-08-21 | relationship rebuild cadence |
+| H14 | H3 update | production's active product semantic snapshot (`a86a8c6f…`, 2026-09-10) carries `catalogPresence` on 2011/2011 records — compatible; only the archived 2026-08-31 build lacked it | — (resolved) |
+| H15 | H5 update: three price paths | v2 `commercialEngine` and commercial-truth `CommercialPriceCalculator` share `prestashopUnitPrice` (J1D-R1); v1 `priceResolver` still prices on its own and ignores zero-dated promotions | `CAT-HOTFIX-ZERO-DATE-PROMOTIONS`, then single engine |

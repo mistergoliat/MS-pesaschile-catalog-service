@@ -51,7 +51,7 @@ storefront, but 6 295 in one step. The pre-J1D legacy rule (round the gross to C
   recommendations) now both price through it; selection, OD-1/OD-2/OD-3 and field semantics are
   unchanged. The legacy calculator keeps `baseGrossAmount` = catalog base (its own contract).
 - `CATALOG_V2_ENGINE_VERSION` → `catalog-commercial-v2.2.0`.
-- Not changed: v1 `priceResolver` (third implementation, see `docs/audits/CAT-HOTFIX-V1-ZERO-DATE-PROMOTIONS.md`).
+- Not changed: v1 `priceResolver` (third implementation, see `docs/audits/CAT-HOTFIX-ZERO-DATE-PROMOTIONS.md`).
 
 ## Evidence
 
