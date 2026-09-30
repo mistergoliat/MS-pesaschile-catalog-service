@@ -1,12 +1,44 @@
 import { z } from 'zod';
 
+/*
+ * Identity invariant (R4-J1C, frozen for schemaVersion 1):
+ *   productKey = PRODUCT identity (`P{id}`): search results, product context,
+ *                frequently-bought-together items and a variant_required answer.
+ *   itemKey    = SELLABLE ITEM identity: `P{id}` ONLY for a product without
+ *                variants, `P{id}-V{variantId}` for a concrete variant. It is
+ *                emitted only by `facts.sellableItem`, `facts.variantOptions`
+ *                and the item context.
+ * A product-level object never carries an `itemKey`, and `P{id}` of a product
+ * with variants is never a sellable item (item context answers
+ * `variant_required`). Consumers treat both keys as opaque.
+ */
 export const catalogItemKeySchema = z.string().regex(/^P\d+(?:-V\d+)?$/u);
 export const catalogProductKeySchema = z.string().regex(/^P\d+$/u);
 
-export const catalogItemRefSchema = z.object({
-  productId: z.string().regex(/^\d+$/u),
-  variantId: z.string().regex(/^\d+$/u).nullable(),
+const numericIdSchema = z.string().regex(/^\d+$/u);
+
+/** Internal ids of a product (product-level objects). */
+export const catalogProductRefSchema = z.object({
+  productId: numericIdSchema,
 }).strict();
+
+/** Internal ids of a sellable item: `variantId` is null only for a product without variants. */
+export const catalogItemRefSchema = z.object({
+  productId: numericIdSchema,
+  variantId: numericIdSchema.nullable(),
+}).strict();
+
+/*
+ * Text bounds follow the PrestaShop source columns (product_lang.name 128,
+ * reference 64, category_lang.name 128, manufacturer.name 64,
+ * feature_lang.name 128, feature_value_lang.value 255, attribute names 128).
+ * They are part of the contract: consumers reject, never truncate.
+ */
+const nameText = z.string().min(1).max(128);
+const skuText = z.string().min(1).max(64);
+const categorySchema = z.object({ id: numericIdSchema, name: nameText }).strict();
+const attributeSchema = z.object({ group: nameText, value: nameText }).strict();
+export const CATALOG_V2_MAX_VARIANT_OPTIONS = 100;
 
 export const catalogMoneySchema = z.object({
   amount: z.number().int().nonnegative(),
@@ -42,24 +74,33 @@ export const catalogSearchRequestSchema = z.object({
   limit: z.number().int().min(1).max(10).default(5),
 }).strict();
 
+/**
+ * Product-level price: `exact` for a product without variants; `from` = the
+ * minimum final price over the product's priced variants (sellable or not).
+ */
+export const catalogPriceSummarySchema = z.object({
+  kind: z.enum(['exact', 'from']),
+  finalGross: catalogMoneySchema,
+  regularGross: catalogMoneySchema,
+  discounted: z.boolean(),
+}).strict();
+
+/** Product-level availability: the best variant's sellability, and how many variants are sellable (null without variants). */
+export const catalogAvailabilitySummarySchema = z.object({
+  sellability: sellabilitySchema,
+  reason: sellabilityReasonSchema,
+  sellableVariants: z.number().int().nonnegative().nullable(),
+}).strict();
+
 export const catalogSearchResultSchema = z.object({
-  itemKey: catalogItemKeySchema,
-  ref: catalogItemRefSchema,
-  name: z.string(),
-  sku: z.string().nullable(),
-  category: z.object({ id: z.string(), name: z.string() }).strict().nullable(),
+  productKey: catalogProductKeySchema,
+  ref: catalogProductRefSchema,
+  name: nameText,
+  sku: skuText.nullable(),
+  category: categorySchema.nullable(),
   variants: z.object({ count: z.number().int().nonnegative(), requiresSelection: z.boolean() }).strict(),
-  priceSummary: z.object({
-    kind: z.enum(['exact', 'from']),
-    finalGross: catalogMoneySchema,
-    regularGross: catalogMoneySchema,
-    discounted: z.boolean(),
-  }).strict().nullable(),
-  availabilitySummary: z.object({
-    sellability: sellabilitySchema,
-    reason: sellabilityReasonSchema,
-    sellableVariants: z.number().int().nonnegative().nullable(),
-  }).strict(),
+  priceSummary: catalogPriceSummarySchema.nullable(),
+  availabilitySummary: catalogAvailabilitySummarySchema,
   match: z.object({
     type: z.enum(['exact_reference', 'exact_name', 'name', 'description']),
     matchedTokens: z.number().int().nonnegative(),
@@ -79,7 +120,7 @@ export const catalogSearchResponseSchema = z.object({
 }).strict();
 
 export const productContextRequestSchema = z.object({
-  itemKey: catalogProductKeySchema,
+  productKey: catalogProductKeySchema,
   quantity: z.number().int().min(1).max(99).default(1),
 }).strict();
 
@@ -89,58 +130,41 @@ const productStatusSchema = z.object({
   orderable: z.boolean(),
 }).strict();
 
+/** One concrete sellable unit of a product. */
+export const catalogSellableItemSchema = z.object({
+  itemKey: catalogItemKeySchema,
+  ref: catalogItemRefSchema,
+}).strict();
+
 const variantOptionSchema = z.object({
   itemKey: catalogItemKeySchema,
-  sku: z.string().nullable(),
-  attributes: z.array(z.object({ group: z.string(), value: z.string() }).strict()),
+  ref: catalogItemRefSchema,
+  sku: skuText.nullable(),
+  attributes: z.array(attributeSchema).max(10),
   isDefault: z.boolean(),
 }).strict();
 
-const specificationSchema = z.object({ name: z.string(), value: z.string() }).strict();
+const specificationSchema = z.object({ name: nameText, value: z.string().min(1).max(255) }).strict();
 
 const authoritativeFactsSchema = z.object({
-  name: z.string(),
-  sku: z.string().nullable(),
+  name: nameText,
+  sku: skuText.nullable(),
   shortDescription: z.string().max(600).nullable(),
-  category: z.object({ id: z.string(), name: z.string() }).strict().nullable(),
-  brand: z.string().nullable(),
+  category: categorySchema.nullable(),
+  brand: z.string().min(1).max(64).nullable(),
   weightKg: z.number().nonnegative().nullable(),
   specifications: z.array(specificationSchema).max(40),
   status: productStatusSchema,
-  variantOptions: z.array(variantOptionSchema).max(20),
+  /** The product's own sellable unit when it has NO variants; null when a variant must be selected. */
+  sellableItem: catalogSellableItemSchema.nullable(),
+  variantOptions: z.array(variantOptionSchema).max(CATALOG_V2_MAX_VARIANT_OPTIONS),
   stock: z.object({
     availableQuantity: z.number().int().nullable(),
     scope: z.enum(['variant', 'product_total']),
   }).strict(),
 }).strict();
 
-const productPricingSchema = z.union([
-  z.object({
-    status: z.literal('available'),
-    basis: z.object({
-      taxIncluded: z.literal(true),
-      taxRate: z.number().nonnegative(),
-      taxBasis: z.enum(['configured_flat_rate', 'prestashop_tax_rules']),
-    }).strict(),
-    quantity: z.number().int().positive(),
-    regularGross: catalogMoneySchema,
-    finalGross: catalogMoneySchema,
-    promotion: z.object({
-      discountType: z.enum(['amount', 'percentage']),
-      discountValue: z.number(),
-      validUntil: z.string().datetime().nullable(),
-    }).strict().nullable(),
-    engineVersion: z.string().min(1),
-  }).strict(),
-  z.object({
-    status: z.literal('unavailable'),
-    reason: z.enum(['invalid_base_price', 'variant_required']),
-  }).strict(),
-]);
-
-const availabilitySchema = z.object({
-  sellability: sellabilitySchema,
-  reason: sellabilityReasonSchema,
+const availabilitySchema = catalogAvailabilitySummarySchema.extend({
   leadTime: z.null(),
 }).strict();
 
@@ -151,9 +175,9 @@ const inferredSchema = z.object({
       snapshotId: z.string().min(1),
       builtAt: z.string().datetime(),
       items: z.array(z.object({
-        itemKey: catalogItemKeySchema,
-        name: z.string(),
-        confidence: z.number(),
+        productKey: catalogProductKeySchema,
+        name: nameText,
+        confidence: z.number().min(0).max(1),
         jointCount: z.number().int().nonnegative(),
       }).strict()).max(5),
     }).strict(),
@@ -174,17 +198,17 @@ const provenanceSchema = z.object({
 export const productContextNotFoundSchema = z.object({
   schemaVersion: z.literal(1),
   status: z.literal('not_found'),
-  itemKey: catalogProductKeySchema,
+  productKey: catalogProductKeySchema,
 }).strict();
 
 export const productContextFoundSchema = z.object({
   schemaVersion: z.literal(1),
   status: z.literal('found'),
-  itemKey: catalogProductKeySchema,
-  ref: catalogItemRefSchema,
+  productKey: catalogProductKeySchema,
+  ref: catalogProductRefSchema,
   facts: authoritativeFactsSchema,
   derived: z.object({
-    pricing: productPricingSchema,
+    priceSummary: catalogPriceSummarySchema.nullable(),
     availability: availabilitySchema,
     publicUrl: z.string().url().nullable(),
   }).strict(),
@@ -206,24 +230,31 @@ export const itemContextRequestSchema = z.object({
 const itemPricingSchema = z.union([
   z.object({
     status: z.literal('available'),
+    /** The quantity tier priced (specific prices with from_quantity); amounts are UNIT amounts, tax included. */
     quantity: z.number().int().positive(),
     regularGross: catalogMoneySchema,
     finalGross: catalogMoneySchema,
+    /**
+     * The applied PrestaShop specific price, as stored: `percentage` value is a
+     * fraction (0.1 = 10 %); `amount` value is the raw reduction, whose tax
+     * basis follows the source row. Display-only: the owner's final price is
+     * `finalGross`; consumers never recompute from it.
+     */
     promotion: z.object({
       discountType: z.enum(['amount', 'percentage']),
-      discountValue: z.number(),
+      discountValue: z.number().nonnegative(),
       validUntil: z.string().datetime().nullable(),
     }).strict().nullable(),
     tax: z.object({
       included: z.literal(true),
-      rate: z.number().nonnegative(),
+      rate: z.number().min(0).max(1),
       basis: z.enum(['configured_flat_rate', 'prestashop_tax_rules']),
     }).strict(),
     engineVersion: z.string().min(1),
   }).strict(),
   z.object({
     status: z.literal('unavailable'),
-    reason: z.enum(['invalid_base_price', 'variant_required']),
+    reason: z.enum(['invalid_base_price']),
   }).strict(),
 ]);
 
@@ -234,13 +265,13 @@ const itemContextResponseBaseSchema = z.object({
   ref: catalogItemRefSchema,
   parentProduct: z.object({
     productKey: catalogProductKeySchema,
-    name: z.string(),
-    sku: z.string().nullable(),
+    name: nameText,
+    sku: skuText.nullable(),
   }).strict(),
   variant: z.object({
-    variantId: z.string().nullable(),
-    sku: z.string().nullable(),
-    attributes: z.array(z.object({ group: z.string(), value: z.string() }).strict()),
+    variantId: numericIdSchema.nullable(),
+    sku: skuText.nullable(),
+    attributes: z.array(attributeSchema).max(10),
   }).strict(),
   pricing: itemPricingSchema,
   availability: z.object({
@@ -259,9 +290,18 @@ export const itemContextNotFoundSchema = z.object({
   itemKey: catalogItemKeySchema,
 }).strict();
 
-export const itemContextResponseSchema = z.union([itemContextNotFoundSchema, itemContextResponseBaseSchema]);
+/** The key names a product that HAS variants: it is a productKey, not a sellable item; select a variant's itemKey. */
+export const itemContextVariantRequiredSchema = z.object({
+  schemaVersion: z.literal(1),
+  status: z.literal('variant_required'),
+  itemKey: catalogItemKeySchema,
+  productKey: catalogProductKeySchema,
+}).strict();
+
+export const itemContextResponseSchema = z.union([itemContextNotFoundSchema, itemContextVariantRequiredSchema, itemContextResponseBaseSchema]);
 
 export type CatalogItemRef = z.infer<typeof catalogItemRefSchema>;
+export type CatalogProductRef = z.infer<typeof catalogProductRefSchema>;
 export type CatalogSearchRequest = z.infer<typeof catalogSearchRequestSchema>;
 export type CatalogSearchResponse = z.infer<typeof catalogSearchResponseSchema>;
 export type ProductContextResponse = z.infer<typeof productContextResponseSchema>;

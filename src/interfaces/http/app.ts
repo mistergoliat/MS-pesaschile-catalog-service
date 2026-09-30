@@ -143,6 +143,12 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
     const correlationId = request.id;
     if (error instanceof CatalogError) {
       errorsTotal.inc({ code: error.code });
+      if ((request.routeOptions.url ?? '').startsWith('/v2/catalog')) {
+        // v2 failure semantics: lowercase typed codes and an explicit retryable flag.
+        return reply.code(error.statusCode).send({
+          error: { code: error.code.toLowerCase(), message: error.message, correlationId, retryable: error.statusCode >= 500 },
+        });
+      }
       return reply.code(error.statusCode).send(errorPayload(error, correlationId));
     }
 

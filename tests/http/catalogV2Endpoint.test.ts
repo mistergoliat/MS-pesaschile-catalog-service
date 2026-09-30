@@ -58,7 +58,8 @@ describe('Catalog v2 HTTP contract', () => {
       payload: { query: 'barra', limit: 5 },
     });
     expect(response.statusCode).toBe(200);
-    expect(response.json().results[0].itemKey).toBe('P10');
+    expect(response.json().results[0].productKey).toBe('P10');
+    expect(response.json().results[0]).not.toHaveProperty('itemKey');
     expect(response.json().results[0].availabilitySummary.sellability).toBe('backorder');
     await app.close();
   });

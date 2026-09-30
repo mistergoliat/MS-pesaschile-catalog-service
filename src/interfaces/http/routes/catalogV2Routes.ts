@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { DatabaseUnavailableError } from '../../../shared/errors.js';
 import {
@@ -49,6 +49,29 @@ function unavailable(correlationId: string) {
   };
 }
 
+/**
+ * The owner guarantees its published contract: an answer that does not match
+ * the executable schema is never sent (it would make a consumer reject or,
+ * worse, trust malformed data). It fails as a typed, non-retryable 500.
+ */
+function sendChecked(
+  reply: FastifyReply,
+  request: FastifyRequest,
+  schema: { safeParse(value: unknown): { success: boolean; error?: { issues: Array<{ path: PropertyKey[] }> } } },
+  value: unknown,
+) {
+  const checked = schema.safeParse(value);
+  if (checked.success) return reply.send(value);
+  request.log.error({
+    event: 'catalog_v2_contract_output_invalid',
+    correlationId: request.id,
+    paths: checked.error?.issues.slice(0, 5).map((issue) => issue.path.map(String).join('.')),
+  }, 'Catalog v2 answer violates the published contract');
+  return reply.code(500).send({
+    error: { code: 'contract_output_invalid', message: 'Catalog answer violates its contract', correlationId: request.id, retryable: false },
+  });
+}
+
 function isDatabaseUnavailable(error: unknown): boolean {
   return error instanceof DatabaseUnavailableError
     || (error instanceof Error && 'code' in error && (error as { code?: string }).code === 'DATABASE_UNAVAILABLE');
@@ -69,6 +92,7 @@ export async function registerCatalogV2Routes(
         400: errorSchema,
         401: errorSchema,
         429: errorSchema,
+        500: errorSchema,
         503: errorSchema,
       },
     },
@@ -77,7 +101,7 @@ export async function registerCatalogV2Routes(
     const parsed = catalogSearchRequestSchema.safeParse(request.body);
     if (!parsed.success) return reply.code(400).send(invalidRequest(request.id));
     try {
-      return reply.send(await service.search(parsed.data));
+      return sendChecked(reply, request, catalogSearchResponseSchema, await service.search(parsed.data));
     } catch (error) {
       if (isDatabaseUnavailable(error)) return reply.code(503).send(unavailable(request.id));
       throw error;
@@ -105,6 +129,7 @@ export async function registerCatalogV2Routes(
         400: errorSchema,
         401: errorSchema,
         429: errorSchema,
+        500: errorSchema,
         503: errorSchema,
       },
     },
@@ -118,7 +143,7 @@ export async function registerCatalogV2Routes(
       return reply.code(400).send(invalidRequest(request.id));
     }
     try {
-      return reply.send(await service.getProductContext({ productKey, quantity }));
+      return sendChecked(reply, request, productContextResponseSchema, await service.getProductContext({ productKey, quantity }));
     } catch (error) {
       if (isDatabaseUnavailable(error)) return reply.code(503).send(unavailable(request.id));
       throw error;
@@ -146,6 +171,7 @@ export async function registerCatalogV2Routes(
         400: errorSchema,
         401: errorSchema,
         429: errorSchema,
+        500: errorSchema,
         503: errorSchema,
       },
     },
@@ -159,7 +185,7 @@ export async function registerCatalogV2Routes(
       return reply.code(400).send(invalidRequest(request.id));
     }
     try {
-      return reply.send(await service.getItemContext({ itemKey, quantity }));
+      return sendChecked(reply, request, itemContextResponseSchema, await service.getItemContext({ itemKey, quantity }));
     } catch (error) {
       if (isDatabaseUnavailable(error)) return reply.code(503).send(unavailable(request.id));
       throw error;

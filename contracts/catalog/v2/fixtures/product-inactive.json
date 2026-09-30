@@ -1,8 +1,10 @@
 {
   "schemaVersion": 1,
   "status": "found",
-  "itemKey": "P40",
-  "ref": { "productId": "40", "variantId": null },
+  "productKey": "P40",
+  "ref": {
+    "productId": "40"
+  },
   "facts": {
     "name": "Producto descontinuado",
     "sku": "OLD-40",
@@ -11,16 +13,63 @@
     "brand": null,
     "weightKg": null,
     "specifications": [],
-    "status": { "active": false, "listed": true, "orderable": true },
+    "status": {
+      "active": false,
+      "listed": true,
+      "orderable": true
+    },
+    "sellableItem": {
+      "itemKey": "P40",
+      "ref": {
+        "productId": "40",
+        "variantId": null
+      }
+    },
     "variantOptions": [],
-    "stock": { "availableQuantity": 0, "scope": "variant" }
+    "stock": {
+      "availableQuantity": 0,
+      "scope": "variant"
+    }
   },
   "derived": {
-    "pricing": { "status": "available", "basis": { "taxIncluded": true, "taxRate": 0.19, "taxBasis": "configured_flat_rate" }, "quantity": 1, "regularGross": { "amount": 119000, "currency": "CLP" }, "finalGross": { "amount": 119000, "currency": "CLP" }, "promotion": null, "engineVersion": "catalog-commercial-v2.0.0" },
-    "availability": { "sellability": "not_sellable", "reason": "inactive", "leadTime": null },
-    "publicUrl": null
+    "priceSummary": {
+      "kind": "exact",
+      "finalGross": {
+        "amount": 119000,
+        "currency": "CLP"
+      },
+      "regularGross": {
+        "amount": 119000,
+        "currency": "CLP"
+      },
+      "discounted": false
+    },
+    "availability": {
+      "sellability": "not_sellable",
+      "reason": "inactive",
+      "sellableVariants": null,
+      "leadTime": null
+    },
+    "publicUrl": "https://pesaschile.cl/categories/40-producto-40.html"
   },
-  "inferred": { "frequentlyBoughtTogether": { "status": "unavailable", "reason": "snapshot_unavailable" } },
-  "provenance": { "source": "prestashop", "service": "catalog-service", "serviceBuildRef": "catalog-service@local", "sourceUpdatedAt": null },
-  "freshness": { "asOf": "2026-09-29T12:00:00.000Z", "cache": { "hit": false, "ageMs": 0 }, "validUntil": "2026-09-29T12:00:15.000Z" }
+  "inferred": {
+    "frequentlyBoughtTogether": {
+      "status": "unavailable",
+      "reason": "snapshot_unavailable"
+    }
+  },
+  "provenance": {
+    "source": "prestashop",
+    "service": "catalog-service",
+    "serviceBuildRef": "catalog-service@fixtures",
+    "sourceUpdatedAt": null
+  },
+  "freshness": {
+    "asOf": "2026-09-29T12:00:00.000Z",
+    "cache": {
+      "hit": false,
+      "ageMs": 0
+    },
+    "validUntil": "2026-09-29T12:00:15.000Z"
+  }
 }

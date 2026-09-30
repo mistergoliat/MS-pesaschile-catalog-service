@@ -38,49 +38,11 @@
         "matchedTokens": 1,
         "totalTokens": 1
       }
-    },
-    {
-      "productKey": "P70",
-      "ref": {
-        "productId": "70"
-      },
-      "name": "Barra corta",
-      "sku": "BAR-70",
-      "category": {
-        "id": "3",
-        "name": "Barras"
-      },
-      "variants": {
-        "count": 0,
-        "requiresSelection": false
-      },
-      "priceSummary": {
-        "kind": "exact",
-        "finalGross": {
-          "amount": 119000,
-          "currency": "CLP"
-        },
-        "regularGross": {
-          "amount": 119000,
-          "currency": "CLP"
-        },
-        "discounted": false
-      },
-      "availabilitySummary": {
-        "sellability": "sellable",
-        "reason": "in_stock",
-        "sellableVariants": null
-      },
-      "match": {
-        "type": "name",
-        "matchedTokens": 1,
-        "totalTokens": 1
-      }
     }
   ],
   "completeness": {
-    "totalMatches": 6,
-    "truncated": true
+    "totalMatches": 1,
+    "truncated": false
   },
   "searchMode": "lexical",
   "freshness": {

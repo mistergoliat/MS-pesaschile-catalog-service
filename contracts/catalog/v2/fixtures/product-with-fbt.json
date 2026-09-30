@@ -62,8 +62,17 @@
   },
   "inferred": {
     "frequentlyBoughtTogether": {
-      "status": "unavailable",
-      "reason": "snapshot_unavailable"
+      "status": "available",
+      "snapshotId": "same-order-2026-09-01",
+      "builtAt": "2026-09-01T00:00:00.000Z",
+      "items": [
+        {
+          "productKey": "P20",
+          "name": "Barra con opciones",
+          "confidence": 0.4,
+          "jointCount": 12
+        }
+      ]
     }
   },
   "provenance": {

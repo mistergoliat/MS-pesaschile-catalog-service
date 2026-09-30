@@ -86,8 +86,13 @@ function placeholders(values: readonly unknown[]): string {
   return values.map(() => '?').join(', ');
 }
 
+// `!` rather than a backslash: `ESCAPE '\'` is a syntax error under the
+// default sql_mode (the backslash escapes the closing quote), and `'\\'` is
+// two characters under NO_BACKSLASH_ESCAPES. `!` is literal in both modes.
+const LIKE_ESCAPE = '!';
+
 function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/gu, '\\$&');
+  return value.replace(/[!%_]/gu, `${LIKE_ESCAPE}$&`);
 }
 
 export class MySqlCatalogV2DataReader implements CatalogV2DataReader {
@@ -138,9 +143,10 @@ export class MySqlCatalogV2DataReader implements CatalogV2DataReader {
 
     const specificationsByProduct = new Map<number, Array<{ name: string; value: string }>>();
     for (const row of specificationRows) {
-      if (!row.name || row.value === null) continue;
+      const name = row.name === null ? '' : String(row.name).trim();
+      if (!name || row.value === null) continue;
       const list = specificationsByProduct.get(Number(row.productId)) ?? [];
-      if (list.length < 40) list.push({ name: String(row.name), value: String(row.value) });
+      if (list.length < 40) list.push({ name, value: String(row.value) });
       specificationsByProduct.set(Number(row.productId), list);
     }
 
@@ -233,9 +239,9 @@ export class MySqlCatalogV2DataReader implements CatalogV2DataReader {
       conditions.push(`(
         LOWER(COALESCE(p.reference, '')) = LOWER(?)
         OR LOWER(COALESCE(pl.name, '')) = LOWER(?)
-        OR pl.name LIKE ? ESCAPE '\\'
-        OR pl.description_short LIKE ? ESCAPE '\\'
-        OR pl.description LIKE ? ESCAPE '\\'
+        OR pl.name LIKE ? ESCAPE '${LIKE_ESCAPE}'
+        OR pl.description_short LIKE ? ESCAPE '${LIKE_ESCAPE}'
+        OR pl.description LIKE ? ESCAPE '${LIKE_ESCAPE}'
         OR EXISTS (
           SELECT 1 FROM ${table('product_attribute')} pa_search
           WHERE pa_search.id_product = p.id_product
@@ -386,7 +392,7 @@ export class MySqlCatalogV2DataReader implements CatalogV2DataReader {
         SELECT
           fp.id_product AS productId,
           fl.name AS name,
-          COALESCE(NULLIF(TRIM(fvl.value), ''), NULLIF(TRIM(fv.custom_value), '')) AS value
+          NULLIF(TRIM(fvl.value), '') AS value
         FROM ${table('feature_product')} fp
         INNER JOIN ${table('feature')} f ON f.id_feature = fp.id_feature
         INNER JOIN ${table('feature_lang')} fl
@@ -428,8 +434,10 @@ export class MySqlCatalogV2DataReader implements CatalogV2DataReader {
           sp.reduction,
           sp.reduction_tax,
           sp.reduction_type,
-          sp.from,
-          sp.to
+          -- PrestaShop stores an unbounded window as the zero datetime; the
+          -- driver cannot represent it, so it is mapped to NULL (= unbounded) here.
+          NULLIF(sp.\`from\`, '0000-00-00 00:00:00') AS \`from\`,
+          NULLIF(sp.\`to\`, '0000-00-00 00:00:00') AS \`to\`
         FROM ${table('specific_price')} sp
         ${conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''}
       `,

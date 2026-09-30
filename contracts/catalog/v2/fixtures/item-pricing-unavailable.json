@@ -1,43 +1,24 @@
 {
   "schemaVersion": 1,
   "status": "found",
-  "itemKey": "P12",
+  "itemKey": "P60",
   "ref": {
-    "productId": "12",
+    "productId": "60",
     "variantId": null
   },
   "parentProduct": {
-    "productKey": "P12",
-    "name": "Barra técnica",
-    "sku": "BAR-12"
+    "productKey": "P60",
+    "name": "Accesorio sin precio",
+    "sku": "ACC-60"
   },
   "variant": {
     "variantId": null,
-    "sku": "BAR-12",
+    "sku": "ACC-60",
     "attributes": []
   },
   "pricing": {
-    "status": "available",
-    "quantity": 2,
-    "regularGross": {
-      "amount": 119000,
-      "currency": "CLP"
-    },
-    "finalGross": {
-      "amount": 107100,
-      "currency": "CLP"
-    },
-    "promotion": {
-      "discountType": "percentage",
-      "discountValue": 0.1,
-      "validUntil": "2026-10-15T03:00:00.000Z"
-    },
-    "tax": {
-      "included": true,
-      "rate": 0.19,
-      "basis": "configured_flat_rate"
-    },
-    "engineVersion": "catalog-commercial-v2.0.0"
+    "status": "unavailable",
+    "reason": "invalid_base_price"
   },
   "availability": {
     "availableQuantity": 4,

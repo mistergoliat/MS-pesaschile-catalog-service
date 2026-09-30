@@ -3,23 +3,34 @@
   "$id": "https://pesaschile.cl/contracts/catalog/v2/catalog-v2.schema.json",
   "title": "Catalog commercial contract v2",
   "schemaVersion": 1,
-  "description": "The executable source of truth is src/domain/catalog/v2/contracts.ts.",
+  "description": "Interchange reference. The executable source of truth is src/domain/catalog/v2/contracts.ts; fixtures/ are generated from the real service and pinned by fixtures/MANIFEST.json.",
+  "identity": {
+    "productKey": "PRODUCT identity: search results, product context, frequentlyBoughtTogether items, variant_required answers. Never a sellable item when the product has variants.",
+    "itemKey": "SELLABLE ITEM identity: only facts.sellableItem, facts.variantOptions[] and the item context emit it. P{id} only for a product without variants; P{id}-V{variantId} for a variant.",
+    "opaque": "Consumers never parse either key."
+  },
   "$defs": {
     "itemKey": { "type": "string", "pattern": "^P[0-9]+(?:-V[0-9]+)?$" },
     "productKey": { "type": "string", "pattern": "^P[0-9]+$" },
     "money": { "type": "object", "required": ["amount", "currency"], "additionalProperties": false, "properties": { "amount": { "type": "integer", "minimum": 0 }, "currency": { "const": "CLP" } } },
-    "freshness": { "type": "object", "required": ["asOf", "cache", "validUntil"], "additionalProperties": false, "properties": { "asOf": { "type": "string", "format": "date-time" }, "cache": { "type": "object", "required": ["hit", "ageMs"], "additionalProperties": false, "properties": { "hit": { "type": "boolean" }, "ageMs": { "type": "integer", "minimum": 0 } } }, "validUntil": { "type": ["string", "null"], "format": "date-time" } } },
+    "freshness": { "type": "object", "required": ["asOf", "cache", "validUntil"], "additionalProperties": false, "properties": { "asOf": { "type": "string", "format": "date-time" }, "cache": { "type": "object", "required": ["hit", "ageMs"], "additionalProperties": false, "properties": { "hit": { "type": "boolean" }, "ageMs": { "type": "integer", "minimum": 0 } } }, "validUntil": { "type": ["string", "null"], "format": "date-time", "description": "Until when the owner vouches for the answer: asOf + 15 s, or earlier when an applied promotion ends earlier." } } },
     "sellability": { "enum": ["sellable", "backorder", "not_sellable", "check_with_staff"] },
-    "reason": { "enum": ["in_stock", "backorder_allowed", "inactive", "not_listed", "not_orderable", "out_of_stock", "stock_unknown", "variant_required", "backorder_policy_unknown"] }
+    "reason": { "enum": ["in_stock", "backorder_allowed", "inactive", "not_listed", "not_orderable", "out_of_stock", "stock_unknown", "variant_required", "backorder_policy_unknown"] },
+    "textBounds": { "description": "name/category/attribute/feature name 1..128, sku 1..64, brand 1..64, feature value 1..255, shortDescription <= 600, specifications <= 40, variantOptions <= 100, variant attributes <= 10." }
   },
   "endpoints": {
-    "search": { "method": "POST", "path": "/v2/catalog/search", "request": "CatalogSearchRequest", "response": "CatalogSearchResponse" },
-    "productContext": { "method": "GET", "path": "/v2/catalog/products/{productKey}/context", "response": "ProductContextResponse" },
-    "itemContext": { "method": "GET", "path": "/v2/catalog/items/{itemKey}/context", "response": "ItemContextResponse" }
+    "search": { "method": "POST", "path": "/v2/catalog/search", "request": "CatalogSearchRequest", "response": "CatalogSearchResponse (product-level: results[].productKey)" },
+    "productContext": { "method": "GET", "path": "/v2/catalog/products/{productKey}/context", "response": "ProductContextResponse: found | not_found(productKey)" },
+    "itemContext": { "method": "GET", "path": "/v2/catalog/items/{itemKey}/context?quantity=1..99", "response": "ItemContextResponse: found | not_found(itemKey) | variant_required(itemKey, productKey)" }
   },
   "failureSemantics": {
+    "body": "{ error: { code (lowercase), message, correlationId, retryable? } }",
     "400": "invalid_request",
+    "401": { "code": "unauthorized", "retryable": false },
+    "429": { "code": "rate_limited", "retryable": true },
+    "500": "contract_output_invalid (retryable false) | catalog_query_failed | internal_error",
     "503": { "code": "catalog_source_unavailable", "retryable": true },
-    "429": "rate_limited"
-  }
+    "notFound": "An unknown key is a 200 answer (status not_found), never an HTTP 404."
+  },
+  "additiveEvolution": "schemaVersion changes only on a breaking change. New optional fields may be added within schemaVersion 1; consumers must tolerate unknown fields and reject missing or mistyped known ones."
 }

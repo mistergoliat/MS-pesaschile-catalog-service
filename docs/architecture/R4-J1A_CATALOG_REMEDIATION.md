@@ -202,3 +202,27 @@ La implementación quedó publicada en `main` mediante el commit `7097db2` y el 
 ## 13. Confirmación
 
 **catalog-service now owns all Catalog commercial repair logic required by R4; R4 does not need to interpret PrestaShop semantics.**
+
+## 14. J1C outcome (2026-09-29, sin commit)
+
+Convergencia con el consumidor R4 (`R4-agent-platform/docs/architecture/R4-J1C_CATALOG_CONTRACT_CONVERGENCE.md`).
+La confirmación de §13 **no era cierta en J1A**: al ejecutar el lector v2 contra una base con el
+esquema real de PrestaShop, los tres endpoints v2 respondían 500 siempre. Correcciones del owner:
+
+| Fix | Antes | Después |
+|---|---|---|
+| Identidad | búsqueda, contexto de producto y FBT emitían `itemKey = P{id}` también para productos con variantes | `productKey` + `ref{productId}` a nivel producto; `itemKey` sólo en `facts.sellableItem`, `facts.variantOptions[]` (con `ref{productId, variantId}`) e item context |
+| Item context de `P{id}` con variantes | `not_found` (rama `requireVariant` muerta) | `status: 'variant_required'` con `productKey` |
+| Precio de producto | `derived.pricing` del variante más barato, sin `exact`/`from` | `derived.priceSummary {kind, finalGross, regularGross, discounted}`; `availability.sellableVariants` |
+| SQL features | `fv.custom_value` (columna inexistente) ⇒ 500 | sólo `feature_value_lang.value` |
+| SQL búsqueda | `ESCAPE '\'` ⇒ error de sintaxis con `sql_mode` por defecto | escape `!` (válido en ambos modos) |
+| Promociones ilimitadas | fecha cero ⇒ Date inválida ⇒ promoción ignorada | `NULLIF(... '0000-00-00 00:00:00')` ⇒ ventana abierta |
+| Salida | no validada | cada respuesta v2 se valida contra el esquema; si no, `500 contract_output_invalid` |
+| Errores v2 | 401 `UNAUTHORIZED` | códigos en minúsculas + `retryable` |
+| Cotas de texto | sin cotas | declaradas según columnas PS (128/64/255; variantOptions ≤ 100) |
+| Fixtures | escritas a mano | generadas por el servicio real (`tests/support/catalogV2FixtureScenarios.ts`), verificadas por `tests/contract/catalogV2Fixtures.contract.test.ts`, fijadas por hash en `fixtures/MANIFEST.json` (24 fixtures, incluye 400/401/429/503) |
+
+Nuevos artefactos: `scripts/local-contract-db/` (base sintética local), `docs/audits/r4-j1c-production-unknowns.sql`
+(consultas read-only; B1 esquema, B7 zona horaria y B8 cotas son nuevos y bloqueantes).
+Decisiones abiertas del owner: OD-1 base del precio "desde" (hoy incluye variantes sin stock), OD-2
+base del `discountValue` de tipo `amount`, OD-3 ventana de frescura (15 s).

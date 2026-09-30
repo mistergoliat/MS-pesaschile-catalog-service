@@ -1,35 +1,30 @@
 {
   "schemaVersion": 1,
   "status": "found",
-  "productKey": "P10",
+  "productKey": "P41",
   "ref": {
-    "productId": "10"
+    "productId": "41"
   },
   "facts": {
-    "name": "Barra olímpica",
-    "sku": "BAR-10",
-    "shortDescription": "Barra comercial",
+    "name": "Barra oculta",
+    "sku": "HID-41",
+    "shortDescription": null,
     "category": {
       "id": "3",
       "name": "Barras"
     },
     "brand": null,
-    "weightKg": 20,
-    "specifications": [
-      {
-        "name": "Largo",
-        "value": "220 cm"
-      }
-    ],
+    "weightKg": null,
+    "specifications": [],
     "status": {
       "active": true,
-      "listed": true,
+      "listed": false,
       "orderable": true
     },
     "sellableItem": {
-      "itemKey": "P10",
+      "itemKey": "P41",
       "ref": {
-        "productId": "10",
+        "productId": "41",
         "variantId": null
       }
     },
@@ -53,12 +48,12 @@
       "discounted": false
     },
     "availability": {
-      "sellability": "sellable",
-      "reason": "in_stock",
+      "sellability": "not_sellable",
+      "reason": "not_listed",
       "sellableVariants": null,
       "leadTime": null
     },
-    "publicUrl": "https://pesaschile.cl/categories/10-barra-olimpica.html"
+    "publicUrl": "https://pesaschile.cl/categories/41-producto-41.html"
   },
   "inferred": {
     "frequentlyBoughtTogether": {

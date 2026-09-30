@@ -50,8 +50,9 @@ describe('CatalogContractService', () => {
 
     expect(productContext.status).toBe('found');
     if (productContext.status === 'found') {
-      expect(productContext.itemKey).toBe('P10');
-      expect(productContext.ref).toEqual({ productId: '10', variantId: null });
+      expect(productContext.productKey).toBe('P10');
+      expect(productContext.ref).toEqual({ productId: '10' });
+      expect(productContext.facts.sellableItem).toEqual({ itemKey: 'P10', ref: { productId: '10', variantId: null } });
       expect(productContext.facts.sku).toBe('BAR-10');
     }
     expect(itemContext.status).toBe('found');
@@ -83,9 +84,11 @@ describe('CatalogContractService', () => {
     expect(productContext.status).toBe('found');
     if (productContext.status === 'found') {
       expect(productContext.facts.variantOptions[0]?.itemKey).toBe('P20-V7');
+      expect(productContext.facts.variantOptions[0]?.ref).toEqual({ productId: '20', variantId: '7' });
+      expect(productContext.facts.sellableItem).toBeNull();
       expect(productContext.facts.stock.scope).toBe('product_total');
     }
-    expect(itemContext.status).toBe('not_found');
+    expect(itemContext).toEqual({ schemaVersion: 1, status: 'variant_required', itemKey: 'P20', productKey: 'P20' });
     expect(variantContext.status).toBe('found');
     if (variantContext.status === 'found') expect(variantContext.ref.variantId).toBe('7');
   });
@@ -151,7 +154,7 @@ describe('CatalogContractService', () => {
     const result = await service.search({ query: 'barra', filters: { sellableOnly: false }, limit: 1 });
 
     expect(result.results).toHaveLength(1);
-    expect(result.results[0]?.itemKey).toBe('P31');
+    expect(result.results[0]?.productKey).toBe('P31');
     expect(result.completeness).toEqual({ totalMatches: 1, truncated: false });
     expect(catalogSearchResponseSchema.safeParse(result).success).toBe(true);
   });

@@ -1,17 +1,56 @@
 {
   "schemaVersion": 1,
-  "results": [{
-    "itemKey": "P10",
-    "ref": { "productId": "10", "variantId": null },
-    "name": "Barra olímpica",
-    "sku": "BAR-10",
-    "category": { "id": "3", "name": "Barras" },
-    "variants": { "count": 0, "requiresSelection": false },
-    "priceSummary": { "kind": "exact", "finalGross": { "amount": 119000, "currency": "CLP" }, "regularGross": { "amount": 119000, "currency": "CLP" }, "discounted": false },
-    "availabilitySummary": { "sellability": "sellable", "reason": "in_stock", "sellableVariants": null },
-    "match": { "type": "exact_reference", "matchedTokens": 1, "totalTokens": 1 }
-  }],
-  "completeness": { "totalMatches": 1, "truncated": false },
+  "results": [
+    {
+      "productKey": "P10",
+      "ref": {
+        "productId": "10"
+      },
+      "name": "Barra olímpica",
+      "sku": "BAR-10",
+      "category": {
+        "id": "3",
+        "name": "Barras"
+      },
+      "variants": {
+        "count": 0,
+        "requiresSelection": false
+      },
+      "priceSummary": {
+        "kind": "exact",
+        "finalGross": {
+          "amount": 119000,
+          "currency": "CLP"
+        },
+        "regularGross": {
+          "amount": 119000,
+          "currency": "CLP"
+        },
+        "discounted": false
+      },
+      "availabilitySummary": {
+        "sellability": "sellable",
+        "reason": "in_stock",
+        "sellableVariants": null
+      },
+      "match": {
+        "type": "exact_reference",
+        "matchedTokens": 0,
+        "totalTokens": 1
+      }
+    }
+  ],
+  "completeness": {
+    "totalMatches": 1,
+    "truncated": false
+  },
   "searchMode": "lexical",
-  "freshness": { "asOf": "2026-09-29T12:00:00.000Z", "cache": { "hit": false, "ageMs": 0 }, "validUntil": "2026-09-29T12:00:15.000Z" }
+  "freshness": {
+    "asOf": "2026-09-29T12:00:00.000Z",
+    "cache": {
+      "hit": false,
+      "ageMs": 0
+    },
+    "validUntil": "2026-09-29T12:00:15.000Z"
+  }
 }

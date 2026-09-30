@@ -12,7 +12,7 @@ import {
   type PriceResult,
 } from '../../../domain/catalog/v2/commercialEngine.js';
 import type {
-  CatalogItemRef,
+  CatalogProductRef,
   CatalogSearchRequest,
   CatalogSearchResponse,
   CatalogV2DataReader,
@@ -98,12 +98,12 @@ export class CatalogContractService {
     if (cached) return this.withFreshness(cached.value, cached.asOf, true);
     const parsed = parseCatalogItemKey(input.productKey);
     if (!parsed || parsed.variantId !== null) {
-      return { schemaVersion: 1, status: 'not_found', itemKey: input.productKey };
+      return { schemaVersion: 1, status: 'not_found', productKey: input.productKey };
     }
     const data = await this.dependencies.reader.readProducts({ productIds: [parsed.productId] });
     const product = data.products.find((candidate) => candidate.productId === parsed.productId);
     if (!product) {
-      return { schemaVersion: 1, status: 'not_found', itemKey: input.productKey };
+      return { schemaVersion: 1, status: 'not_found', productKey: input.productKey };
     }
     const value = this.buildProductContext(product, input.quantity, data.asOf);
     this.setCached(key, value, data.asOf);
@@ -121,13 +121,19 @@ export class CatalogContractService {
     if (!product) return { schemaVersion: 1, status: 'not_found', itemKey: input.itemKey };
 
     const hasVariants = product.variants.some((variant) => variant.combinationId > 0);
+    // P{id} of a product WITH variants is a productKey, never a sellable item:
+    // the owner says so explicitly instead of picking a variant or answering not_found.
+    if (hasVariants && parsed.variantId === null) {
+      const value: ItemContextResponse = { schemaVersion: 1, status: 'variant_required', itemKey: input.itemKey, productKey: buildProductKey(product.productId) };
+      this.setCached(key, value, data.asOf);
+      return value;
+    }
     const variant = parsed.variantId === null
-      ? (hasVariants ? null : product.variants.find((candidate) => candidate.combinationId === 0) ?? null)
-      : product.variants.find((candidate) => candidate.combinationId === parsed.variantId) ?? null;
+      ? product.variants.find((candidate) => candidate.combinationId === 0) ?? null
+      : product.variants.find((candidate) => candidate.combinationId === parsed.variantId && candidate.combinationId > 0) ?? null;
     if (!variant) return { schemaVersion: 1, status: 'not_found', itemKey: input.itemKey };
 
-    const actualItemKey = buildItemKey(product.productId, hasVariants ? parsed.variantId : null);
-    const value = this.buildItemContext(product, variant, actualItemKey, input.quantity, data.asOf, hasVariants && parsed.variantId === null);
+    const value = this.buildItemContext(product, variant, buildItemKey(product.productId, hasVariants ? variant.combinationId : null), input.quantity, data.asOf);
     this.setCached(key, value, data.asOf);
     return value;
   }
@@ -170,8 +176,8 @@ export class CatalogContractService {
     return {
       rank: { item: searchItem, signals: rank },
       result: {
-        itemKey: buildProductKey(product.productId),
-        ref: { productId: String(product.productId), variantId: null } satisfies CatalogItemRef,
+        productKey: buildProductKey(product.productId),
+        ref: { productId: String(product.productId) } satisfies CatalogProductRef,
         name: product.name,
         sku: product.sku,
         category: product.category,
@@ -198,12 +204,14 @@ export class CatalogContractService {
     const pricedVariants = product.variants
       .map((variant) => calculatePrice({ product, variant, specificPrices: product.specificPrices, context, now }))
       .filter((price): price is PriceResult => price !== null);
-    const price = bestPrice(pricedVariants);
-    const availability = chooseBestSellability(product.variants.map((variant) => deriveSellability({
+    const priceSummary = minPrice(pricedVariants, hasVariants);
+    const variantAvailability = product.variants.map((variant) => deriveSellability({
       product: withVariantBackorderPolicy(product, variant),
       availableQuantity: variant.availableQuantity,
       requireVariant: false,
-    })));
+    }));
+    const availability = chooseBestSellability(variantAvailability);
+    const sellableVariants = variantAvailability.filter((item) => item.sellability === 'sellable').length;
     const publicUrl = buildProductPublicUrl({
       baseUrl: this.dependencies.publicBaseUrl ?? config.catalog.publicBaseUrl,
       productId: product.productId,
@@ -213,8 +221,8 @@ export class CatalogContractService {
     const response: ProductContextResponse = {
       schemaVersion: 1,
       status: 'found',
-      itemKey: buildProductKey(product.productId),
-      ref: { productId: String(product.productId), variantId: null },
+      productKey: buildProductKey(product.productId),
+      ref: { productId: String(product.productId) },
       facts: {
         name: product.name,
         sku: product.sku,
@@ -228,8 +236,12 @@ export class CatalogContractService {
           listed: product.listed === true,
           orderable: product.orderable === true,
         },
+        sellableItem: hasVariants
+          ? null
+          : { itemKey: buildItemKey(product.productId, null), ref: { productId: String(product.productId), variantId: null } },
         variantOptions: hasVariants ? product.variants.filter((variant) => variant.combinationId > 0).map((variant) => ({
           itemKey: buildItemKey(product.productId, variant.combinationId),
+          ref: { productId: String(product.productId), variantId: String(variant.combinationId) },
           sku: variant.sku ?? product.sku,
           attributes: variant.attributes,
           isDefault: variant.isDefault,
@@ -240,23 +252,18 @@ export class CatalogContractService {
         },
       },
       derived: {
-        pricing: price
-          ? {
-              status: 'available',
-              basis: { taxIncluded: true, taxRate: context.taxRate, taxBasis: 'configured_flat_rate' },
-              quantity,
-              regularGross: money(price.regularGross),
-              finalGross: money(price.finalGross),
-              promotion: price.promotion,
-              engineVersion: CATALOG_V2_ENGINE_VERSION,
-            }
-          : { status: 'unavailable', reason: hasVariants ? 'variant_required' : 'invalid_base_price' },
-        availability: { sellability: availability.sellability, reason: availability.reason, leadTime: null },
+        priceSummary,
+        availability: {
+          sellability: availability.sellability,
+          reason: availability.reason,
+          sellableVariants: hasVariants ? sellableVariants : null,
+          leadTime: null,
+        },
         publicUrl: publicUrl.available ? publicUrl.canonicalUrl : null,
       },
       inferred,
       provenance: this.provenance(),
-      freshness: this.freshness(asOf, false, price?.promotion?.validUntil ?? null),
+      freshness: this.freshness(asOf, false, earliestPromotionEnd(pricedVariants)),
     };
     return response;
   }
@@ -267,10 +274,9 @@ export class CatalogContractService {
     itemKey: string,
     quantity: number,
     asOf: string,
-    requireVariant: boolean,
   ): ItemContextResponse {
     const context = this.publicContext(quantity);
-    const price = requireVariant ? null : calculatePrice({
+    const price = calculatePrice({
       product,
       variant,
       specificPrices: product.specificPrices,
@@ -280,7 +286,7 @@ export class CatalogContractService {
     const availability = deriveSellability({
       product: withVariantBackorderPolicy(product, variant),
       availableQuantity: variant.availableQuantity,
-      requireVariant,
+      requireVariant: false,
     });
     return {
       schemaVersion: 1,
@@ -307,7 +313,7 @@ export class CatalogContractService {
             tax: { included: true, rate: context.taxRate, basis: 'configured_flat_rate' },
             engineVersion: CATALOG_V2_ENGINE_VERSION,
           }
-        : { status: 'unavailable', reason: requireVariant ? 'variant_required' : 'invalid_base_price' },
+        : { status: 'unavailable', reason: 'invalid_base_price' },
       availability: {
         availableQuantity: variant.availableQuantity,
         sellability: availability.sellability,
@@ -328,7 +334,7 @@ export class CatalogContractService {
         snapshotId: result.snapshotId,
         builtAt: result.builtAt,
         items: result.items.slice(0, 5).map((item) => ({
-          itemKey: buildProductKey(item.productId),
+          productKey: buildProductKey(item.productId),
           name: item.name,
           confidence: item.confidence,
           jointCount: item.jointCount,
@@ -413,6 +419,12 @@ function minPrice(prices: readonly PriceResult[], from: boolean) {
     regularGross: money(selected.regularGross),
     discounted: selected.discounted,
   };
+}
+
+/** A product answer that relies on promotions stops being valid when the first of them ends. */
+function earliestPromotionEnd(prices: readonly PriceResult[]): string | null {
+  const ends = prices.map((price) => price.promotion?.validUntil ?? null).filter((value): value is string => value !== null);
+  return ends.length === 0 ? null : ends.reduce((left, right) => (Date.parse(left) <= Date.parse(right) ? left : right));
 }
 
 function bestPrice(prices: readonly PriceResult[]): PriceResult | null {
