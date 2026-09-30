@@ -14,6 +14,7 @@
     "smoke": "tsx scripts/smoke-runtime.ts",
     "validate:prices": "tsx scripts/validate-price-parity.ts",
     "validate:weight": "tsx scripts/validate-weight-parity.ts",
+    "catalog:projection:extract": "tsx scripts/catalog-v2/extract-projection-input.ts",
     "relationship:snapshot:build": "tsx src/cli/buildRelationshipSnapshot.ts",
     "product:semantic:classify": "tsx scripts/product-semantic-classification/classify-catalog.ts",
     "product:semantic:v2-migration-audit": "tsx scripts/product-semantic-classification/non-product-policy-v2-migration.ts",
