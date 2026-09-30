@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CatalogContractService } from '../../src/application/catalog/v2/catalogContractService.js';
+import { CATALOG_V2_ENGINE_VERSION } from '../../src/domain/catalog/v2/commercialEngine.js';
 import { catalogSearchResponseSchema, itemContextResponseSchema, productContextResponseSchema, type CatalogV2DataReader, type CatalogV2Product } from '../../src/domain/catalog/v2/contracts.js';
 
 function product(overrides: Partial<CatalogV2Product> = {}): CatalogV2Product {
@@ -120,7 +121,8 @@ describe('CatalogContractService', () => {
     if (result.status === 'found' && result.pricing.status === 'available') {
       expect(result.pricing.regularGross.amount).toBe(119000);
       expect(result.pricing.finalGross.amount).toBe(107100);
-      expect(result.pricing.engineVersion).toBe('catalog-commercial-v2.0.0');
+      expect(result.pricing.engineVersion).toBe(CATALOG_V2_ENGINE_VERSION);
+      expect(result.pricing.promotion).toEqual({ type: 'amount', percentOff: null, amountOffGross: { amount: 11900, currency: 'CLP' }, validUntil: null });
     }
     expect(itemContextResponseSchema.safeParse(result).success).toBe(true);
   });

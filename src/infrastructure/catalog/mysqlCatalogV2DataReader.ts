@@ -6,8 +6,10 @@ import type {
   CatalogV2Variant,
 } from '../../domain/catalog/v2/contracts.js';
 import { DISCOVERY_EXCLUDED_PRODUCT_IDS } from '../../domain/catalog/discoveryExclusionPolicy.js';
-import { normalizeCatalogSearchText } from '../../domain/catalog/searchTextNormalization.js';
+import { selectMeaningfulCategory } from '../../domain/catalog/v2/meaningfulCategory.js';
+import { significantTokens, sqlLikeFragments } from '../../domain/catalog/v2/nominalSearch.js';
 import { config } from '../../shared/config.js';
+import { wallTimeToIso } from '../../shared/zonedTime.js';
 import { stripHtml } from '../../shared/html.js';
 import { runQuery } from '../database/queries.js';
 
@@ -23,9 +25,14 @@ type ProductRow = RowDataPacket & {
   listed: number | null;
   visibility: string | null;
   orderable: number | null;
-  categoryId: number | null;
-  categoryName: string | null;
   brand: string | null;
+};
+
+type CategoryRow = RowDataPacket & {
+  productId: number;
+  categoryId: number;
+  categoryName: string | null;
+  levelDepth: number | null;
 };
 
 type VariantRow = RowDataPacket & {
@@ -72,8 +79,8 @@ type SpecificPriceRow = RowDataPacket & {
   reduction: number;
   reduction_tax: number;
   reduction_type: string;
-  from: string | Date | null;
-  to: string | Date | null;
+  from: string | null;
+  to: string | null;
 };
 
 type ConfigurationRow = RowDataPacket & { value: string | null };
@@ -101,6 +108,7 @@ export class MySqlCatalogV2DataReader implements CatalogV2DataReader {
     private readonly scope = {
       shopId: config.prestashop.shopId,
       langId: config.prestashop.langId,
+      timeZone: config.prestashop.timeZone,
     },
     private readonly timeoutMs = config.db.queryTimeoutMs,
   ) {}
@@ -110,20 +118,29 @@ export class MySqlCatalogV2DataReader implements CatalogV2DataReader {
     const productIds = input.productIds?.length
       ? [...new Set(input.productIds)].filter((id) => Number.isSafeInteger(id) && id > 0)
       : undefined;
-    const normalizedQuery = input.query ? normalizeCatalogSearchText(input.query) : null;
-    if (!productIds?.length && !normalizedQuery) return { products: [], asOf };
+    const query = input.query?.trim() || null;
+    if (!productIds?.length && !query) return { products: [], asOf };
 
-    const productRows = await this.readProductRows(productIds, normalizedQuery);
+    const productRows = await this.readProductRows(productIds, query);
     const resolvedProductIds = productRows.map((row) => Number(row.productId));
     if (resolvedProductIds.length === 0) return { products: [], asOf };
-    const [variantRows, simpleStockRows, attributeRows, specificationRows, specificPriceRows, globalBackorder] = await Promise.all([
+    const [variantRows, simpleStockRows, attributeRows, specificationRows, specificPriceRows, globalBackorder, categoryRows] = await Promise.all([
       this.readVariants(resolvedProductIds),
       this.readSimpleStocks(resolvedProductIds),
       this.readAttributes(resolvedProductIds),
       this.readSpecifications(resolvedProductIds),
       this.readSpecificPrices(resolvedProductIds),
       this.readGlobalBackorderPolicy(),
+      this.readCategories(resolvedProductIds),
     ]);
+
+    const categoriesByProduct = new Map<number, Array<{ id: number; name: string; levelDepth: number | null }>>();
+    for (const row of categoryRows) {
+      if (!row.categoryName) continue;
+      const list = categoriesByProduct.get(Number(row.productId)) ?? [];
+      list.push({ id: Number(row.categoryId), name: String(row.categoryName), levelDepth: row.levelDepth === null ? null : Number(row.levelDepth) });
+      categoriesByProduct.set(Number(row.productId), list);
+    }
 
     const attributesByVariant = new Map<number, Array<{ group: string; value: string }>>();
     for (const row of attributeRows) {
@@ -167,8 +184,9 @@ export class MySqlCatalogV2DataReader implements CatalogV2DataReader {
         reduction: Number(row.reduction),
         reductionTax: Number(row.reduction_tax),
         reductionType: String(row.reduction_type),
-        from: row.from,
-        to: row.to,
+        // Shop-local wall-clock time -> instant (B7: PRESTASHOP_TIMEZONE = PS_TIMEZONE).
+        from: wallTimeToIso(row.from, this.scope.timeZone),
+        to: wallTimeToIso(row.to, this.scope.timeZone),
       });
       pricesByProduct.set(Number(row.id_product), list);
     }
@@ -209,9 +227,7 @@ export class MySqlCatalogV2DataReader implements CatalogV2DataReader {
         brand: row.brand?.trim() || null,
         weightKg: row.weightKg === null ? null : Number(row.weightKg),
         linkRewrite: row.linkRewrite?.trim() || null,
-        category: row.categoryId === null || !row.categoryName
-          ? null
-          : { id: String(row.categoryId), name: String(row.categoryName) },
+        category: selectMeaningfulCategory(categoriesByProduct.get(productId) ?? []),
         basePriceNet: row.basePriceNet === null ? null : Number(row.basePriceNet),
         active: row.active === null ? null : Boolean(row.active),
         listed: row.visibility === null ? null : String(row.visibility) !== 'none',
@@ -235,20 +251,32 @@ export class MySqlCatalogV2DataReader implements CatalogV2DataReader {
       values.push(...productIds);
     }
     if (query) {
+      // Candidate retrieval (J1D-CAT-01): exact reference/name, the raw phrase,
+      // OR every significant token in the name, OR every significant token in
+      // the short description. A superset of the nominal match; the service
+      // then matches and ranks it (nominalSearch.ts).
       const like = `%${escapeLike(query)}%`;
+      const tokenLikes = significantTokens(query).map((token) => sqlLikeFragments(token).map((fragment) => `%${escapeLike(fragment)}%`));
+      const allTokensIn = (column: string) => tokenLikes
+        .map((fragments) => `(${fragments.map(() => `${column} LIKE ? ESCAPE '${LIKE_ESCAPE}'`).join(' OR ')})`)
+        .join(' AND ');
+      const tokenBranches = tokenLikes.length === 0
+        ? ''
+        : `
+        OR (${allTokensIn('pl.name')})
+        OR (${allTokensIn('pl.description_short')})`;
       conditions.push(`(
         LOWER(COALESCE(p.reference, '')) = LOWER(?)
         OR LOWER(COALESCE(pl.name, '')) = LOWER(?)
         OR pl.name LIKE ? ESCAPE '${LIKE_ESCAPE}'
         OR pl.description_short LIKE ? ESCAPE '${LIKE_ESCAPE}'
-        OR pl.description LIKE ? ESCAPE '${LIKE_ESCAPE}'
         OR EXISTS (
           SELECT 1 FROM ${table('product_attribute')} pa_search
           WHERE pa_search.id_product = p.id_product
             AND LOWER(COALESCE(pa_search.reference, '')) = LOWER(?)
-        )
+        )${tokenBranches}
       )`);
-      values.push(query, query, like, like, like, query);
+      values.push(query, query, like, like, query, ...tokenLikes.flat(), ...tokenLikes.flat());
     }
 
     return runQuery<ProductRow[]>(
@@ -266,8 +294,6 @@ export class MySqlCatalogV2DataReader implements CatalogV2DataReader {
           COALESCE(ps.active, p.active) AS active,
           COALESCE(ps.visibility, 'both') AS visibility,
           COALESCE(ps.available_for_order, p.available_for_order) AS orderable,
-          p.id_category_default AS categoryId,
-          cl.name AS categoryName,
           m.name AS brand,
           CASE WHEN COALESCE(ps.visibility, 'both') = 'none' THEN 0 ELSE 1 END AS listed
         FROM ${table('product')} p
@@ -278,15 +304,11 @@ export class MySqlCatalogV2DataReader implements CatalogV2DataReader {
         LEFT JOIN ${table('product_shop')} ps
           ON ps.id_product = p.id_product
           AND ps.id_shop = ?
-        LEFT JOIN ${table('category_lang')} cl
-          ON cl.id_category = p.id_category_default
-          AND cl.id_shop = ?
-          AND cl.id_lang = ?
         LEFT JOIN ${table('manufacturer')} m
           ON m.id_manufacturer = p.id_manufacturer
         WHERE ${conditions.join('\n          AND ')}
       `,
-      [this.scope.shopId, this.scope.langId, this.scope.shopId, this.scope.shopId, this.scope.langId, ...values],
+      [this.scope.shopId, this.scope.langId, this.scope.shopId, ...values],
       this.timeoutMs,
     );
   }
@@ -436,12 +458,40 @@ export class MySqlCatalogV2DataReader implements CatalogV2DataReader {
           sp.reduction_type,
           -- PrestaShop stores an unbounded window as the zero datetime; the
           -- driver cannot represent it, so it is mapped to NULL (= unbounded) here.
-          NULLIF(sp.\`from\`, '0000-00-00 00:00:00') AS \`from\`,
-          NULLIF(sp.\`to\`, '0000-00-00 00:00:00') AS \`to\`
+          -- Read as text: the value is shop-local wall-clock time, converted
+          -- with the configured zone, never reinterpreted by the driver.
+          CAST(NULLIF(sp.\`from\`, '0000-00-00 00:00:00') AS CHAR) AS \`from\`,
+          CAST(NULLIF(sp.\`to\`, '0000-00-00 00:00:00') AS CHAR) AS \`to\`
         FROM ${table('specific_price')} sp
         ${conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''}
       `,
       values,
+      this.timeoutMs,
+    );
+  }
+
+  private async readCategories(productIds: readonly number[]): Promise<CategoryRow[]> {
+    return runQuery<CategoryRow[]>(
+      this.pool,
+      'catalog-v2-categories',
+      `
+        SELECT
+          cp.id_product AS productId,
+          c.id_category AS categoryId,
+          cl.name AS categoryName,
+          c.level_depth AS levelDepth
+        FROM ${table('category_product')} cp
+        INNER JOIN ${table('category')} c
+          ON c.id_category = cp.id_category
+          AND c.active = 1
+        INNER JOIN ${table('category_lang')} cl
+          ON cl.id_category = c.id_category
+          AND cl.id_shop = ?
+          AND cl.id_lang = ?
+        WHERE cp.id_product IN (${placeholders(productIds)})
+        ORDER BY cp.id_product ASC, c.id_category ASC
+      `,
+      [this.scope.shopId, this.scope.langId, ...productIds],
       this.timeoutMs,
     );
   }

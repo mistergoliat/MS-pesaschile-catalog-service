@@ -47,7 +47,8 @@ describe('MySqlCatalogV2DataReader SQL', () => {
     const { pool, queries } = recordingPool();
     await new MySqlCatalogV2DataReader(pool as never).readProducts({ productIds: [10] });
     const prices = queries.find((q) => q.sql.includes('specific_price'))!;
-    expect(prices.sql).toContain("NULLIF(sp.`from`, '0000-00-00 00:00:00') AS `from`");
-    expect(prices.sql).toContain("NULLIF(sp.`to`, '0000-00-00 00:00:00') AS `to`");
+    // Read as text (shop-local wall-clock time), never reinterpreted by the driver.
+    expect(prices.sql).toContain("CAST(NULLIF(sp.`from`, '0000-00-00 00:00:00') AS CHAR) AS `from`");
+    expect(prices.sql).toContain("CAST(NULLIF(sp.`to`, '0000-00-00 00:00:00') AS CHAR) AS `to`");
   });
 });

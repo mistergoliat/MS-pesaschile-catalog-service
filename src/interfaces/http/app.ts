@@ -51,6 +51,12 @@ export type AppDependencies = {
     database: 'ok' | 'unavailable';
     redis?: 'ok' | 'unavailable';
     relationshipSnapshot?: 'ok' | 'unavailable';
+    capabilities?: {
+      commercialTruth: 'ok' | 'unavailable';
+      relationships: 'ok' | 'unavailable';
+      productSemantics: 'ok' | 'unavailable';
+      trainingSemantics: 'ok' | 'unavailable';
+    };
   }>;
 };
 
@@ -200,14 +206,17 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
       },
     },
   }, async (_request, reply) => {
+    // J1D-CAT-05: only commercial-truth dependencies gate readiness. An
+    // unavailable optional capability (relationships, semantics) is reported
+    // as `degraded` with HTTP 200, so the commercial API stays in rotation.
     const checks = await deps.readyCheck();
-    const databaseUnavailable = checks.database !== 'ok';
-    const redisUnavailable = checks.redis === 'unavailable';
-    const relationshipSnapshotUnavailable = checks.relationshipSnapshot === 'unavailable';
-    if (databaseUnavailable || redisUnavailable || relationshipSnapshotUnavailable) {
-      return reply.code(503).send({ status: 'degraded', checks });
+    if (checks.database !== 'ok' || checks.redis === 'unavailable') {
+      return reply.code(503).send({ status: 'unavailable', checks });
     }
-    return reply.send({ status: 'ok', checks });
+    const optional = checks.capabilities
+      ? [checks.capabilities.relationships, checks.capabilities.productSemantics, checks.capabilities.trainingSemantics]
+      : [checks.relationshipSnapshot];
+    return reply.send({ status: optional.includes('unavailable') ? 'degraded' : 'ok', checks });
   });
 
   app.addHook('preHandler', async (request) => {

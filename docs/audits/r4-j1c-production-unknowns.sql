@@ -1,4 +1,8 @@
 -- R4-J1C — Production UNKNOWN plan for the Catalog v2 contract (READ-ONLY).
+-- R4-J1D additions are marked [J1D]: the reader now also uses ps_category /
+-- ps_category_product (meaningful category), reads specific-price windows as
+-- shop-local text (PRESTASHOP_TIMEZONE must equal PS_TIMEZONE) and relies on a
+-- case/accent-insensitive collation for token retrieval (D1 is now BLOCKING).
 --
 -- Run ONLY with explicit authorization, against the PrestaShop database that
 -- catalog-service reads, with a SELECT-only account. Every statement below is
@@ -32,7 +36,10 @@ WHERE TABLE_SCHEMA = DATABASE()
     ('ps_stock_available','quantity'),('ps_stock_available','out_of_stock'),('ps_stock_available','id_shop'),
     ('ps_feature','position'),('ps_feature_lang','name'),('ps_feature_product','id_feature_value'),('ps_feature_value','custom'),('ps_feature_value_lang','value'),
     ('ps_specific_price','reduction_tax'),('ps_specific_price','reduction_type'),('ps_specific_price','from'),('ps_specific_price','to'),('ps_specific_price','id_cart'),
-    ('ps_configuration','name'),('ps_configuration','value'))
+    ('ps_configuration','name'),('ps_configuration','value'),
+    -- [J1D] meaningful category source
+    ('ps_category','id_category'),('ps_category','level_depth'),('ps_category','active'),
+    ('ps_category_product','id_category'),('ps_category_product','id_product'))
 ORDER BY TABLE_NAME, COLUMN_NAME;
 SELECT name, value FROM ps_configuration WHERE name IN ('PS_VERSION_DB', 'PS_INSTALL_VERSION');
 
@@ -101,8 +108,9 @@ WHERE ps.id_shop = 1 AND ps.active = 1
   AND NOT EXISTS (SELECT 1 FROM ps_product_attribute pa WHERE pa.id_product = ps.id_product)
   AND NOT EXISTS (SELECT 1 FROM ps_stock_available sa WHERE sa.id_product = ps.id_product AND sa.id_product_attribute = 0 AND sa.id_shop = 1);
 
--- B7. Datetime semantics: PrestaShop stores shop-local datetimes; the service's pool reads them as UTC
--- (timezone 'Z'). Promotion windows and freshness.validUntil depend on this.
+-- B7. Datetime semantics: PrestaShop stores shop-local datetimes. [J1D] The v2 reader reads specific-price
+-- windows as text and converts them with PRESTASHOP_TIMEZONE (default UTC): deployment must set it to PS_TIMEZONE.
+-- Promotion windows and freshness.validUntil depend on this.
 SELECT @@global.time_zone AS global_tz, @@session.time_zone AS session_tz, NOW() AS db_now, UTC_TIMESTAMP() AS db_utc_now;
 SELECT name, value FROM ps_configuration WHERE name = 'PS_TIMEZONE';
 
@@ -118,11 +126,32 @@ WHERE pl.id_lang = 1 AND pl.id_shop = 1;
 SELECT SUM(fvl.value IS NULL OR TRIM(fvl.value) = '') AS empty_feature_values, MAX(CHAR_LENGTH(fvl.value)) AS max_feature_value_len
 FROM ps_feature_value_lang fvl WHERE fvl.id_lang = 1;
 
+-- B9. [J1D-CAT-02] Meaningful category evidence. The service embeds the audited trust map
+-- (src/domain/catalog/v2/categoryTrustMap.ts, keyed by these production ids).
+-- (a) default category of sellable products (expected: 2 / CATEGORÍAS for the whole catalog):
+SELECT ps.id_category_default, cl.name, COUNT(*) AS products
+FROM ps_product_shop ps
+LEFT JOIN ps_category_lang cl ON cl.id_category = ps.id_category_default AND cl.id_lang = 1 AND cl.id_shop = 1
+WHERE ps.id_shop = 1 AND ps.active = 1 AND ps.visibility <> 'none'
+GROUP BY ps.id_category_default, cl.name ORDER BY products DESC LIMIT 20;
+-- (b) the trust map is still valid: ids of the embedded map that are missing, inactive or renamed in production
+--     (compare the returned names with the map comments; any drift → regenerate the map, rerun gates):
+SELECT c.id_category, c.active, c.level_depth, cl.name
+FROM ps_category c JOIN ps_category_lang cl ON cl.id_category = c.id_category AND cl.id_lang = 1 AND cl.id_shop = 1
+WHERE c.id_category IN (SELECT id_category FROM ps_category_product) ORDER BY c.id_category;
+-- (c) sellable products per number of assigned categories (0 → category null):
+SELECT n_categories, COUNT(*) AS products FROM (
+  SELECT ps.id_product, COUNT(cp.id_category) AS n_categories
+  FROM ps_product_shop ps LEFT JOIN ps_category_product cp ON cp.id_product = ps.id_product
+  WHERE ps.id_shop = 1 AND ps.active = 1 AND ps.visibility <> 'none' GROUP BY ps.id_product
+) x GROUP BY n_categories ORDER BY n_categories;
+
 -- =====================================================================
 -- DIAGNOSTIC / NON-BLOCKING
 -- =====================================================================
 
--- D1. Collation of the searched columns (lexical match behaviour: accents, case).
+-- D1. [J1D: BLOCKING for J1D-CAT-01] Collation of the searched columns. Token retrieval sends
+-- accent-stripped lowercase tokens; it requires a case- AND accent-insensitive collation (*_ci, not *_bin/_as_).
 SELECT TABLE_NAME, COLUMN_NAME, CHARACTER_SET_NAME, COLLATION_NAME
 FROM information_schema.COLUMNS
 WHERE TABLE_SCHEMA = DATABASE()

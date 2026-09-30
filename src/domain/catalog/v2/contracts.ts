@@ -75,11 +75,17 @@ export const catalogSearchRequestSchema = z.object({
 }).strict();
 
 /**
- * Product-level price: `exact` for a product without variants; `from` = the
- * minimum final price over the product's priced variants (sellable or not).
+ * Product-level price (OD-1): `exact` for a product without variants; `from`
+ * = the minimum final price over the product's priced variants.
+ * `basis: offerable` — computed only over units that can be ordered now
+ * (sellability `sellable` or `backorder`); a unit that cannot be ordered never
+ * lowers the advertised price.
+ * `basis: not_offerable` — explicit fallback when NO priced unit is offerable:
+ * the minimum over all priced units, a reference price, never an offer.
  */
 export const catalogPriceSummarySchema = z.object({
   kind: z.enum(['exact', 'from']),
+  basis: z.enum(['offerable', 'not_offerable']),
   finalGross: catalogMoneySchema,
   regularGross: catalogMoneySchema,
   discounted: z.boolean(),
@@ -235,16 +241,26 @@ const itemPricingSchema = z.union([
     regularGross: catalogMoneySchema,
     finalGross: catalogMoneySchema,
     /**
-     * The applied PrestaShop specific price, as stored: `percentage` value is a
-     * fraction (0.1 = 10 %); `amount` value is the raw reduction, whose tax
-     * basis follows the source row. Display-only: the owner's final price is
-     * `finalGross`; consumers never recompute from it.
+     * The applied promotion in normalized terms (OD-2), present only when it
+     * lowers the price: `percentage` → `percentOff` is a fraction (0.1 = 10 %);
+     * `amount` → `amountOffGross` is the unit reduction, TAX INCLUDED, whatever
+     * basis the source used. `regularGross` is the price before the reduction.
+     * Display-only: the owner's price is `finalGross`; consumers never recompute.
      */
-    promotion: z.object({
-      discountType: z.enum(['amount', 'percentage']),
-      discountValue: z.number().nonnegative(),
-      validUntil: z.string().datetime().nullable(),
-    }).strict().nullable(),
+    promotion: z.discriminatedUnion('type', [
+      z.object({
+        type: z.literal('percentage'),
+        percentOff: z.number().gt(0).max(1),
+        amountOffGross: z.null(),
+        validUntil: z.string().datetime().nullable(),
+      }).strict(),
+      z.object({
+        type: z.literal('amount'),
+        percentOff: z.null(),
+        amountOffGross: catalogMoneySchema,
+        validUntil: z.string().datetime().nullable(),
+      }).strict(),
+    ]).nullable(),
     tax: z.object({
       included: z.literal(true),
       rate: z.number().min(0).max(1),

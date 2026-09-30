@@ -5,7 +5,7 @@ import type {
   CatalogV2Variant,
 } from './contracts.js';
 
-export const CATALOG_V2_ENGINE_VERSION = 'catalog-commercial-v2.0.0';
+export const CATALOG_V2_ENGINE_VERSION = 'catalog-commercial-v2.1.0';
 
 export type Sellability = 'sellable' | 'backorder' | 'not_sellable' | 'check_with_staff';
 export type SellabilityReason =
@@ -24,16 +24,32 @@ export type SellabilityResult = {
   reason: SellabilityReason;
 };
 
+/**
+ * OD-2: the promotion is published in normalized commercial terms. An amount
+ * reduction is always tax-included (`amountOffGross`), whatever basis the
+ * source row used; consumers never learn or infer PrestaShop's reduction_tax.
+ */
 export type PriceResult = {
+  /** Unit price before the reduction, tax included (PrestaShop's price without reduction, fixed-price override applied). */
   regularGross: number;
   finalGross: number;
   discounted: boolean;
   promotion: {
-    discountType: 'amount' | 'percentage';
-    discountValue: number;
+    type: 'amount' | 'percentage';
+    /** Fraction (0.1 = 10 %), only for `percentage`. */
+    percentOff: number | null;
+    /** Unit reduction, tax included, only for `amount`. */
+    amountOffGross: number | null;
     validUntil: string | null;
   } | null;
+  /** The earliest scheduled change of this price: the applied row's end or a compatible row's future start. */
+  priceValidUntil: string | null;
 };
+
+/** OD-1: a unit is commercially offerable when it can be ordered now, from stock or on backorder. */
+export function isOfferable(result: SellabilityResult): boolean {
+  return result.sellability === 'sellable' || result.sellability === 'backorder';
+}
 
 export type PublicPriceContext = {
   quantity: number;
@@ -82,21 +98,23 @@ export function deriveSellability(input: {
   return { sellability: 'check_with_staff', reason: 'backorder_policy_unknown' };
 }
 
+function isScopeCompatible(row: CatalogV2SpecificPrice, input: PublicPriceContext & { combinationId: number }): boolean {
+  if (row.cartId !== 0 || row.fromQuantity > input.quantity) return false;
+  if (row.combinationId !== 0 && row.combinationId !== input.combinationId) return false;
+  if (row.shopId !== 0 && row.shopId !== input.shopId) return false;
+  if (row.currencyId !== 0 && row.currencyId !== input.currencyId) return false;
+  if (row.countryId !== 0 && row.countryId !== input.countryId) return false;
+  if (row.groupId !== 0 && row.groupId !== input.customerGroupId) return false;
+  if (row.customerId !== 0 && row.customerId !== input.customerId) return false;
+  return true;
+}
+
 export function selectSpecificPrice(
   rows: readonly CatalogV2SpecificPrice[],
   input: PublicPriceContext & { combinationId: number },
   now: Date,
 ): CatalogV2SpecificPrice | null {
-  const compatible = rows.filter((row) => {
-    if (row.cartId !== 0 || row.fromQuantity > input.quantity) return false;
-    if (row.combinationId !== 0 && row.combinationId !== input.combinationId) return false;
-    if (row.shopId !== 0 && row.shopId !== input.shopId) return false;
-    if (row.currencyId !== 0 && row.currencyId !== input.currencyId) return false;
-    if (row.countryId !== 0 && row.countryId !== input.countryId) return false;
-    if (row.groupId !== 0 && row.groupId !== input.customerGroupId) return false;
-    if (row.customerId !== 0 && row.customerId !== input.customerId) return false;
-    return isActiveDateWindow(row, now);
-  });
+  const compatible = rows.filter((row) => isScopeCompatible(row, input) && isActiveDateWindow(row, now));
 
   return [...compatible].sort((left, right) => {
     const leftScore = specificityScore(left, input);
@@ -148,49 +166,73 @@ export function calculatePrice(input: {
   const baseNet = Number(input.product.basePriceNet ?? Number.NaN) + input.variant.impactPriceNet;
   if (!Number.isFinite(baseNet) || baseNet < 0) return null;
 
-  const selected = selectSpecificPrice(
-    input.specificPrices,
-    { ...input.context, combinationId: input.variant.combinationId },
-    input.now,
-  );
+  const scope = { ...input.context, combinationId: input.variant.combinationId };
+  const selected = selectSpecificPrice(input.specificPrices, scope, input.now);
   const selectedBaseNet = selected && selected.price >= 0
     ? selected.price + input.variant.impactPriceNet
     : baseNet;
-  let finalNet = Decimal.max(selectedBaseNet, 0);
-  const regularGross = toCurrencyInteger(decimal(baseNet).mul(decimal(1).plus(input.context.taxRate)));
+  const taxFactor = decimal(1).plus(input.context.taxRate);
+  // PrestaShop's price "without reduction" already applies a fixed-price
+  // override; only the reduction makes the difference to the final price.
+  const regularNet = Decimal.max(selectedBaseNet, 0);
+  let finalNet = regularNet;
   let promotion: PriceResult['promotion'] = null;
 
   if (selected && Number.isFinite(selected.reduction) && selected.reduction > 0) {
     if (selected.reductionType === 'percentage' && selected.reduction <= 1) {
       finalNet = finalNet.mul(decimal(1).minus(selected.reduction));
       promotion = {
-        discountType: 'percentage',
-        discountValue: selected.reduction,
+        type: 'percentage',
+        percentOff: selected.reduction,
+        amountOffGross: null,
         validUntil: validUntil(selected.to),
       };
     } else if (selected.reductionType === 'amount') {
-      // PrestaShop defines reduction_tax=0 as a tax-excluded amount. This is
-      // deliberately applied in net space; reduction_tax=1 is gross and is
-      // converted back to net before the final tax calculation.
+      // PrestaShop defines reduction_tax=0 as a tax-excluded amount and
+      // reduction_tax=1 as tax-included. It is applied in net space and
+      // published tax-included, so the consumer never sees the source basis.
       const reductionNet = selected.reductionTax === 1
-        ? decimal(selected.reduction).div(decimal(1).plus(input.context.taxRate))
+        ? decimal(selected.reduction).div(taxFactor)
         : decimal(selected.reduction);
       finalNet = finalNet.minus(reductionNet);
       promotion = {
-        discountType: 'amount',
-        discountValue: selected.reduction,
+        type: 'amount',
+        percentOff: null,
+        amountOffGross: toCurrencyInteger(reductionNet.mul(taxFactor)),
         validUntil: validUntil(selected.to),
       };
     }
   }
 
-  const finalGross = toCurrencyInteger(Decimal.max(finalNet, 0).mul(decimal(1).plus(input.context.taxRate)));
+  const regularGross = toCurrencyInteger(regularNet.mul(taxFactor));
+  const finalGross = toCurrencyInteger(Decimal.max(finalNet, 0).mul(taxFactor));
   return {
     regularGross,
     finalGross,
     discounted: finalGross < regularGross,
-    promotion,
+    promotion: finalGross < regularGross ? promotion : null,
+    priceValidUntil: nextPriceChange(input.specificPrices, scope, selected, input.now),
   };
+}
+
+/**
+ * The answer's price holds until the applied row ends or a compatible row
+ * starts, whichever comes first (OD-3: owner validity is never lengthened).
+ */
+function nextPriceChange(
+  rows: readonly CatalogV2SpecificPrice[],
+  scope: PublicPriceContext & { combinationId: number },
+  selected: CatalogV2SpecificPrice | null,
+  now: Date,
+): string | null {
+  const nowMs = now.getTime();
+  const changes = rows
+    .filter((row) => isScopeCompatible(row, scope))
+    .map((row) => dateTime(row.from))
+    .filter((from) => from > nowMs);
+  const selectedEnd = selected ? dateTime(selected.to) : 0;
+  if (selectedEnd > 0) changes.push(selectedEnd);
+  return changes.length === 0 ? null : new Date(Math.min(...changes)).toISOString();
 }
 
 function validUntil(value: string | Date | null): string | null {

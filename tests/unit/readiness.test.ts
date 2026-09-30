@@ -4,6 +4,7 @@ import { collectRuntimeReadinessChecks } from '../../src/shared/readiness.js';
 import { createRepositoryStub } from '../support/fakes.js';
 
 function appWithChecks(checks: { database: 'ok' | 'unavailable'; redis: 'ok' | 'unavailable'; relationshipSnapshot: 'ok' | 'unavailable' }) {
+  // J1D-CAT-05: an optional snapshot never gates readiness.
   return buildApp({
     service: {
       searchProducts: vi.fn(),
@@ -24,7 +25,7 @@ describe('runtime readiness checks', () => {
       relationshipSnapshotReader: { getStatus: () => ({ state: 'ready' as const }) },
     });
 
-    expect(checks).toEqual({
+    expect(checks).toMatchObject({
       database: 'ok',
       redis: 'ok',
       relationshipSnapshot: 'ok',
@@ -39,7 +40,7 @@ describe('runtime readiness checks', () => {
       relationshipSnapshotReader: { getStatus: () => ({ state: 'ready' as const }) },
     });
 
-    expect(checks).toEqual({
+    expect(checks).toMatchObject({
       database: 'unavailable',
       redis: 'ok',
       relationshipSnapshot: 'ok',
@@ -54,7 +55,7 @@ describe('runtime readiness checks', () => {
       relationshipSnapshotReader: { getStatus: () => ({ state: 'ready' as const }) },
     });
 
-    expect(checks).toEqual({
+    expect(checks).toMatchObject({
       database: 'ok',
       redis: 'unavailable',
       relationshipSnapshot: 'ok',
@@ -69,10 +70,11 @@ describe('runtime readiness checks', () => {
       relationshipSnapshotReader: { getStatus: () => ({ state: 'not_loaded' as const }) },
     });
 
-    expect(checks).toEqual({
+    expect(checks).toMatchObject({
       database: 'ok',
       redis: 'ok',
       relationshipSnapshot: 'unavailable',
+      capabilities: { commercialTruth: 'ok', relationships: 'unavailable' },
     });
   });
 
@@ -84,10 +86,11 @@ describe('runtime readiness checks', () => {
       relationshipSnapshotReader: { getStatus: () => ({ state: 'not_loaded' as const }) },
     });
 
-    expect(checks).toEqual({
+    expect(checks).toMatchObject({
       database: 'unavailable',
       redis: 'unavailable',
       relationshipSnapshot: 'unavailable',
+      capabilities: { commercialTruth: 'unavailable', relationships: 'unavailable' },
     });
   });
 
@@ -100,7 +103,7 @@ describe('runtime readiness checks', () => {
       relationshipSnapshotReader: { getStatus: () => ({ state: 'ready' as const }) },
     });
 
-    expect(checks).toEqual({
+    expect(checks).toMatchObject({
       database: 'ok',
       redis: 'ok',
       relationshipSnapshot: 'ok',
@@ -119,17 +122,26 @@ describe('/health/ready', () => {
     await app.close();
   });
 
-  const degradedCases: Array<{ database: 'ok' | 'unavailable'; redis: 'ok' | 'unavailable'; relationshipSnapshot: 'ok' | 'unavailable' }> = [
+  const unavailableCases: Array<{ database: 'ok' | 'unavailable'; redis: 'ok' | 'unavailable'; relationshipSnapshot: 'ok' | 'unavailable' }> = [
     { database: 'unavailable', redis: 'ok', relationshipSnapshot: 'ok' },
     { database: 'ok', redis: 'unavailable', relationshipSnapshot: 'ok' },
-    { database: 'ok', redis: 'ok', relationshipSnapshot: 'unavailable' },
   ];
 
-  it.each(degradedCases)('returns 503 when any hard dependency is unavailable: %j', async (checks) => {
+  it.each(unavailableCases)('returns 503 when a commercial-truth dependency is unavailable: %j', async (checks) => {
     const app = await appWithChecks(checks);
     const response = await app.inject({ method: 'GET', url: '/health/ready' });
 
     expect(response.statusCode).toBe(503);
+    expect(response.json()).toMatchObject({ status: 'unavailable', checks });
+    await app.close();
+  });
+
+  it('stays ready (200, degraded) when only the optional relationship snapshot is unavailable', async () => {
+    const checks = { database: 'ok' as const, redis: 'ok' as const, relationshipSnapshot: 'unavailable' as const };
+    const app = await appWithChecks(checks);
+    const response = await app.inject({ method: 'GET', url: '/health/ready' });
+
+    expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ status: 'degraded', checks });
     await app.close();
   });

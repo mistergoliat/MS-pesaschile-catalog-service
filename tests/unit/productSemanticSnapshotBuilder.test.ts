@@ -51,8 +51,8 @@ describe('DefaultProductSemanticSnapshotBuilder', () => {
       ...snapshot,
       records: snapshot.records.map(({ catalogPresence: _catalogPresence, ...record }) => record),
     };
-    const parsed = productSemanticSnapshotSchema.parse(legacySnapshot);
-    expect(parsed.records.every((record) => record.catalogPresence === 'historical_order_detail_only')).toBe(true);
+    // J1D-CAT-04: presence is never invented; the legacy snapshot is incompatible as a whole.
+    expect(productSemanticSnapshotSchema.safeParse(legacySnapshot).success).toBe(false);
   });
 
   it('same semantic content produces the same snapshotId even when builtAt changes', () => {

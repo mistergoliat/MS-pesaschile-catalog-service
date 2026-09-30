@@ -1,0 +1,53 @@
+{
+  "goldSetVersion": "catalog-search-gold-v0",
+  "surface": "POST /v2/catalog/search (nominal lexical search)",
+  "createdFor": "R4-J1D J1D-CAT-01",
+  "source": {
+    "offline": "docs/audits/product-intelligence-exploration/inputs/product_catalog_exploration(2).csv (production export 2026-08-29; current_catalog, active, listed)",
+    "note": "Product ids and references are PRODUCTION PrestaShop ids. Expected sets were frozen from independent name regexes over the export, not from the search implementation."
+  },
+  "limit": 10,
+  "classes": {
+    "exact_sku": { "gate": "hard", "metric": "hit@1", "threshold": 1.0 },
+    "product_name": { "gate": "hard", "metric": "hit@1", "threshold": 1.0 },
+    "multi_token_nominal": { "gate": "hard", "metric": "recall@limit + exclusions", "threshold": 1.0 },
+    "unit_bearing": { "gate": "hard", "metric": "recall@limit + hit@1 + exclusions", "threshold": 1.0 },
+    "supported_synonyms": { "gate": "hard", "metric": "hit@1 / recall@limit", "threshold": 1.0, "supported": ["case", "accents", "unit spellings: 20 kg / 20kg / 20kgs / 20 kilos", "singular/plural (trailing s)"] },
+    "typo": { "gate": "measured", "metric": "hit@1 / recall@limit", "note": "No fuzzy matching in v0 (nominal search). Reported, never gating." }
+  },
+  "cases": [
+    { "id": "sku-kh20", "class": "exact_sku", "query": "KH20", "top1": [186] },
+    { "id": "sku-kh20-lower", "class": "exact_sku", "query": "kh20", "top1": [186] },
+    { "id": "sku-dob10", "class": "exact_sku", "query": "DOB10", "top1": [100] },
+    { "id": "sku-boeh", "class": "exact_sku", "query": "BOEH", "top1": [21] },
+    { "id": "sku-v8-101", "class": "exact_sku", "query": "V8-101", "top1": [471] },
+    { "id": "sku-mh35", "class": "exact_sku", "query": "MH35", "top1": [236] },
+    { "id": "sku-pm202", "class": "exact_sku", "query": "PM202", "top1": [981] },
+
+    { "id": "name-kettlebell-acero-20", "class": "product_name", "query": "Kettlebell Acero 20kg | HWM®", "top1": [186] },
+    { "id": "name-barra-hex-20", "class": "product_name", "query": "Barra Olímpica Hexagonal 20kg | HWM®", "top1": [24] },
+    { "id": "name-banco-v8", "class": "product_name", "query": "Banco Abdominal Ajustable V8 Series | Obelix", "top1": [471] },
+    { "id": "name-disco-preolimpico-10", "class": "product_name", "query": "Par Discos Preolímpicos 10kg | Barbell", "top1": [145] },
+
+    { "id": "nominal-kettlebell-20-kg", "class": "multi_token_nominal", "query": "kettlebell 20 kg", "mustInclude": [186, 196], "mustExclude": [187, 185] },
+    { "id": "nominal-disco-10-kg", "class": "multi_token_nominal", "query": "disco 10 kg", "mustInclude": [145, 1497] },
+    { "id": "nominal-banco-ajustable", "class": "multi_token_nominal", "query": "banco ajustable", "mustInclude": [471, 981, 1280, 1281, 1706, 1852] },
+    { "id": "nominal-mancuerna-hexagonal", "class": "multi_token_nominal", "query": "mancuerna hexagonal 35kg", "top1": [236] },
+
+    { "id": "unit-barra-olimpica-20kg", "class": "unit_bearing", "query": "barra olímpica 20kg", "mustInclude": [21, 24, 31, 32, 545, 611, 795, 1208, 1651, 2263], "mustExclude": [22, 29] },
+    { "id": "unit-bumper-10kg", "class": "unit_bearing", "query": "bumper 10 kg", "mustInclude": [100, 323, 824, 830, 835, 840, 1458], "mustExclude": [99, 101] },
+    { "id": "unit-kettlebell-acero-20kg", "class": "unit_bearing", "query": "kettlebell acero 20kg", "top1": [186], "mustExclude": [187] },
+
+    { "id": "syn-case", "class": "supported_synonyms", "query": "KETTLEBELL ACERO 20KG", "top1": [186] },
+    { "id": "syn-accents", "class": "supported_synonyms", "query": "barra olimpica hexagonal 20kg", "top1": [24] },
+    { "id": "syn-kilos", "class": "supported_synonyms", "query": "kettlebell 20 kilos", "mustInclude": [186, 196] },
+    { "id": "syn-kgs", "class": "supported_synonyms", "query": "mancuerna hexagonal 35kgs", "top1": [236] },
+    { "id": "syn-plural", "class": "supported_synonyms", "query": "discos preolimpicos 10 kg", "top1": [145] },
+    { "id": "syn-singular", "class": "supported_synonyms", "query": "bancos ajustables", "mustInclude": [471, 981, 1280, 1281, 1706, 1852] },
+
+    { "id": "typo-kettelbell", "class": "typo", "query": "kettelbell 20 kg", "mustInclude": [186] },
+    { "id": "typo-hexagnal", "class": "typo", "query": "mancuerna hexagnal 35kg", "top1": [236] },
+    { "id": "typo-ajustabel", "class": "typo", "query": "banco ajustabel", "mustInclude": [471] },
+    { "id": "typo-missing-space", "class": "typo", "query": "kettlebell20kg", "mustInclude": [186] }
+  ]
+}

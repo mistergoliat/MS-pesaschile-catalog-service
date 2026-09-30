@@ -66,9 +66,9 @@ export const productSemanticSnapshotExclusionSchema = z
 export const productSemanticSnapshotFactSchema = z
   .object({
     productId: z.string().trim().min(1),
-    // Missing presence on a pre-R1 snapshot fails closed: it remains readable for
-    // intelligence consumers but is never eligible for commercial discovery.
-    catalogPresence: catalogPresenceSchema.default('historical_order_detail_only'),
+    // J1D-CAT-04: required. A snapshot without presence (pre-R1) is
+    // incompatible and rejected as a whole; presence is never invented.
+    catalogPresence: catalogPresenceSchema,
     classificationStatus: productSemanticClassificationStatusSchema,
     primaryProductFamily: productSemanticSnapshotTagSchema.nullable(),
     secondaryProductFamilies: z.array(productSemanticSnapshotTagSchema),

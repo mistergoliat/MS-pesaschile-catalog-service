@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { z } from 'zod';
+import { isValidTimeZone } from './zonedTime.js';
 
 function parseBoolean(value: unknown, fallback: boolean): boolean {
   if (value === undefined || value === null || value === '') {
@@ -33,6 +34,9 @@ const envSchema = z.object({
   PRESTASHOP_CURRENCY_CODE: z.string().default('CLP'),
   PRESTASHOP_COUNTRY_ID: z.coerce.number().int().nonnegative().default(0),
   PRESTASHOP_CUSTOMER_GROUP_ID: z.coerce.number().int().nonnegative().default(0),
+  // Zone of PrestaShop's DATETIME wall-clock values (specific price windows).
+  // Must match PS_TIMEZONE in production (R4-J1D B7); UTC keeps the J1C reading.
+  PRESTASHOP_TIMEZONE: z.string().trim().min(1).default('UTC').refine(isValidTimeZone, 'must be an IANA time zone'),
   DB_HOST: z.string().min(1),
   DB_PORT: z.coerce.number().int().positive().default(3306),
   DB_USER: z.string().min(1),
@@ -152,6 +156,7 @@ export const config = {
     currencyCode: raw.PRESTASHOP_CURRENCY_CODE,
     countryId: raw.PRESTASHOP_COUNTRY_ID,
     customerGroupId: raw.PRESTASHOP_CUSTOMER_GROUP_ID,
+    timeZone: raw.PRESTASHOP_TIMEZONE,
   },
   db: {
     host: raw.DB_HOST,

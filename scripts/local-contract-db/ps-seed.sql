@@ -47,6 +47,22 @@ CREATE TABLE ps_category_lang (
   PRIMARY KEY (id_category, id_shop, id_lang)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- R4-J1D: product categories come from category_product (id_category_default
+-- is the navigation root for the whole production catalog).
+CREATE TABLE ps_category (
+  id_category INT UNSIGNED NOT NULL PRIMARY KEY,
+  id_parent INT UNSIGNED NOT NULL DEFAULT 0,
+  level_depth TINYINT(3) UNSIGNED NOT NULL DEFAULT 0,
+  active TINYINT(1) UNSIGNED NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE ps_category_product (
+  id_category INT UNSIGNED NOT NULL,
+  id_product INT UNSIGNED NOT NULL,
+  position INT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (id_category, id_product)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 CREATE TABLE ps_manufacturer (
   id_manufacturer INT UNSIGNED NOT NULL PRIMARY KEY,
   name VARCHAR(64) NOT NULL
@@ -174,6 +190,13 @@ CREATE TABLE ps_configuration (
 -- ---------------------------------------------------------------- data
 INSERT INTO ps_configuration (name, value) VALUES ('PS_ORDER_OUT_OF_STOCK', '0');
 INSERT INTO ps_category_lang VALUES (3, 1, 1, 'Barras'), (4, 1, 1, 'Discos');
+-- Category ids 2/65/66/67 mirror the production trust audit (root, Kettlebells,
+-- Bumper Plates, Barras Olímpicas); 8 is the untrusted 'Test' category.
+INSERT INTO ps_category VALUES (2, 1, 1, 1), (3, 2, 2, 1), (4, 2, 2, 1), (8, 2, 2, 1), (65, 2, 3, 1), (66, 4, 3, 1), (67, 3, 3, 1);
+INSERT INTO ps_category_lang VALUES (2, 1, 1, 'CATEGORÍAS'), (8, 1, 1, 'Test'), (65, 1, 1, 'Kettlebells'), (66, 1, 1, 'Bumper Plates'), (67, 1, 1, 'Barras Olímpicas');
+INSERT INTO ps_category_product (id_category, id_product) VALUES
+  (2, 10), (67, 10), (2, 12), (67, 12), (8, 12), (2, 20), (67, 20), (2, 50), (66, 50), (2, 51), (66, 51),
+  (2, 60), (65, 60), (2, 61), (65, 61), (2, 62);
 INSERT INTO ps_manufacturer VALUES (7, 'MarcaSintetica');
 
 -- P10 simple, in stock, one specification.
@@ -228,6 +251,19 @@ INSERT INTO ps_product (id_product, id_category_default, reference, price, activ
 INSERT INTO ps_product_shop VALUES (51, 1, 4, 30000, 1, 1, 'both');
 INSERT INTO ps_product_lang VALUES (51, 1, 1, '', 'Disco a pedido', 'disco-pedido', 'Disco a pedido 20 kg');
 INSERT INTO ps_stock_available (id_product, id_product_attribute, id_shop, quantity, out_of_stock) VALUES (51, 0, 1, 0, 1);
+
+-- R4-J1D nominal search: token-AND retrieval and exact measures.
+INSERT INTO ps_product (id_product, id_category_default, reference, price, active, available_for_order, visibility) VALUES
+  (60, 2, 'KH20', 40000, 1, 1, 'both'), (61, 2, 'KH24', 48000, 1, 1, 'both'), (62, 2, 'CAMP-62', 10000, 1, 1, 'both');
+INSERT INTO ps_product_shop VALUES (60, 1, 2, 40000, 1, 1, 'both'), (61, 1, 2, 48000, 1, 1, 'both'), (62, 1, 2, 10000, 1, 1, 'both');
+INSERT INTO ps_product_lang VALUES
+  (60, 1, 1, '', 'Pesa rusa de acero', 'kettlebell-acero-20', 'Kettlebell Acero 20kg | HWM®'),
+  (61, 1, 1, '', 'Pesa rusa de acero', 'kettlebell-acero-24', 'Kettlebell Acero 24kg | HWM®'),
+  (62, 1, 1, '', NULL, 'solo-root', 'Producto solo en raíz');
+INSERT INTO ps_stock_available (id_product, id_product_attribute, id_shop, quantity, out_of_stock) VALUES (60, 0, 1, 7, 2), (61, 0, 1, 2, 2), (62, 0, 1, 1, 2);
+-- A 20% promotion on P60 in SHOP-LOCAL wall-clock time, far in the future: it
+-- must not apply now, and it bounds nothing within the TTL.
+INSERT INTO ps_specific_price (id_specific_price, id_product, id_shop, price, from_quantity, reduction, reduction_tax, reduction_type, `from`, `to`) VALUES (60, 60, 0, -1, 1, 0.200000, 1, 'percentage', '2099-01-01 00:00:00', '2099-01-31 23:59:59');
 
 -- P444 internal product (excluded by policy even though it matches "barra").
 INSERT INTO ps_product (id_product, id_category_default, reference, price, active, available_for_order, visibility) VALUES (444, 3, 'SRV-444', 1, 1, 1, 'both');

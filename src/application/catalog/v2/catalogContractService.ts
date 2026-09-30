@@ -8,8 +8,10 @@ import {
   chooseBestSellability,
   CATALOG_V2_ENGINE_VERSION,
   deriveSellability,
+  isOfferable,
   parseCatalogItemKey,
   type PriceResult,
+  type SellabilityResult,
 } from '../../../domain/catalog/v2/commercialEngine.js';
 import type {
   CatalogProductRef,
@@ -22,21 +24,17 @@ import type {
   ItemContextResponse,
   ProductContextResponse,
 } from '../../../domain/catalog/v2/contracts.js';
-import {
-  evaluateCatalogSearchTextRelevance,
-  compareCatalogSearchRankEntries,
-  type CatalogSearchRankEntry,
-} from '../../../domain/catalog/searchTextRelevance.js';
-import type { SearchItem } from '../../../domain/catalog/types.js';
-import { normalizeCatalogSearchText, tokenizeCatalogSearchText } from '../../../domain/catalog/searchTextNormalization.js';
+import { compareNominal, matchNominal, type NominalMatch } from '../../../domain/catalog/v2/nominalSearch.js';
+import { BoundedTtlCache } from './boundedTtlCache.js';
 
 export type CatalogV2Clock = { now(): Date };
 
-type CacheEntry<T> = {
-  value: T;
+type CacheEntry = {
+  value: unknown;
   asOf: string;
-  expiresAt: number;
 };
+
+export const CATALOG_V2_CACHE_MAX_ENTRIES = 500;
 
 type CatalogV2ServiceDependencies = {
   reader: CatalogV2DataReader;
@@ -44,49 +42,67 @@ type CatalogV2ServiceDependencies = {
   publicBaseUrl?: string;
   frequentlyBoughtTogether?: FrequentlyBoughtTogetherProvider;
   freshnessTtlSeconds?: number;
+  cacheMaxEntries?: number;
   serviceBuildRef?: string;
 };
 
 export class CatalogContractService {
   private readonly clock: CatalogV2Clock;
-  private readonly cache = new Map<string, CacheEntry<unknown>>();
+  private readonly cache: BoundedTtlCache<CacheEntry>;
   private readonly freshnessTtlSeconds: number;
   private readonly serviceBuildRef: string;
 
   constructor(private readonly dependencies: CatalogV2ServiceDependencies) {
     this.clock = dependencies.clock ?? { now: () => new Date() };
     this.freshnessTtlSeconds = dependencies.freshnessTtlSeconds ?? 15;
+    this.cache = new BoundedTtlCache(dependencies.cacheMaxEntries ?? CATALOG_V2_CACHE_MAX_ENTRIES);
     this.serviceBuildRef = dependencies.serviceBuildRef ?? process.env.CATALOG_SERVICE_BUILD_REF ?? 'catalog-service@local';
   }
 
   async search(input: CatalogSearchRequest): Promise<CatalogSearchResponse> {
-    const key = `catalog-v2:search:${JSON.stringify(input)}`;
-    const cached = this.getCached<CatalogSearchResponse>(key);
-    if (cached) return this.withFreshness(cached.value, cached.asOf, true);
+    // Whitespace is collapsed before retrieval; the key is also case-folded,
+    // which is answer-preserving because retrieval and matching ignore case.
+    const query = input.query.trim().replace(/\s+/gu, ' ');
+    const key = `catalog-v2:search:${JSON.stringify([
+      query.toLocaleLowerCase('es'),
+      input.filters.categoryId ?? null,
+      input.filters.maxUnitPrice ?? null,
+      input.filters.sellableOnly,
+      input.limit,
+    ])}`;
+    const cached = this.getCached(key);
+    if (cached) return this.withFreshness(cached.value as CatalogSearchResponse, cached.asOf, true);
 
-    const data = await this.dependencies.reader.readProducts({ query: input.query });
+    const data = await this.dependencies.reader.readProducts({ query });
     const context = this.publicContext(1);
+    const now = this.clock.now();
     const candidates = data.products
       .filter((product) => product.active === true && product.listed === true)
-      .filter((product) => matchesLexically(product, input.query))
       .filter((product) => !input.filters.categoryId || product.category?.id === input.filters.categoryId)
-      .map((product) => this.toSearchCandidate(product, input.query, context))
-      .filter((candidate) => candidate !== null)
+      .flatMap((product) => {
+        const match = matchNominal({
+          query,
+          name: product.name,
+          shortDescription: product.shortDescription,
+          references: [product.sku, ...product.variants.map((variant) => variant.sku)],
+        });
+        return match ? [this.toSearchCandidate(product, match, context, now)] : [];
+      })
       .filter((candidate) => !input.filters.sellableOnly || candidate.result.availabilitySummary.sellability === 'sellable')
       .filter((candidate) => input.filters.maxUnitPrice === undefined
         || (candidate.result.priceSummary !== null && candidate.result.priceSummary.finalGross.amount <= input.filters.maxUnitPrice))
-      .sort((left, right) => compareCatalogSearchRankEntries(left.rank, right.rank));
+      .sort((left, right) => compareNominal(left.rank, right.rank));
 
-    const results = candidates.slice(0, input.limit).map((candidate) => candidate.result);
+    const returned = candidates.slice(0, input.limit);
     const value: CatalogSearchResponse = {
       schemaVersion: 1,
-      results,
+      results: returned.map((candidate) => candidate.result),
       completeness: {
         totalMatches: candidates.length,
         truncated: candidates.length > input.limit,
       },
       searchMode: 'lexical',
-      freshness: this.freshness(data.asOf, false),
+      freshness: this.freshness(data.asOf, false, earliest(returned.map((candidate) => candidate.priceValidUntil))),
     };
     this.setCached(key, value, data.asOf);
     return value;
@@ -94,8 +110,8 @@ export class CatalogContractService {
 
   async getProductContext(input: { productKey: string; quantity: number }): Promise<ProductContextResponse> {
     const key = `catalog-v2:product:${input.productKey}:${input.quantity}`;
-    const cached = this.getCached<ProductContextResponse>(key);
-    if (cached) return this.withFreshness(cached.value, cached.asOf, true);
+    const cached = this.getCached(key);
+    if (cached) return this.withFreshness(cached.value as ProductContextResponse, cached.asOf, true);
     const parsed = parseCatalogItemKey(input.productKey);
     if (!parsed || parsed.variantId !== null) {
       return { schemaVersion: 1, status: 'not_found', productKey: input.productKey };
@@ -112,8 +128,8 @@ export class CatalogContractService {
 
   async getItemContext(input: { itemKey: string; quantity: number }): Promise<ItemContextResponse> {
     const key = `catalog-v2:item:${input.itemKey}:${input.quantity}`;
-    const cached = this.getCached<ItemContextResponse>(key);
-    if (cached) return this.withFreshness(cached.value, cached.asOf, true);
+    const cached = this.getCached(key);
+    if (cached) return this.withFreshness(cached.value as ItemContextResponse, cached.asOf, true);
     const parsed = parseCatalogItemKey(input.itemKey);
     if (!parsed) return { schemaVersion: 1, status: 'not_found', itemKey: input.itemKey };
     const data = await this.dependencies.reader.readProducts({ productIds: [parsed.productId] });
@@ -140,41 +156,25 @@ export class CatalogContractService {
 
   private toSearchCandidate(
     product: CatalogV2Product,
-    query: string,
+    match: NominalMatch,
     context: ReturnType<CatalogContractService['publicContext']>,
-  ): { rank: CatalogSearchRankEntry; result: CatalogSearchResponse['results'][number] } {
+    now: Date,
+  ): {
+    rank: { match: NominalMatch; name: string; productId: number };
+    result: CatalogSearchResponse['results'][number];
+    priceValidUntil: string | null;
+  } {
     const variants = product.variants;
     const hasVariants = variants.some((variant) => variant.combinationId > 0);
-    const prices = variants
-      .map((variant) => calculatePrice({ product, variant, specificPrices: product.specificPrices, context, now: this.clock.now() }))
-      .filter((price): price is PriceResult => price !== null);
-    const priceSummary = minPrice(prices, hasVariants);
-    const availability = variants.map((variant) => deriveSellability({
-      product: withVariantBackorderPolicy(product, variant),
-      availableQuantity: variant.availableQuantity,
-      requireVariant: false,
-    }));
-    const aggregateAvailability = chooseBestSellability(availability);
-    const sellableVariants = availability.filter((item) => item.sellability === 'sellable').length;
-    const matchingVariant = variants.find((variant) => variant.sku && variant.sku.trim().toLocaleLowerCase() === query.trim().toLocaleLowerCase());
-    const searchItem: SearchItem = {
-      productId: product.productId,
-      combinationId: 0,
-      sku: matchingVariant?.sku ?? product.sku,
-      name: product.name,
-      variantLabel: null,
-      shortDescription: product.shortDescription,
-      physicalQuantity: aggregateAvailableQuantity(product) ?? 0,
-      available: aggregateAvailability.sellability === 'sellable',
-      matchType: 'description',
-    };
-    const rank = evaluateCatalogSearchTextRelevance({ item: searchItem, query, isDefault: true });
-    const totalTokens = Math.max(rank.nameTokenTotal, 1);
-    const matchType: CatalogSearchResponse['results'][number]['match']['type'] = rank.matchType === 'exact_sku'
-      ? 'exact_reference'
-      : rank.matchType === 'partial_name' ? 'name' : rank.matchType;
+    const units = this.priceUnits(product, context, now);
+    const aggregateAvailability = chooseBestSellability(units.map((unit) => unit.availability));
+    const sellableVariants = units.filter((unit) => unit.availability.sellability === 'sellable').length;
+    const matchType: CatalogSearchResponse['results'][number]['match']['type'] = match.tier === 'exact_reference' || match.tier === 'exact_name'
+      ? match.tier
+      : match.tier === 'description' ? 'description' : 'name';
     return {
-      rank: { item: searchItem, signals: rank },
+      rank: { match, name: product.name, productId: product.productId },
+      priceValidUntil: earliest(units.map((unit) => unit.price?.priceValidUntil ?? null)),
       result: {
         productKey: buildProductKey(product.productId),
         ref: { productId: String(product.productId) } satisfies CatalogProductRef,
@@ -182,7 +182,7 @@ export class CatalogContractService {
         sku: product.sku,
         category: product.category,
         variants: { count: hasVariants ? variants.length : 0, requiresSelection: hasVariants },
-        priceSummary,
+        priceSummary: priceSummary(units, hasVariants),
         availabilitySummary: {
           sellability: aggregateAvailability.sellability,
           reason: aggregateAvailability.reason,
@@ -190,28 +190,31 @@ export class CatalogContractService {
         },
         match: {
           type: matchType,
-          matchedTokens: rank.matchType === 'description' ? rank.descriptionTokenCoverage : rank.nameTokenCoverage,
-          totalTokens,
+          matchedTokens: Math.min(match.matchedTokens, match.totalTokens),
+          totalTokens: match.totalTokens,
         },
       },
     };
   }
 
+  /** Every sellable unit of the product with its owner price and sellability (the basis of OD-1). */
+  private priceUnits(product: CatalogV2Product, context: ReturnType<CatalogContractService['publicContext']>, now: Date): PriceUnit[] {
+    return product.variants.map((variant) => ({
+      price: calculatePrice({ product, variant, specificPrices: product.specificPrices, context, now }),
+      availability: deriveSellability({
+        product: withVariantBackorderPolicy(product, variant),
+        availableQuantity: variant.availableQuantity,
+        requireVariant: false,
+      }),
+    }));
+  }
+
   private buildProductContext(product: CatalogV2Product, quantity: number, asOf: string): ProductContextResponse {
     const hasVariants = product.variants.some((variant) => variant.combinationId > 0);
     const context = this.publicContext(quantity);
-    const now = this.clock.now();
-    const pricedVariants = product.variants
-      .map((variant) => calculatePrice({ product, variant, specificPrices: product.specificPrices, context, now }))
-      .filter((price): price is PriceResult => price !== null);
-    const priceSummary = minPrice(pricedVariants, hasVariants);
-    const variantAvailability = product.variants.map((variant) => deriveSellability({
-      product: withVariantBackorderPolicy(product, variant),
-      availableQuantity: variant.availableQuantity,
-      requireVariant: false,
-    }));
-    const availability = chooseBestSellability(variantAvailability);
-    const sellableVariants = variantAvailability.filter((item) => item.sellability === 'sellable').length;
+    const units = this.priceUnits(product, context, this.clock.now());
+    const availability = chooseBestSellability(units.map((unit) => unit.availability));
+    const sellableVariants = units.filter((unit) => unit.availability.sellability === 'sellable').length;
     const publicUrl = buildProductPublicUrl({
       baseUrl: this.dependencies.publicBaseUrl ?? config.catalog.publicBaseUrl,
       productId: product.productId,
@@ -252,7 +255,7 @@ export class CatalogContractService {
         },
       },
       derived: {
-        priceSummary,
+        priceSummary: priceSummary(units, hasVariants),
         availability: {
           sellability: availability.sellability,
           reason: availability.reason,
@@ -263,7 +266,7 @@ export class CatalogContractService {
       },
       inferred,
       provenance: this.provenance(),
-      freshness: this.freshness(asOf, false, earliestPromotionEnd(pricedVariants)),
+      freshness: this.freshness(asOf, false, earliest(units.map((unit) => unit.price?.priceValidUntil ?? null))),
     };
     return response;
   }
@@ -309,7 +312,7 @@ export class CatalogContractService {
             quantity,
             regularGross: money(price.regularGross),
             finalGross: money(price.finalGross),
-            promotion: price.promotion,
+            promotion: publicPromotion(price.promotion),
             tax: { included: true, rate: context.taxRate, basis: 'configured_flat_rate' },
             engineVersion: CATALOG_V2_ENGINE_VERSION,
           }
@@ -320,7 +323,7 @@ export class CatalogContractService {
         reason: availability.reason,
         leadTime: null,
       },
-      freshness: this.freshness(asOf, false, price?.promotion?.validUntil ?? null),
+      freshness: this.freshness(asOf, false, price?.priceValidUntil ?? null),
       provenance: this.provenance(),
     };
   }
@@ -365,11 +368,12 @@ export class CatalogContractService {
     };
   }
 
-  private freshness(asOf: string, hit: boolean, promotionValidUntil: string | null = null) {
+  /** OD-3: valid for the owner TTL from `asOf`, never past the first scheduled price change. */
+  private freshness(asOf: string, hit: boolean, priceChangeAt: string | null = null) {
     const asOfMs = Date.parse(asOf);
     const ttlEnd = new Date(asOfMs + this.freshnessTtlSeconds * 1000).toISOString();
-    const validUntil = promotionValidUntil && Date.parse(promotionValidUntil) < Date.parse(ttlEnd)
-      ? promotionValidUntil
+    const validUntil = priceChangeAt && Date.parse(priceChangeAt) < Date.parse(ttlEnd)
+      ? priceChangeAt
       : ttlEnd;
     return {
       asOf,
@@ -378,22 +382,15 @@ export class CatalogContractService {
     };
   }
 
-  private getCached<T>(key: string): CacheEntry<T> | null {
-    const entry = this.cache.get(key) as CacheEntry<T> | undefined;
-    if (!entry) return null;
-    if (entry.expiresAt <= this.clock.now().getTime()) {
-      this.cache.delete(key);
-      return null;
-    }
-    return entry;
+  private getCached(key: string): CacheEntry | null {
+    return this.cache.get(key, this.clock.now().getTime()) ?? null;
   }
 
-  private setCached<T>(key: string, value: T, asOf: string): void {
-    this.cache.set(key, {
-      value,
-      asOf,
-      expiresAt: this.clock.now().getTime() + this.freshnessTtlSeconds * 1000,
-    });
+  /** An answer is cached only until its own validity ends (asOf + TTL, or earlier). */
+  private setCached(key: string, value: unknown, asOf: string): void {
+    const validUntil = (value as { freshness?: { validUntil?: string | null } }).freshness?.validUntil;
+    const expiresAtMs = validUntil ? Date.parse(validUntil) : Date.parse(asOf) + this.freshnessTtlSeconds * 1000;
+    this.cache.set(key, { value, asOf }, expiresAtMs, this.clock.now().getTime());
   }
 
   private withFreshness<T>(value: T, asOf: string, hit: boolean): T {
@@ -410,41 +407,42 @@ function money(amount: number) {
   return { amount, currency: 'CLP' as const };
 }
 
-function minPrice(prices: readonly PriceResult[], from: boolean) {
-  if (prices.length === 0) return null;
-  const selected = bestPrice(prices)!;
+type PriceUnit = { price: PriceResult | null; availability: SellabilityResult };
+
+/**
+ * OD-1: the advertised price of a product. Only offerable units (sellable or
+ * backorder) set it; a unit that cannot be ordered never lowers it. When no
+ * priced unit is offerable the basis says so explicitly (reference price).
+ */
+function priceSummary(units: readonly PriceUnit[], from: boolean) {
+  const priced = units.filter((unit): unit is { price: PriceResult; availability: SellabilityResult } => unit.price !== null);
+  if (priced.length === 0) return null;
+  const offerable = priced.filter((unit) => isOfferable(unit.availability));
+  const basis = offerable.length > 0 ? 'offerable' as const : 'not_offerable' as const;
+  const selected = [...(offerable.length > 0 ? offerable : priced)]
+    .map((unit) => unit.price)
+    .sort((left, right) => left.finalGross - right.finalGross || left.regularGross - right.regularGross)[0]!;
   return {
     kind: from ? 'from' as const : 'exact' as const,
+    basis,
     finalGross: money(selected.finalGross),
     regularGross: money(selected.regularGross),
     discounted: selected.discounted,
   };
 }
 
-/** A product answer that relies on promotions stops being valid when the first of them ends. */
-function earliestPromotionEnd(prices: readonly PriceResult[]): string | null {
-  const ends = prices.map((price) => price.promotion?.validUntil ?? null).filter((value): value is string => value !== null);
-  return ends.length === 0 ? null : ends.reduce((left, right) => (Date.parse(left) <= Date.parse(right) ? left : right));
+/** OD-2: the wire shape of an applied promotion (amounts tax-included). */
+function publicPromotion(promotion: PriceResult['promotion']) {
+  if (!promotion) return null;
+  if (promotion.type === 'percentage') {
+    return { type: 'percentage' as const, percentOff: promotion.percentOff!, amountOffGross: null, validUntil: promotion.validUntil };
+  }
+  return { type: 'amount' as const, percentOff: null, amountOffGross: money(promotion.amountOffGross!), validUntil: promotion.validUntil };
 }
 
-function bestPrice(prices: readonly PriceResult[]): PriceResult | null {
-  return [...prices].sort((left, right) => left.finalGross - right.finalGross || left.regularGross - right.regularGross)[0] ?? null;
-}
-
-function matchesLexically(product: CatalogV2Product, query: string): boolean {
-  const normalizedQuery = normalizeCatalogSearchText(query);
-  const fields = [
-    product.sku,
-    product.name,
-    product.shortDescription,
-    ...product.variants.map((variant) => variant.sku),
-  ].filter((value): value is string => Boolean(value)).map(normalizeCatalogSearchText);
-  if (fields.some((field) => field === normalizedQuery || field.includes(normalizedQuery))) return true;
-  const tokens = tokenizeCatalogSearchText(query).filter((token) => token.length > 0);
-  if (tokens.length === 0) return false;
-  const name = normalizeCatalogSearchText(product.name);
-  const description = normalizeCatalogSearchText(product.shortDescription ?? '');
-  return tokens.every((token) => name.includes(token)) || tokens.every((token) => description.includes(token));
+function earliest(values: readonly (string | null)[]): string | null {
+  const instants = values.filter((value): value is string => value !== null);
+  return instants.length === 0 ? null : instants.reduce((left, right) => (Date.parse(left) <= Date.parse(right) ? left : right));
 }
 
 function withVariantBackorderPolicy(product: CatalogV2Product, variant: CatalogV2Variant): CatalogV2Product {

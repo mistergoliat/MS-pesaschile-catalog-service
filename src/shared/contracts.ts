@@ -173,12 +173,21 @@ export const errorResponseSchema = z
 
 export const healthResponseSchema = z
   .object({
-    status: z.enum(['ok', 'degraded']),
+    status: z.enum(['ok', 'degraded', 'unavailable']),
     checks: z
       .object({
         database: z.enum(['ok', 'unavailable']).optional(),
         redis: z.enum(['ok', 'unavailable']).optional(),
         relationshipSnapshot: z.enum(['ok', 'unavailable']).optional(),
+        capabilities: z
+          .object({
+            commercialTruth: z.enum(['ok', 'unavailable']),
+            relationships: z.enum(['ok', 'unavailable']),
+            productSemantics: z.enum(['ok', 'unavailable']),
+            trainingSemantics: z.enum(['ok', 'unavailable']),
+          })
+          .strict()
+          .optional(),
       })
       .strict(),
   })

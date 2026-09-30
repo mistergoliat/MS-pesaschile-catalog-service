@@ -22,6 +22,8 @@ const app = await buildApp({
     cache: runtime.cache,
     cacheDriver: config.cache.driver,
     relationshipSnapshotReader: runtime.relationshipSnapshotReader,
+    productSemanticSnapshotReader: runtime.productSemanticSnapshotReader,
+    trainingSemanticSnapshotReader: runtime.trainingSemanticSnapshotV2Reader,
   }),
 });
 

@@ -202,6 +202,7 @@ export async function createRuntime() {
     relationshipSnapshotInitialRefresh: recommendationRuntime.initialRefreshResult,
     relationshipSnapshotInitialRefreshError: recommendationRuntime.initialRefreshError,
     productSemanticSnapshotReader,
+    trainingSemanticSnapshotV2Reader,
     trainingSemanticReadService: new DefaultTrainingSemanticReadService(trainingSemanticSnapshotV2Reader),
     trainingSemanticQueryService: new DefaultTrainingSemanticQueryService(trainingSemanticSnapshotV2Reader),
     semanticDiscoveryService: new DefaultSemanticDiscoveryService(productSemanticSnapshotReader, trainingSemanticSnapshotV2Reader),

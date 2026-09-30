@@ -264,10 +264,11 @@ describe('SearchProducts V2 production runtime wiring', () => {
     await app.close();
   });
 
-  it('readiness is degraded when no relationship snapshot is loaded', async () => {
+  it('readiness is degraded, not unavailable, when no relationship snapshot is loaded (J1D-CAT-05)', async () => {
     const { app } = await appWithRuntime();
     const response = await app.inject({ method: 'GET', url: '/health/ready' });
-    expect(response.statusCode).toBe(503);
+    expect(response.statusCode).toBe(200);
+    expect(response.json().status).toBe('degraded');
     expect(response.json().checks.relationshipSnapshot).toBe('unavailable');
     await app.close();
   });
