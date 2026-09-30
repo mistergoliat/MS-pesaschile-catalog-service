@@ -1,4 +1,4 @@
-import { decimal, Decimal, toCurrencyInteger } from '../../../shared/money.js';
+import { prestashopUnitPrice } from '../../pricing/prestashopPrice.js';
 import type {
   CatalogCommercialContext,
   CatalogCommercialPrice,
@@ -37,13 +37,14 @@ export class CommercialPriceCalculator {
 
     const selected = input.selectedSpecificPrice;
     const effectiveBaseNet = selected && selected.price >= 0
-      ? decimal(selected.price).plus(input.rawProduct.combinationImpactNet ?? 0)
+      ? selected.price + (input.rawProduct.combinationImpactNet ?? 0)
       : catalogBaseNet;
-    const positiveCatalogBaseNet = Decimal.max(catalogBaseNet, 0);
-    let effectiveNet = Decimal.max(effectiveBaseNet, 0);
-    const baseGrossAmount = toCurrencyInteger(positiveCatalogBaseNet.mul(decimal(1).plus(input.context.taxRate)));
+    const taxRate = input.context.taxRate;
+    // R4-J1D-R1: PrestaShop's own storefront arithmetic (prestashopPrice.ts).
+    const baseGrossAmount = prestashopUnitPrice({ priceNet: Math.max(catalogBaseNet, 0), taxRate, reduction: null }).regularGross;
+    const effectiveNet = Math.max(effectiveBaseNet, 0);
 
-    let finalGrossAmount = baseGrossAmount;
+    let finalGrossAmount = prestashopUnitPrice({ priceNet: effectiveNet, taxRate, reduction: null }).finalGross;
     let discountType: CatalogCommercialPrice['discountType'] = null;
     let discountValue: number | null = null;
 
@@ -54,8 +55,11 @@ export class CommercialPriceCalculator {
             specificPriceId: selected.idSpecificPrice,
           }));
         } else {
-          effectiveNet = effectiveNet.mul(decimal(1).minus(selected.reduction));
-          finalGrossAmount = toCurrencyInteger(effectiveNet.mul(decimal(1).plus(input.context.taxRate)));
+          finalGrossAmount = prestashopUnitPrice({
+            priceNet: effectiveNet,
+            taxRate,
+            reduction: { type: 'percentage', rate: selected.reduction },
+          }).finalGross;
           discountType = 'percentage';
           discountValue = selected.reduction;
         }
@@ -65,19 +69,19 @@ export class CommercialPriceCalculator {
             specificPriceId: selected.idSpecificPrice,
           }));
         } else {
-          const reductionNet = selected.reductionTax === 1
-            ? decimal(selected.reduction).div(decimal(1).plus(input.context.taxRate))
-            : decimal(selected.reduction);
-          const grossReduction = toCurrencyInteger(reductionNet.mul(decimal(1).plus(input.context.taxRate)));
-          if (grossReduction > baseGrossAmount) {
+          const unit = prestashopUnitPrice({
+            priceNet: effectiveNet,
+            taxRate,
+            reduction: { type: 'amount', amount: selected.reduction, taxIncluded: selected.reductionTax === 1 },
+          });
+          if (unit.reductionGross > baseGrossAmount) {
             warnings.push(warning('SPECIFIC_PRICE_EXCEEDS_BASE_PRICE', input.product, {
               specificPriceId: selected.idSpecificPrice,
               baseGrossAmount,
-              reductionGrossAmount: grossReduction,
+              reductionGrossAmount: unit.reductionGross,
             }));
           }
-          effectiveNet = effectiveNet.minus(reductionNet);
-          finalGrossAmount = toCurrencyInteger(Decimal.max(effectiveNet, 0).mul(decimal(1).plus(input.context.taxRate)));
+          finalGrossAmount = unit.finalGross;
           discountType = 'amount';
           discountValue = selected.reduction;
         }
@@ -119,7 +123,7 @@ function warning(
   return details === undefined ? { code, product } : { code, product, details };
 }
 
-function baseNet(product: CatalogCommercialRawProduct) {
+function baseNet(product: CatalogCommercialRawProduct): number | null {
   if (
     product.productBasePriceNet === null ||
     product.combinationImpactNet === null ||
@@ -128,6 +132,7 @@ function baseNet(product: CatalogCommercialRawProduct) {
   ) {
     return null;
   }
-  const value = decimal(product.productBasePriceNet).plus(product.combinationImpactNet);
-  return value.toNumber() < 0 ? null : value;
+  // Summed as PrestaShop does ((float) price + attribute_price).
+  const value = product.productBasePriceNet + product.combinationImpactNet;
+  return value < 0 ? null : value;
 }

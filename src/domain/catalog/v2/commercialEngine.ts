@@ -1,11 +1,11 @@
-import { decimal, Decimal, toCurrencyInteger } from '../../../shared/money.js';
+import { prestashopUnitPrice, type PrestashopReduction } from '../../pricing/prestashopPrice.js';
 import type {
   CatalogV2Product,
   CatalogV2SpecificPrice,
   CatalogV2Variant,
 } from './contracts.js';
 
-export const CATALOG_V2_ENGINE_VERSION = 'catalog-commercial-v2.1.0';
+export const CATALOG_V2_ENGINE_VERSION = 'catalog-commercial-v2.2.0';
 
 export type Sellability = 'sellable' | 'backorder' | 'not_sellable' | 'check_with_staff';
 export type SellabilityReason =
@@ -171,16 +171,15 @@ export function calculatePrice(input: {
   const selectedBaseNet = selected && selected.price >= 0
     ? selected.price + input.variant.impactPriceNet
     : baseNet;
-  const taxFactor = decimal(1).plus(input.context.taxRate);
   // PrestaShop's price "without reduction" already applies a fixed-price
   // override; only the reduction makes the difference to the final price.
-  const regularNet = Decimal.max(selectedBaseNet, 0);
-  let finalNet = regularNet;
+  const priceNet = Math.max(selectedBaseNet, 0);
+  let reduction: PrestashopReduction | null = null;
   let promotion: PriceResult['promotion'] = null;
 
   if (selected && Number.isFinite(selected.reduction) && selected.reduction > 0) {
     if (selected.reductionType === 'percentage' && selected.reduction <= 1) {
-      finalNet = finalNet.mul(decimal(1).minus(selected.reduction));
+      reduction = { type: 'percentage', rate: selected.reduction };
       promotion = {
         type: 'percentage',
         percentOff: selected.reduction,
@@ -189,23 +188,21 @@ export function calculatePrice(input: {
       };
     } else if (selected.reductionType === 'amount') {
       // PrestaShop defines reduction_tax=0 as a tax-excluded amount and
-      // reduction_tax=1 as tax-included. It is applied in net space and
-      // published tax-included, so the consumer never sees the source basis.
-      const reductionNet = selected.reductionTax === 1
-        ? decimal(selected.reduction).div(taxFactor)
-        : decimal(selected.reduction);
-      finalNet = finalNet.minus(reductionNet);
-      promotion = {
-        type: 'amount',
-        percentOff: null,
-        amountOffGross: toCurrencyInteger(reductionNet.mul(taxFactor)),
-        validUntil: validUntil(selected.to),
-      };
+      // reduction_tax=1 as tax-included; it is published tax-included, so the
+      // consumer never sees the source basis.
+      reduction = { type: 'amount', amount: selected.reduction, taxIncluded: selected.reductionTax === 1 };
     }
   }
 
-  const regularGross = toCurrencyInteger(regularNet.mul(taxFactor));
-  const finalGross = toCurrencyInteger(Decimal.max(finalNet, 0).mul(taxFactor));
+  // R4-J1D-R1: PrestaShop's own storefront arithmetic (prestashopPrice.ts).
+  const { regularGross, finalGross, reductionGross } = prestashopUnitPrice({
+    priceNet,
+    taxRate: input.context.taxRate,
+    reduction,
+  });
+  if (reduction?.type === 'amount' && selected) {
+    promotion = { type: 'amount', percentOff: null, amountOffGross: reductionGross, validUntil: validUntil(selected.to) };
+  }
   return {
     regularGross,
     finalGross,

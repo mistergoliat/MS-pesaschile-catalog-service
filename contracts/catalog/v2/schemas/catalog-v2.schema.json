@@ -37,5 +37,5 @@
   },
   "search": "J1D-CAT-01. Nominal lexical search: exact reference, exact name, phrase in name, every significant word/measure in the name, then in the short description. Measures match exactly (10 kg never matches 110 kg); explicit equivalences only: case, accents, unit spellings, singular/plural. No conceptual expansion.",
   "additiveEvolution": "schemaVersion changes only on a breaking change. New optional fields may be added within schemaVersion 1; consumers must tolerate unknown fields and reject missing or mistyped known ones.",
-  "versionHistory": "schemaVersion 1 is frozen at its first production deployment (R4-J1D). The pre-production J1C shape (promotion.discountType/discountValue, priceSummary without basis) was never deployed and is superseded, not versioned; engineVersion catalog-commercial-v2.1.0 identifies the J1D semantics."
+  "versionHistory": "schemaVersion 1 is frozen at its first production deployment (R4-J1D). The pre-production J1C shape (promotion.discountType/discountValue, priceSummary without basis) was never deployed and is superseded, not versioned; engineVersion catalog-commercial-v2.1.0 identifies the J1D semantics; catalog-commercial-v2.2.0 (R4-J1D-R1) prices with PrestaShop 1.7.8.3 storefront arithmetic (6-decimal then currency rounding), same shape."
 }
