@@ -188,6 +188,9 @@ export const healthResponseSchema = z
           })
           .strict()
           .optional(),
+        projection: z.object({ desiredProjectionBundleId: z.string().nullable(), desiredActivationId: z.string().nullable(),
+          loadedProjectionBundleId: z.string().nullable(), loadedAt: z.string().nullable(), reloadState: z.string(),
+          lastReloadError: z.string().nullable(), readiness: z.record(z.enum(['READY', 'DEGRADED', 'UNAVAILABLE'])) }).strict().optional(),
       })
       .strict(),
   })

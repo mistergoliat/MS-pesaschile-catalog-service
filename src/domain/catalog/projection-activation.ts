@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { BundleError, bundleManifestSchema, validateBundle, type BundleManifest } from './projection-bundle.js';
-import type { CanonicalExtraction } from './projection-input/canonical.js';
 
 const hash = z.string().regex(/^sha256:[a-f0-9]{64}$/u);
 const actor = z.object({ type: z.enum(['manual', 'automation']), identity: z.string().min(1).max(120) }).strict();
@@ -12,7 +11,7 @@ export type ActivePointer = z.infer<typeof activePointerSchema>;
 export const activationRecordSchema = activePointerSchema.extend({ from: hash.nullable(), to: hash,
   candidateValidation: z.object({ status: z.literal('PASS') }).strict() }).strict();
 export type ActivationRecord = z.infer<typeof activationRecordSchema>;
-export interface VerifiedBundle { manifest: BundleManifest; manifestHash: string; source: CanonicalExtraction; files: Record<string, string> }
+export interface VerifiedBundle { manifest: BundleManifest; manifestHash: string; files: Record<string, string> }
 export interface ActivationStore {
   verifyBundle(id: string): Promise<VerifiedBundle>;
   readActivePointer(): Promise<ActivePointer | null>;
@@ -38,7 +37,7 @@ export class ActivationService {
       if (entry.status === 'present' && !(runtimeCompatibility.projections[name as keyof typeof runtimeCompatibility.projections] as readonly string[]).includes(entry.schemaVersion))
         throw new BundleError('BUNDLE_RUNTIME_INCOMPATIBLE', `${name} schema ${entry.schemaVersion}`);
     }
-    try { validateBundle(bundle.manifest, bundle.files, bundle.source); }
+    try { validateBundle(bundle.manifest, bundle.files); }
     catch (error) { throw new BundleError('BUNDLE_INVALID', String(error)); }
     return bundle;
   }
@@ -50,7 +49,7 @@ export class ActivationService {
     if (candidateId) try { await this.candidate(candidateId); candidate = { projectionBundleId: candidateId, validation: 'PASS', runtimeCompatible: true }; }
     catch (error) { candidate = { projectionBundleId: candidateId, validation: 'FAIL', runtimeCompatible: false, error: String(error) }; }
     return { desiredProjectionBundleId: active?.activeProjectionBundleId ?? null, loadedProjectionBundleId: null,
-      runtimeConsumption: 'NOT_YET_WIRED' as const, active, previousActivation: history[1] ?? null, history, candidate };
+      runtimeConsumption: 'PROCESS_LOCAL_NOT_OBSERVABLE_FROM_CLI' as const, active, previousActivation: history[1] ?? null, history, candidate };
   }
 
   async history(active?: ActivePointer | null) {

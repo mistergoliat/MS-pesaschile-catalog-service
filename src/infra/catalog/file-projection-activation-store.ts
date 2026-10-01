@@ -1,7 +1,7 @@
-import { open, mkdir, readFile, readdir, rename, rm, stat } from 'node:fs/promises';
+import { open, mkdir, readFile, rename, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { BundleError, bundleManifestSchema, type BundleManifest } from '../../domain/catalog/projection-bundle.js';
-import { canonicalContent, contentHash, type CanonicalExtraction } from '../../domain/catalog/projection-input/canonical.js';
+import { contentHash } from '../../domain/catalog/projection-input/canonical.js';
 import { activePointerSchema, activationRecordSchema, type ActivationRecord, type ActivationStore, type ActivePointer, type VerifiedBundle } from '../../domain/catalog/projection-activation.js';
 
 async function readJson(file: string, code: string): Promise<unknown> {
@@ -15,7 +15,7 @@ async function durableWrite(file: string, value: unknown) {
 }
 function isMissing(error: unknown) { return (error as NodeJS.ErrnoException).code === 'ENOENT'; }
 export class FileProjectionActivationStore implements ActivationStore {
-  constructor(readonly root = path.resolve('artifacts/catalog-v2'), readonly sourceRoots = [path.resolve('artifacts/catalog-projection-input'), path.resolve('artifacts/catalog-v2/replay-source')]) {}
+  constructor(readonly root = path.resolve('artifacts/catalog-v2')) {}
   private get control() { return path.join(this.root, 'control'); }
   private bundlePath(id: string) { return path.join(this.root, 'bundles', id.slice(7)); }
 
@@ -43,26 +43,7 @@ export class FileProjectionActivationStore implements ActivationStore {
       try { files[projection.artifact] = await readFile(path.join(dir, projection.artifact), 'utf8'); }
       catch (error) { throw new BundleError('BUNDLE_INVALID', String(error)); }
     }
-    const source = await this.findSource(manifest.source.sourceExtractionId);
-    return { manifest, manifestHash: contentHash(raw), files, source };
-  }
-
-  private async findSource(id: string): Promise<CanonicalExtraction> {
-    for (const root of this.sourceRoots) {
-      const dirs = [root];
-      try { for (const entry of await readdir(root, { withFileTypes: true })) if (entry.isDirectory()) dirs.push(path.join(root, entry.name)); }
-      catch (error) { if (!isMissing(error)) throw error; }
-      for (const dir of dirs) {
-        try {
-          const raw = await readFile(path.join(dir, 'canonical_input.json'), 'utf8');
-          if (contentHash(raw) !== id) continue;
-          const source = JSON.parse(raw) as CanonicalExtraction;
-          if (raw !== canonicalContent(source)) throw new BundleError('BUNDLE_INVALID', 'source is not canonical');
-          return source;
-        } catch (error) { if (!isMissing(error)) throw error; }
-      }
-    }
-    throw new BundleError('BUNDLE_INVALID', `verified canonical source ${id} unavailable`);
+    return { manifest, manifestHash: contentHash(raw), files };
   }
 
   async readActivePointer(): Promise<ActivePointer | null> {

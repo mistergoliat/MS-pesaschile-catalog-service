@@ -50,6 +50,9 @@ import {
 } from './domain/product-semantic-snapshot/runtime/index.js';
 import { MySqlCatalogV2DataReader } from './infrastructure/catalog/mysqlCatalogV2DataReader.js';
 import { CatalogContractService } from './application/catalog/v2/catalogContractService.js';
+import { FileProjectionActivationStore } from './infra/catalog/file-projection-activation-store.js';
+import { RuntimeProjectionManager } from './domain/catalog/runtime-projection.js';
+import { RuntimeProductSemanticReader } from './domain/catalog/runtime-product-semantic-reader.js';
 
 export function createCustomerAffinityEvidenceProvider(
   mode: typeof config.recommendation.customerAffinityProviderMode,
@@ -190,6 +193,13 @@ export async function createRuntime() {
     logger.error({ error }, 'training_semantic_snapshot_v2_load_failed');
   }
 
+  const projectionRuntimeManager = new RuntimeProjectionManager(new FileProjectionActivationStore(), {
+    pollIntervalMs: Number(process.env.CATALOG_PROJECTION_POLL_MS ?? 1000),
+    onAttempt: (event) => logger.info(event, 'projection_runtime_reload'),
+  });
+  await projectionRuntimeManager.start();
+  const runtimeProductSemanticReader = new RuntimeProductSemanticReader(projectionRuntimeManager, productSemanticSnapshotReader);
+
   return {
     pool,
     cache,
@@ -201,11 +211,12 @@ export async function createRuntime() {
     searchProductsV2Service: recommendationRuntime.searchProductsV2Service,
     relationshipSnapshotInitialRefresh: recommendationRuntime.initialRefreshResult,
     relationshipSnapshotInitialRefreshError: recommendationRuntime.initialRefreshError,
-    productSemanticSnapshotReader,
+    productSemanticSnapshotReader: runtimeProductSemanticReader,
+    projectionRuntimeManager,
     trainingSemanticSnapshotV2Reader,
     trainingSemanticReadService: new DefaultTrainingSemanticReadService(trainingSemanticSnapshotV2Reader),
     trainingSemanticQueryService: new DefaultTrainingSemanticQueryService(trainingSemanticSnapshotV2Reader),
-    semanticDiscoveryService: new DefaultSemanticDiscoveryService(productSemanticSnapshotReader, trainingSemanticSnapshotV2Reader),
+    semanticDiscoveryService: new DefaultSemanticDiscoveryService(runtimeProductSemanticReader, trainingSemanticSnapshotV2Reader),
     catalogContractService,
   };
 }

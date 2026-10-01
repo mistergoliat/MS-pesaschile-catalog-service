@@ -16,6 +16,15 @@ export type RuntimeReadinessChecks = {
     productSemantics: CapabilityState;
     trainingSemantics: CapabilityState;
   };
+  projection?: {
+    desiredProjectionBundleId: string | null;
+    desiredActivationId: string | null;
+    loadedProjectionBundleId: string | null;
+    loadedAt: string | null;
+    reloadState: string;
+    lastReloadError: string | null;
+    readiness: Record<string, 'READY' | 'DEGRADED' | 'UNAVAILABLE'>;
+  };
 };
 
 type RepositoryLike = {
@@ -41,6 +50,9 @@ export async function collectRuntimeReadinessChecks(input: {
   relationshipSnapshotReader: SnapshotStatusReaderLike;
   productSemanticSnapshotReader?: SnapshotStatusReaderLike;
   trainingSemanticSnapshotReader?: TrainingSemanticSnapshotReaderLike;
+  projectionRuntimeManager?: { status(): { desiredProjectionBundleId: string | null; desiredActivationId: string | null;
+    loadedProjectionBundleId: string | null; loadedAt: string | null; reloadState: string;
+    lastReloadError: { code: string } | null; readiness: Record<string, 'READY' | 'DEGRADED' | 'UNAVAILABLE'> } };
 }): Promise<RuntimeReadinessChecks> {
   const [databaseResult, redisResult] = await Promise.allSettled([
     input.repository.ping(),
@@ -52,6 +64,7 @@ export async function collectRuntimeReadinessChecks(input: {
     ? 'unavailable'
     : 'ok';
   const relationshipSnapshot: CapabilityState = input.relationshipSnapshotReader.getStatus().state === 'ready' ? 'ok' : 'unavailable';
+  const projectionStatus = input.projectionRuntimeManager?.status();
   return {
     database,
     redis,
@@ -62,5 +75,9 @@ export async function collectRuntimeReadinessChecks(input: {
       productSemantics: input.productSemanticSnapshotReader?.getStatus().state === 'ready' ? 'ok' : 'unavailable',
       trainingSemantics: input.trainingSemanticSnapshotReader?.getMetadata() ? 'ok' : 'unavailable',
     },
+    ...(projectionStatus ? { projection: { desiredProjectionBundleId: projectionStatus.desiredProjectionBundleId,
+      desiredActivationId: projectionStatus.desiredActivationId, loadedProjectionBundleId: projectionStatus.loadedProjectionBundleId,
+      loadedAt: projectionStatus.loadedAt, reloadState: projectionStatus.reloadState,
+      lastReloadError: projectionStatus.lastReloadError?.code ?? null, readiness: { commercialTruth: database === 'ok' && redis === 'ok' ? 'READY' : 'UNAVAILABLE', ...projectionStatus.readiness } } } : {}),
   };
 }

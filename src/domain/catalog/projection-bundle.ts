@@ -87,15 +87,16 @@ export function buildSpecs(source: CanonicalExtraction, sourceExtractionId: stri
   return specsArtifactSchema.parse({ schemaVersion: '1', sourceExtractionId, records });
 }
 
-export function validateBundle(manifestValue: unknown, files: Readonly<Record<string, string>>, source: CanonicalExtraction) {
+export function validateBundle(manifestValue: unknown, files: Readonly<Record<string, string>>, source?: CanonicalExtraction) {
   const parsed = bundleManifestSchema.safeParse(manifestValue);
   if (!parsed.success) return fail('INVALID_BUNDLE_MANIFEST', parsed.error.message);
   const manifest = parsed.data;
-  if (manifest.source.sourceExtractionId !== manifest.source.canonicalInputHash || manifest.source.sourceExtractionId !== contentHash(`${JSON.stringify(source)}\n`)) fail('SOURCE_LINEAGE_INVALID', 'canonical source hash differs');
+  if (manifest.source.sourceExtractionId !== manifest.source.canonicalInputHash
+    || (source && manifest.source.sourceExtractionId !== contentHash(`${JSON.stringify(source)}\n`))) fail('SOURCE_LINEAGE_INVALID', 'canonical source hash differs');
   if (manifest.projectionBundleId !== bundleId(manifest)) fail('INVALID_BUNDLE_MANIFEST', 'bundle identity differs');
   const errors: string[] = [], warnings: string[] = [];
   const validators = [] as { name: string; status: 'PASS'; checked: number; warnings: number; errors: number }[];
-  const catalog = new Map(source.products.map((p) => [`P${p.productId}`, p.catalogPresence]));
+  const catalog = new Map(source?.products.map((p) => [`P${p.productId}`, p.catalogPresence]) ?? []);
   const artifactNames = new Set<string>();
   for (const name of names) {
     const entry = manifest.projections[name];
@@ -113,7 +114,7 @@ export function validateBundle(manifestValue: unknown, files: Readonly<Record<st
       if (!specs.success) fail('INVALID_PROJECTION_SCHEMA', specs.error.message);
       if (specs.data.sourceExtractionId !== manifest.source.sourceExtractionId) fail('SOURCE_LINEAGE_INVALID', 'specs');
       if (specs.data.records.length !== entry.recordCount) fail('INVALID_PROJECTION_SCHEMA', 'spec count');
-      for (const row of specs.data.records) if (catalog.get(row.productKey) !== row.catalogPresence) errors.push(`spec product/presence: ${row.productKey}`);
+      if (catalog.size) for (const row of specs.data.records) if (catalog.get(row.productKey) !== row.catalogPresence) errors.push(`spec product/presence: ${row.productKey}`);
       const statusCounts = { parsed: 0, ambiguous: 0, unsupported: 0 };
       for (const row of specs.data.records) statusCounts[row.status] += 1;
       projectionWarnings = statusCounts.ambiguous + statusCounts.unsupported;
@@ -135,11 +136,12 @@ export function validateBundle(manifestValue: unknown, files: Readonly<Record<st
       const seen = new Set<string>();
       for (const row of s.records) {
         const key = `P${row.productId}`;
-        if (!/^P[1-9]\d*$/u.test(key) || catalog.get(key) !== row.catalogPresence) errors.push(`semantic product/presence: ${key}`);
+        if (!/^P[1-9]\d*$/u.test(key) || (source && catalog.get(key) !== row.catalogPresence)) errors.push(`semantic product/presence: ${key}`);
         if (seen.has(key)) errors.push(`duplicate semantic product: ${key}`);
         seen.add(key);
+        if (!source) catalog.set(key, row.catalogPresence);
       }
-      if (seen.size !== catalog.size) errors.push(`product semantics covers ${seen.size}/${catalog.size} source products`);
+      if (source && seen.size !== catalog.size) errors.push(`product semantics covers ${seen.size}/${catalog.size} source products`);
     } else if (name === 'trainingSemantics') {
       const wrapper = z.object({ schemaVersion: z.literal('1'), sourceExtractionId: hash, legacySnapshotId: hash,
         snapshot: trainingSemanticSnapshotSchema }).strict().safeParse(artifact);
@@ -155,10 +157,10 @@ export function validateBundle(manifestValue: unknown, files: Readonly<Record<st
       const seen = new Set<string>();
       for (const row of s.records) {
         const key = `P${row.productId}`;
-        if (!catalog.has(key) || seen.has(key)) errors.push(`training product: ${key}`);
+        if ((catalog.size > 0 && !catalog.has(key)) || seen.has(key)) errors.push(`training product: ${key}`);
         seen.add(key);
       }
-      if (seen.size !== catalog.size) errors.push(`training semantics covers ${seen.size}/${catalog.size} source products`);
+      if (catalog.size > 0 && seen.size !== catalog.size) errors.push(`training semantics covers ${seen.size}/${catalog.size} product semantics products`);
     } else if (name === 'trustMaps') {
       const trust = z.object({ schemaVersion: z.literal('1'), sourceExtractionId: hash, categoryHash: hash, featureHash: hash }).strict().safeParse(artifact);
       if (!trust.success) fail('INVALID_PROJECTION_SCHEMA', 'trust maps');
@@ -167,7 +169,7 @@ export function validateBundle(manifestValue: unknown, files: Readonly<Record<st
     if (entry.snapshotId !== semanticHash(artifact)) fail('INVALID_PROJECTION_SCHEMA', `${name} snapshot identity`);
     validators.push({ name, status: 'PASS', checked: entry.recordCount, warnings: projectionWarnings, errors: 0 });
   }
-  for (const [name, rows] of Object.entries(source.orphanReferences)) if (rows.length) warnings.push(`${name}: ${rows.length} orphan references retained in source`);
+  if (source) for (const [name, rows] of Object.entries(source.orphanReferences)) if (rows.length) warnings.push(`${name}: ${rows.length} orphan references retained in source`);
   if (errors.length) fail('BUNDLE_VALIDATION_FAILED', errors.join('; '));
   return { projectionBundleId: manifest.projectionBundleId, status: 'PASS' as const, validators, warnings, errors };
 }

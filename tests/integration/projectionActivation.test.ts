@@ -28,7 +28,7 @@ describe('projection activation control plane', () => {
     if (ids.length !== 2) throw new Error(`expected two bundles, got ${ids.length}`);
     b1 = `sha256:${ids[0]!}`;
     b2 = `sha256:${ids[1]!}`;
-    store = new FileProjectionActivationStore(base, [source]);
+    store = new FileProjectionActivationStore(base);
     service = new ActivationService(store);
   }, 60000);
   afterAll(async () => { if (base) await rm(base, { recursive: true, force: true }); });
@@ -49,7 +49,7 @@ describe('projection activation control plane', () => {
     const status = await service.status();
     expect(status.history.map((record) => [record.from, record.to])).toEqual([[b2, b1], [b1, b2], [null, b1]]);
     expect(new Set(status.history.map((record) => record.activationId)).size).toBe(3);
-    expect(status.runtimeConsumption).toBe('NOT_YET_WIRED');
+    expect(status.runtimeConsumption).toBe('PROCESS_LOCAL_NOT_OBSERVABLE_FROM_CLI');
     expect(status.loadedProjectionBundleId).toBeNull();
     expect((await readdir(path.join(base, 'control', 'history'))).length).toBe(3);
   }, 30000);
@@ -91,7 +91,7 @@ describe('projection activation control plane', () => {
     const isolated = path.join(base, 'isolated');
     await mkdir(path.join(isolated, 'bundles'), { recursive: true });
     await cp(path.join(base, 'bundles', b1.slice(7)), path.join(isolated, 'bundles', b1.slice(7)), { recursive: true });
-    const local = new ActivationService(new FileProjectionActivationStore(isolated, [path.join(base, 'source')]));
+    const local = new ActivationService(new FileProjectionActivationStore(isolated));
     await expect(local.rollback({ actor })).rejects.toThrow('NO_ROLLBACK_TARGET');
     await local.activate(b1, { actor, reason: 'initial' });
     await expect(local.rollback({ actor })).rejects.toThrow('NO_ROLLBACK_TARGET');
@@ -103,7 +103,7 @@ describe('projection activation control plane', () => {
     const isolated = path.join(base, 'concurrent');
     await mkdir(path.join(isolated, 'bundles'), { recursive: true });
     for (const id of [b1, b2]) await cp(path.join(base, 'bundles', id.slice(7)), path.join(isolated, 'bundles', id.slice(7)), { recursive: true });
-    const local = new ActivationService(new FileProjectionActivationStore(isolated, [path.join(base, 'source')]));
+    const local = new ActivationService(new FileProjectionActivationStore(isolated));
     const attempts = await Promise.allSettled([b1, b2].map((id) => local.activate(id, { actor, reason: 'concurrent', expectedActiveBundleId: null })));
     expect(attempts.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
     expect(attempts.filter((result) => result.status === 'rejected')).toHaveLength(1);

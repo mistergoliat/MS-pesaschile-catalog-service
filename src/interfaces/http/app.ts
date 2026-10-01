@@ -34,6 +34,7 @@ import { registerQueryTrainingSemanticsRoute } from './routes/queryTrainingSeman
 import { registerSemanticDiscoveryQueryRoute } from './routes/semanticDiscoveryQueryRoute.js';
 import { registerCatalogV2Routes } from './routes/catalogV2Routes.js';
 import type { CatalogContractService } from '../../application/catalog/v2/catalogContractService.js';
+import type { RuntimeProjectionManager } from '../../domain/catalog/runtime-projection.js';
 
 export type AppDependencies = {
   service: CatalogApplicationService;
@@ -46,6 +47,7 @@ export type AppDependencies = {
   trainingSemanticQueryService?: TrainingSemanticQueryService;
   semanticDiscoveryService?: SemanticDiscoveryService;
   catalogContractService?: CatalogContractService;
+  projectionRuntimeManager?: RuntimeProjectionManager;
   repository: CatalogRepository;
   readyCheck: () => Promise<{
     database: 'ok' | 'unavailable';
@@ -57,6 +59,9 @@ export type AppDependencies = {
       productSemantics: 'ok' | 'unavailable';
       trainingSemantics: 'ok' | 'unavailable';
     };
+    projection?: { desiredProjectionBundleId: string | null; desiredActivationId: string | null; loadedProjectionBundleId: string | null;
+      loadedAt: string | null; reloadState: string; lastReloadError: string | null;
+      readiness: Record<string, 'READY' | 'DEGRADED' | 'UNAVAILABLE'> };
   }>;
 };
 
@@ -216,8 +221,12 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
     const optional = checks.capabilities
       ? [checks.capabilities.relationships, checks.capabilities.productSemantics, checks.capabilities.trainingSemantics]
       : [checks.relationshipSnapshot];
-    return reply.send({ status: optional.includes('unavailable') ? 'degraded' : 'ok', checks });
+    return reply.send({ status: optional.includes('unavailable') || (checks.projection !== undefined && checks.projection.readiness.projectionRuntime !== 'READY') ? 'degraded' : 'ok', checks });
   });
+
+  app.get('/health/projections', async (_request, reply) => reply.send(deps.projectionRuntimeManager?.status() ?? { reloadState: 'NOT_WIRED' }));
+
+  app.addHook('onRequest', async () => { deps.projectionRuntimeManager?.captureRequest(); });
 
   app.addHook('preHandler', async (request) => {
     const path = request.routeOptions.url ?? '';

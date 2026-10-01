@@ -12,6 +12,7 @@ const app = await buildApp({
   productIntentResolutionService: runtime.productIntentResolutionService,
   searchProductsV2Service: runtime.searchProductsV2Service,
   productSemanticSnapshotReader: runtime.productSemanticSnapshotReader,
+  projectionRuntimeManager: runtime.projectionRuntimeManager,
   trainingSemanticReadService: runtime.trainingSemanticReadService,
   trainingSemanticQueryService: runtime.trainingSemanticQueryService,
   semanticDiscoveryService: runtime.semanticDiscoveryService,
@@ -24,12 +25,14 @@ const app = await buildApp({
     relationshipSnapshotReader: runtime.relationshipSnapshotReader,
     productSemanticSnapshotReader: runtime.productSemanticSnapshotReader,
     trainingSemanticSnapshotReader: runtime.trainingSemanticSnapshotV2Reader,
+    projectionRuntimeManager: runtime.projectionRuntimeManager,
   }),
 });
 
 const shutdown = async (signal: string) => {
   logger.info({ signal }, 'Shutting down catalog service');
   await app.close();
+  runtime.projectionRuntimeManager.stop();
   if ('close' in runtime.cache && typeof runtime.cache.close === 'function') {
     await runtime.cache.close();
   }
