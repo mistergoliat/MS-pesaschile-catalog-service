@@ -329,7 +329,8 @@ export class CatalogContractService {
   }
 
   private inferred(productId: number) {
-    const result = this.dependencies.frequentlyBoughtTogether?.getForProduct(productId, 5);
+    if (!this.dependencies.frequentlyBoughtTogether) return { frequentlyBoughtTogether: { status: 'unavailable' as const, reason: 'not_supported' as const } };
+    const result = this.dependencies.frequentlyBoughtTogether.getForProduct(productId, 5);
     if (!result) return { frequentlyBoughtTogether: { status: 'unavailable' as const, reason: 'snapshot_unavailable' as const } };
     return {
       frequentlyBoughtTogether: {

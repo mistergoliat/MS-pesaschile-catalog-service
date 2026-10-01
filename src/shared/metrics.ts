@@ -103,6 +103,11 @@ export const errorsTotal = new client.Counter({
   labelNames: ['code'] as const,
 });
 
+export const productSemanticLegacyFallbackTotal = new client.Counter({
+  name: 'catalog_product_semantic_legacy_fallback_total',
+  help: 'Product Semantics reads delegated to the legacy snapshot because no CAT-V2 pointer exists',
+});
+
 export const trainingSemanticQueryRequestsTotal = new client.Counter({
   name: 'catalog_training_semantic_query_requests_total',
   help: 'Structured Training Semantic Query requests',

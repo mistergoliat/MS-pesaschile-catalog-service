@@ -153,6 +153,9 @@ describe('CAT-V2 runtime projection hot reload', () => {
     await manager.reconcile();
     expect(manager.status()).toMatchObject({ reloadState: 'NO_ACTIVE_BUNDLE', loadedProjectionBundleId: null,
       readiness: { projectionRuntime: 'UNAVAILABLE' } });
+    const legacy = { getProductSemanticFact: () => ({ productId: '101' }) } as never;
+    const reader = new RuntimeProductSemanticReader(manager, legacy);
+    expect(reader.getProductSemanticFact('101')).toEqual({ productId: '101' });
     await activation.activate(b1!, { actor, reason: 'initial' });
     const spec = path.join(root, 'bundles', b1!.slice(7), 'specs.json');
     await writeFile(spec, '{}');
@@ -162,6 +165,7 @@ describe('CAT-V2 runtime projection hot reload', () => {
     await writeFile(path.join(root, 'control', 'active.json'), '{');
     await manager.reconcile();
     expect(manager.status()).toMatchObject({ reloadState: 'CONTROL_PLANE_INVALID', loadedProjectionBundleId: null });
+    expect(() => reader.getProductSemanticFact('101')).toThrow('Projection runtime has no product semantics');
   }, 30000);
 
   it('reports a missing desired bundle as invalid control state at startup', async () => {

@@ -1215,7 +1215,7 @@ Gate:
 - same source + same code => same content hash;
 - invalid bundle cannot activate;
 - previous valid bundle remains usable;
-- spec parsing meets reviewed precision target;
+- spec parsing reviewed precision: **DEFERRED / WAIVED BY PRODUCT DECISION** for the initial Phase 1 Spec Projection. It is deterministic normalization of current PrestaShop product features, not independent physical or manufacturer-certified verification; retain raw value, source feature, derivation rule, and parsed/ambiguous/unsupported status. External verification is an accepted data quality limitation, not a demonstrated gate.
 - no commercial-truth regression.
 
 ## Phase 2 — Unified Retrieval

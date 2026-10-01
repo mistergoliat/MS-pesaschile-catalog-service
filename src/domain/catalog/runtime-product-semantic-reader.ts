@@ -1,11 +1,16 @@
 import type { ActiveProductSemanticSnapshotReader, ProductSemanticActiveSnapshotMetadata } from '../product-semantic-snapshot/runtime/index.js';
 import { ProductSemanticRuntimeError } from '../product-semantic-snapshot/runtime/index.js';
 import type { RuntimeProjectionManager } from './runtime-projection.js';
+import { productSemanticLegacyFallbackTotal } from '../../shared/metrics.js';
 
 export class RuntimeProductSemanticReader implements ActiveProductSemanticSnapshotReader {
   constructor(private readonly manager: RuntimeProjectionManager, private readonly legacy?: ActiveProductSemanticSnapshotReader) {}
   private index() { return this.manager.forRequest()?.productSemantics ?? null; }
-  private fallback() { return this.manager.status().desiredProjectionBundleId === null ? this.legacy : undefined; }
+  private fallback() {
+    if (this.manager.status().reloadState !== 'NO_ACTIVE_BUNDLE' || !this.legacy) return undefined;
+    productSemanticLegacyFallbackTotal.inc();
+    return this.legacy;
+  }
   async refresh() { return this.fallback()?.refresh() ?? { status: 'unchanged' as const, previousSnapshotId: this.index()?.snapshotId ?? null,
     activeSnapshotId: this.index()?.snapshotId ?? null, statistics: { recordsRead: this.index()?.recordCount ?? 0,
       indexedProducts: this.index()?.recordCount ?? 0, snapshotChanged: false } }; }

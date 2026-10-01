@@ -40,7 +40,7 @@
       "file": "product-simple.json",
       "endpoint": "GET /v2/catalog/products/{productKey}/context",
       "httpStatus": 200,
-      "sha256": "9d61bee81b213f63637c8b683a508e8d0f729a12d6416d9f9e688b41855a18c4"
+      "sha256": "0132fc4c05a514bed5a799271cff2083b8804e0af27057e724215760c0290f0c"
     },
     {
       "file": "product-with-fbt.json",
@@ -52,19 +52,19 @@
       "file": "product-with-variants.json",
       "endpoint": "GET /v2/catalog/products/{productKey}/context",
       "httpStatus": 200,
-      "sha256": "39ac3f540cea80aac62ec0a9c24412668a398fec6e7e7f17575ec9c09c6a8664"
+      "sha256": "e595432ff9488764eba8153b11ead380735bec52b7253ff843cddd563a8afdd4"
     },
     {
       "file": "product-inactive.json",
       "endpoint": "GET /v2/catalog/products/{productKey}/context",
       "httpStatus": 200,
-      "sha256": "ee1aaa96b231e7304b54972ccf5921e5203b1ba0b412c57d35b7891f7fd5913b"
+      "sha256": "671427ee9e889abf3cf42ee4618d24c40a4aac9f7988f24ee3323149c651b4f5"
     },
     {
       "file": "product-not-listed.json",
       "endpoint": "GET /v2/catalog/products/{productKey}/context",
       "httpStatus": 200,
-      "sha256": "27ac5218c73f62eeb44536fc31bfeb0fc04b2caf90d11d1ecd10f185da8e5a92"
+      "sha256": "f5cd0a224c788acab7dd2c94052135022c5426ecf4bd4b370aaf2039e2996bd9"
     },
     {
       "file": "product-not-found.json",
