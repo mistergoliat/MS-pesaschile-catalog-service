@@ -3,7 +3,6 @@ import {
   trainingCoverageStatuses,
   trainingRelationTypes,
   trainingSemanticEvidenceKinds,
-  trainingReviewStates,
   validateProductTrainingCapabilityAssignment,
   type ProductTrainingCapabilityAssignment,
 } from '../training-semantics/index.js';

@@ -3,7 +3,6 @@ import {
   getTrainingSemanticRegistry,
   type ProductTrainingCapabilityAssignment,
   type TrainingCoverageStatus,
-  type TrainingSemanticEvidence,
 } from '../training-semantics/index.js';
 import {
   deterministicTrainingClassificationGeneratedAt,

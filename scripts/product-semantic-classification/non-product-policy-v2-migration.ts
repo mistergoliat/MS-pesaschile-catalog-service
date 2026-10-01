@@ -23,7 +23,6 @@ import {
   computeClassificationChecksum,
   normalizeProductName,
   type ClassifiedOntologyTag,
-  type ProductSemanticClassificationInput,
   type ProductSemanticClassificationResult,
   type ProductSemanticClassificationStatus,
 } from '../../src/domain/product-semantic-classification/index.js';
@@ -111,7 +110,6 @@ async function main(): Promise<void> {
   const inputPaths = await resolveProductSemanticInputPaths(args);
 
   const { inputs } = await loadProductSemanticClassificationInputs(inputPaths);
-  const inputsById = new Map<string, ProductSemanticClassificationInput>(inputs.map((input) => [input.productId, input]));
 
   const registryV1 = getCommercialProductOntologyRegistry();
   const registryV2 = getCommercialProductOntologyRegistryV2();

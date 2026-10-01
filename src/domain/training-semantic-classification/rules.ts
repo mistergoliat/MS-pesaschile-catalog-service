@@ -230,7 +230,6 @@ export function evaluateTrainingSemanticRules(input: TrainingSemanticClassificat
   readonly deferredFindings: readonly { readonly candidateCode: string; readonly matchedText: string; readonly reason: string }[];
 } {
   const normalizedName = normalizeTrainingText(input.name);
-  const categories = sortedCategories(input);
   const nameResults = nameMatches(input, normalizedName);
   const featureResults = explicitFeatureMatches(input, normalizedName);
   const categoryResults = trustedCategoryMatches(input, normalizedName);
@@ -244,7 +243,7 @@ export function evaluateTrainingSemanticRules(input: TrainingSemanticClassificat
   }
   const merged: TrainingSemanticRuleMatch[] = [];
   const reviewCandidates: TrainingSemanticRuleMatch[] = [];
-  for (const [capabilityCode, matches] of byCapability) {
+  for (const matches of byCapability.values()) {
     const ordered = [...matches].sort((a, b) => {
       const confidenceRank = { EXPLICIT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 } as const;
       return confidenceRank[a.confidence] - confidenceRank[b.confidence] || a.relationType.localeCompare(b.relationType) || a.ruleId.localeCompare(b.ruleId);

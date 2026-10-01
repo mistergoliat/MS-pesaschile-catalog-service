@@ -16,7 +16,6 @@
 // matches are kept.
 
 import {
-  commercialProductOntologyRegistryVersionV2,
   commercialProductOntologyRegistryVersionV3,
   getCommercialProductOntologyRegistry,
   computeCommercialProductOntologyRegistryHash,
