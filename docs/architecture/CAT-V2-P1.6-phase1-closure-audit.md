@@ -132,3 +132,7 @@ Published bundles are self-contained for activation, loading, reload, rollback a
 | OPERATIONS | Version the PM2 process definition currently held in `~/.pm2/dump.pm2`; keep `max_memory_restart=384 MiB` durable; set `CATALOG_SERVICE_BUILD_REF` so HTTP provenance stops reporting `catalog-service@local`. Retain raw drill logs, full bundle/activation IDs, production build SHA and exact soak window in the operational evidence store. |
 
 **CAT-V2 PHASE 1: CLOSED**. Production hot reload, rollback, Commercial Truth smoke and fresh-process pointer persistence were reported as validated. The PM2 memory-policy blocker was corrected and re-tested. Remaining items above do not reopen the foundation without a concrete regression.
+
+## Test artifact follow-up (P2.1C, 2026-10-02)
+
+The test-artifact row above records the state at the time of this audit. P2.1C verified that the accepted Training V1/V2 snapshots are reproducibly generated from versioned CSV inputs and added an npm `pretest` bootstrap. A clean checkout running `npm test` now materializes the accepted V2 snapshot before Vitest. The committed synthetic-fixture migration remains optional future test-fixture simplification; manual artifact preparation is no longer required for `npm test`. See `docs/catalog-v2/CAT_V2_P2_1_CLOSURE.md` for generated IDs, hashes and test results.

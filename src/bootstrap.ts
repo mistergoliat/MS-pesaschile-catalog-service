@@ -53,6 +53,8 @@ import { CatalogContractService } from './application/catalog/v2/catalogContract
 import { FileProjectionActivationStore } from './infra/catalog/file-projection-activation-store.js';
 import { RuntimeProjectionManager } from './domain/catalog/runtime-projection.js';
 import { RuntimeProductSemanticReader } from './domain/catalog/runtime-product-semantic-reader.js';
+import { CatalogRuntimeProductContextService } from './application/catalog/runtime-context/catalogRuntimeProductContextService.js';
+import { getCatalogAuthoritySnapshot } from './application/catalog/runtime-context/catalogAuthoritySnapshot.js';
 
 export function createCustomerAffinityEvidenceProvider(
   mode: typeof config.recommendation.customerAffinityProviderMode,
@@ -107,6 +109,7 @@ export async function createRuntime() {
   const catalogContractService = new CatalogContractService({
     reader: new MySqlCatalogV2DataReader(pool),
     publicBaseUrl: config.catalog.publicBaseUrl,
+    serviceBuildRef: config.build.serviceBuildRef,
   });
   const catalogCommercialTruthService = new CatalogCommercialTruthService({
     dataReader: new MySqlCatalogCommercialDataReader(pool),
@@ -199,6 +202,28 @@ export async function createRuntime() {
   });
   await projectionRuntimeManager.start();
   const runtimeProductSemanticReader = new RuntimeProductSemanticReader(projectionRuntimeManager, productSemanticSnapshotReader);
+  const catalogRuntimeProductContextService = new CatalogRuntimeProductContextService({
+    commercialReader: catalogContractService,
+    projectionRuntimeManager,
+    productSemanticReader: runtimeProductSemanticReader,
+    trainingSemanticSnapshotV2Reader,
+    serviceBuildRef: config.build.serviceBuildRef,
+  });
+  const catalogAuthoritySnapshot = () => getCatalogAuthoritySnapshot({
+    projectionRuntimeManager,
+    productSemanticReader: runtimeProductSemanticReader,
+    trainingSemanticSnapshotV2Reader,
+    relationshipSnapshotReader: recommendationRuntime.relationshipSnapshotReader,
+    serviceBuildRef: config.build.serviceBuildRef,
+    getCommercialV2Status: async () => {
+      try {
+        await repository.ping();
+        return 'READY';
+      } catch {
+        return 'UNAVAILABLE';
+      }
+    },
+  });
 
   return {
     pool,
@@ -218,5 +243,7 @@ export async function createRuntime() {
     trainingSemanticQueryService: new DefaultTrainingSemanticQueryService(trainingSemanticSnapshotV2Reader),
     semanticDiscoveryService: new DefaultSemanticDiscoveryService(runtimeProductSemanticReader, trainingSemanticSnapshotV2Reader),
     catalogContractService,
+    catalogRuntimeProductContextService,
+    catalogAuthoritySnapshot,
   };
 }

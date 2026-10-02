@@ -35,6 +35,7 @@ import { registerSemanticDiscoveryQueryRoute } from './routes/semanticDiscoveryQ
 import { registerCatalogV2Routes } from './routes/catalogV2Routes.js';
 import type { CatalogContractService } from '../../application/catalog/v2/catalogContractService.js';
 import type { RuntimeProjectionManager } from '../../domain/catalog/runtime-projection.js';
+import type { CatalogAuthoritySnapshot } from '../../domain/catalog/runtime-authority-contract.js';
 
 export type AppDependencies = {
   service: CatalogApplicationService;
@@ -48,6 +49,7 @@ export type AppDependencies = {
   semanticDiscoveryService?: SemanticDiscoveryService;
   catalogContractService?: CatalogContractService;
   projectionRuntimeManager?: RuntimeProjectionManager;
+  catalogAuthoritySnapshot?: () => Promise<CatalogAuthoritySnapshot>;
   repository: CatalogRepository;
   readyCheck: () => Promise<{
     database: 'ok' | 'unavailable';
@@ -225,6 +227,14 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
   });
 
   app.get('/health/projections', async (_request, reply) => reply.send(deps.projectionRuntimeManager?.status() ?? { reloadState: 'NOT_WIRED' }));
+
+  app.get('/health/catalog-authority', async (_request, reply) => {
+    reply.header('cache-control', 'no-store');
+    if (!deps.catalogAuthoritySnapshot) {
+      return reply.code(503).send({ schemaVersion: 1, status: 'UNAVAILABLE', reason: 'authority_snapshot_not_wired' });
+    }
+    return reply.send(await deps.catalogAuthoritySnapshot());
+  });
 
   app.addHook('onRequest', async () => { deps.projectionRuntimeManager?.captureRequest(); });
 

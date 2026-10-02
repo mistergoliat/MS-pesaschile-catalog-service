@@ -38,6 +38,15 @@ npm run build
 # restart with your process manager
 ```
 
+Before starting/restarting the production process, inject `CATALOG_SERVICE_BUILD_REF` from deployment metadata. This value is required when `NODE_ENV=production`; the service refuses to start without it. Generate it from the checkout rather than entering a SHA by hand, and persist it in the process-manager environment:
+
+```bash
+export CATALOG_SERVICE_BUILD_REF="catalog-service@$(git rev-parse HEAD)"
+# Then restart the service with the process manager that owns this environment.
+```
+
+For Docker builds, pass the same generated value with `--build-arg CATALOG_SERVICE_BUILD_REF="$CATALOG_SERVICE_BUILD_REF"`. A local development process may omit it and reports `catalog-service@local`.
+
 After restart:
 
 ```bash
@@ -50,6 +59,7 @@ Operational notes:
 - `npm ci` is part of every deploy because `package-lock.json` is authoritative.
 - `npm run build` is required because the runtime executes `dist/src/server.js`.
 - This repository has no DB migrations, no schedulers, and no tracked PM2/systemd config.
+- Production must provide `CATALOG_SERVICE_BUILD_REF`; the container accepts it as a build argument or runtime environment variable.
 
 ## Snapshot refresh
 

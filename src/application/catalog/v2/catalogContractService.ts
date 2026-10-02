@@ -56,7 +56,7 @@ export class CatalogContractService {
     this.clock = dependencies.clock ?? { now: () => new Date() };
     this.freshnessTtlSeconds = dependencies.freshnessTtlSeconds ?? 15;
     this.cache = new BoundedTtlCache(dependencies.cacheMaxEntries ?? CATALOG_V2_CACHE_MAX_ENTRIES);
-    this.serviceBuildRef = dependencies.serviceBuildRef ?? process.env.CATALOG_SERVICE_BUILD_REF ?? 'catalog-service@local';
+    this.serviceBuildRef = dependencies.serviceBuildRef ?? config.build.serviceBuildRef;
   }
 
   async search(input: CatalogSearchRequest): Promise<CatalogSearchResponse> {

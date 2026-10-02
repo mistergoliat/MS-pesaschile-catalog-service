@@ -11,7 +11,9 @@ RUN npm run build
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
+ARG CATALOG_SERVICE_BUILD_REF
 ENV NODE_ENV=production
+ENV CATALOG_SERVICE_BUILD_REF=${CATALOG_SERVICE_BUILD_REF}
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev && addgroup -g 1001 -S catalog && adduser -S catalog -u 1001 -G catalog
 COPY --from=build /app/dist ./dist

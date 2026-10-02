@@ -21,6 +21,7 @@ function parseBoolean(value: unknown, fallback: boolean): boolean {
 
 const envSchema = z.object({
   NODE_ENV: z.string().default('development'),
+  CATALOG_SERVICE_BUILD_REF: z.string().trim().min(1).optional(),
   HOST: z.string().default('0.0.0.0'),
   PORT: z.coerce.number().int().positive().default(4010),
   LOG_LEVEL: z.string().default('info'),
@@ -75,6 +76,10 @@ if (!parsed.success) {
 }
 
 const raw = parsed.data;
+if (raw.NODE_ENV === 'production' && !raw.CATALOG_SERVICE_BUILD_REF) {
+  throw new Error('CATALOG_SERVICE_BUILD_REF is required when NODE_ENV=production');
+}
+const serviceBuildRef = raw.CATALOG_SERVICE_BUILD_REF ?? 'catalog-service@local';
 const apiKeys = (raw.CATALOG_API_KEYS ?? raw.API_KEY ?? '')
   .split(',')
   .map((value) => value.trim())
@@ -147,6 +152,9 @@ export const config = {
   apiKeys,
   catalog: {
     publicBaseUrl: raw.CATALOG_PUBLIC_BASE_URL,
+  },
+  build: {
+    serviceBuildRef,
   },
   prestashop: {
     prefix: raw.PRESTASHOP_DB_PREFIX,

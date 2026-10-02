@@ -15,7 +15,7 @@ const DEFAULT_V1_DIR = path.resolve(SERVICE_ROOT, 'data/training-semantic-snapsh
 const DEFAULT_V2_DIR = path.resolve(SERVICE_ROOT, 'data/training-semantic-snapshots/v2');
 const RESOLUTION_CSV = path.resolve(SERVICE_ROOT, 'docs/audits/training-semantics/a00.6.7/post-closure-resolution-active.csv');
 
-function args(argv: readonly string[]) { const values: Record<string, string> = {}; for (const arg of argv) { const match = /^--([a-z-]+)=(.*)$/u.exec(arg); if (!match) throw new Error(`Unsupported argument: ${arg}`); values[match[1]!] = match[2]!; } return { v1Dir: path.resolve(values['source-v1-dir'] ?? DEFAULT_V1_DIR), v2Dir: path.resolve(values['snapshot-dir'] ?? DEFAULT_V2_DIR), generatedAt: values['generated-at'] }; }
+function args(argv: readonly string[]) { const values: Record<string, string> = {}; for (const arg of argv) { const match = /^--([a-z0-9-]+)=(.*)$/u.exec(arg); if (!match) throw new Error(`Unsupported argument: ${arg}`); values[match[1]!] = match[2]!; } return { v1Dir: path.resolve(values['source-v1-dir'] ?? DEFAULT_V1_DIR), v2Dir: path.resolve(values['snapshot-dir'] ?? DEFAULT_V2_DIR), generatedAt: values['generated-at'] }; }
 function resolutionInput() {
   return readFile(RESOLUTION_CSV, 'utf8').then((text) => {
     const records = parseCsvRecords(text).map((row) => ({ productId: Number(row.productId), resolutionState: row.resolutionState }));
