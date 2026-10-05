@@ -36,7 +36,7 @@ function state(input: { bundle: string; activation: string; loadedAt: string; no
     projectionBundleId: input.bundle,
     activationId: input.activation,
     loadedAt: input.loadedAt,
-    manifest: {} as RuntimeProjectionState['manifest'],
+    manifest: { projections: { trainingSemanticsV2: { status: 'present', snapshotId: `projection-${input.bundle}` } } } as RuntimeProjectionState['manifest'],
     productSemantics: {
       snapshotId: `snapshot-${input.bundle}`,
       schemaVersion: '1',
@@ -44,6 +44,7 @@ function state(input: { bundle: string; activation: string; loadedAt: string; no
       facts: [semanticFact(input.semanticMarker)],
     } as unknown as RuntimeProjectionState['productSemantics'],
     trainingSemantics: { schemaVersion: '1', records: [{ productId: 10, marker: 'CAT-V2-TRAINING-V1' }] } as never,
+    trainingSemanticsV2: { snapshot: { schemaVersion: '2', snapshotId: `training-${input.bundle}` } } as never,
     specs: { schemaVersion: '1', records: [{ productKey: 'P10', key: 'max_load_kg', value: input.normalizedValue, unit: 'kg', status: 'parsed' }] } as never,
     trustMaps: { schemaVersion: '1', sourceExtractionId: 'source', categoryHash: `category-${input.bundle}`, featureHash: 'feature' },
     relationships: { status: 'unavailable', reason: 'not_in_cat_v2' },
@@ -68,8 +69,8 @@ describe('CatalogRuntimeProductContextService', () => {
     } as unknown as RuntimeProjectionManager;
     const productSemantics = new RuntimeProductSemanticReader(manager);
     const trainingV2 = {
-      getMetadata: () => ({ schemaVersion: '2', snapshotId: 'legacy-training-v2-snapshot' }),
-      getProductTrainingSemanticFact: () => trainingV2Fact('LEGACY-TRAINING-V2'),
+      getMetadata: () => activeState.trainingSemanticsV2?.snapshot,
+      getProductTrainingSemanticFact: () => trainingV2Fact(activeState.projectionBundleId),
     } as unknown as ActiveTrainingSemanticSnapshotV2Reader;
     const context = new CatalogRuntimeProductContextService({
       commercialReader: commercial,
@@ -82,7 +83,8 @@ describe('CatalogRuntimeProductContextService', () => {
     const b1 = await context.getProductContext({ productKey: 'P10', quantity: 1 });
     expect(b1?.knowledge.productSemantics).toMatchObject({ authority: 'cat-v2-product-semantics', fallbackUsed: false, value: { marker: 'B1' } });
     expect(b1?.knowledge.trainingSemanticsV1CatV2).toMatchObject({ authority: 'cat-v2-training-semantics-v1', value: { marker: 'CAT-V2-TRAINING-V1' } });
-    expect(b1?.knowledge.trainingSemantics).toMatchObject({ authority: 'legacy-training-v2', migrationStatus: 'pending', value: { marker: 'LEGACY-TRAINING-V2' } });
+    expect(b1?.knowledge.trainingSemantics).toMatchObject({ authority: 'cat-v2-training-semantics-v2', migrationStatus: 'complete', value: { marker: 'B1' },
+      lineage: { snapshotId: 'training-B1', projectionId: 'projection-B1', projectionBundleId: 'B1', activationId: 'A1' } });
     expect(b1?.facts.specifications).toEqual([{ name: 'Feature PrestaShop', value: 'peso 20 kg (raw)' }]);
     expect(b1?.knowledge.specs).toMatchObject({ authority: 'cat-v2-specs', value: [{ value: 100 }] });
     expect(b1?.provenance.facts.categorySelectionAuthority).toBe('static-category-trust-map');
@@ -106,7 +108,7 @@ describe('CatalogRuntimeProductContextService', () => {
     expect(b2?.commercial.availability.availableQuantity).toBe(25);
     expect(b2?.commercial.availability.sellability).toBe('sellable');
     expect(b2?.commercial.price.summary?.finalGross.amount).toBeGreaterThan(b1?.commercial.price.summary?.finalGross.amount ?? 0);
-    expect(b2?.knowledge.trainingSemantics).toMatchObject({ value: { marker: 'LEGACY-TRAINING-V2' } });
+    expect(b2?.knowledge.trainingSemantics).toMatchObject({ value: { marker: 'B2' }, lineage: { snapshotId: 'training-B2', activationId: 'A2' } });
     expect(b2?.knowledge.relationships).toMatchObject({ status: 'unavailable', authority: null });
     expect(b2?.knowledge.capabilities).toMatchObject({ status: 'unavailable', authority: null });
 
@@ -114,6 +116,7 @@ describe('CatalogRuntimeProductContextService', () => {
     const rollback = await context.getProductContext({ productKey: 'P10', quantity: 1 });
     expect(rollback?.knowledge.specs).toMatchObject({ value: [{ value: 100 }], lineage: { projectionBundleId: 'B1', activationId: 'A3' } });
     expect(rollback?.commercial.availability.availableQuantity).toBe(25);
+    expect(rollback?.knowledge.trainingSemantics).toMatchObject({ value: { marker: 'B1' }, lineage: { snapshotId: 'training-B1', activationId: 'A3' } });
   });
 
   it('keeps projection lineage unavailable when no bundle is captured without changing commercial freshness', async () => {
@@ -131,6 +134,6 @@ describe('CatalogRuntimeProductContextService', () => {
     expect(result?.freshness.commercial.asOf).toBe(baseProduct.asOf);
     expect(result?.freshness.knowledge).toEqual({ projectionBundleId: null, activationId: null, loadedAt: null });
     expect(result?.knowledge.specs).toMatchObject({ status: 'unavailable', authority: 'cat-v2-specs' });
-    expect(result?.knowledge.trainingSemantics).toMatchObject({ status: 'unavailable', authority: 'legacy-training-v2', migrationStatus: 'pending' });
+    expect(result?.knowledge.trainingSemantics).toMatchObject({ status: 'unavailable', authority: 'cat-v2-training-semantics-v2', migrationStatus: 'complete' });
   });
 });

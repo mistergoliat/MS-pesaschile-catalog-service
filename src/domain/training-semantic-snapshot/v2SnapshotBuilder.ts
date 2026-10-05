@@ -11,6 +11,7 @@ import { trainingSemanticClassifierV2Version } from '../training-semantic-classi
 import { canonicalizeTrainingSnapshotJson, cloneTrainingSnapshotJson, hashTrainingSnapshotCanonical } from './canonicalJson.js';
 import { trainingSemanticSnapshotV2Schema, trainingSemanticResolutionStates, type TrainingSemanticResolutionState, type TrainingSemanticSnapshotV2, type TrainingSemanticSnapshotV2BuildParameters, type TrainingSemanticSnapshotV2Counts, type TrainingSemanticSnapshotV2Record } from './v2-contracts.js';
 import type { TrainingSemanticSnapshot } from './contracts.js';
+import { validateTrainingSemanticSnapshot } from './defaultSnapshotBuilder.js';
 
 export const TRAINING_SEMANTIC_V1_SNAPSHOT_ID = 'sha256:63fd41033347c4bd4bcc6382ce432a8a5d0876c8de0a5bec2dd54ac9297ab90d';
 export const TRAINING_SEMANTIC_V1_REGISTRY_HASH = '82fcbe9a014522257ab8b2d460286d0c6ecbeffc6a01814d8d4e2f6b8849023f';
@@ -74,16 +75,24 @@ function semanticRecord(result: TrainingSemanticClassificationV21Result, paramet
 function projection(assignment: { capabilityCode: string; relationType: string; classificationConfidence: string; evidence: readonly unknown[]; reviewState: string; moduleId?: string; modifierCodes?: readonly string[] }) {
   return { capabilityCode: assignment.capabilityCode, relationType: assignment.relationType, classificationConfidence: assignment.classificationConfidence, evidence: assignment.evidence, reviewState: assignment.reviewState, ...(assignment.moduleId ? { moduleId: assignment.moduleId } : {}), ...(assignment.modifierCodes?.length ? { modifierCodes: assignment.modifierCodes } : {}) };
 }
-function assertV1Lineage(results: readonly TrainingSemanticClassificationV21Result[], source: TrainingSemanticSnapshot): number {
-  if (source.snapshotId !== TRAINING_SEMANTIC_V1_SNAPSHOT_ID) throw new Error(`V1 source snapshot mismatch: expected ${TRAINING_SEMANTIC_V1_SNAPSHOT_ID}, got ${source.snapshotId}`);
+function assertV1Lineage(results: readonly { productId: number; exerciseCapabilities: readonly (Parameters<typeof projection>[0] & { provenance?: { classifierVersion?: string } })[] }[], source: TrainingSemanticSnapshot, acceptedBaseline: boolean): number {
+  validateTrainingSemanticSnapshot(source);
+  if (acceptedBaseline && source.snapshotId !== TRAINING_SEMANTIC_V1_SNAPSHOT_ID) throw new Error(`V1 source snapshot mismatch: expected ${TRAINING_SEMANTIC_V1_SNAPSHOT_ID}, got ${source.snapshotId}`);
   if (source.registryHash !== TRAINING_SEMANTIC_V1_REGISTRY_HASH) throw new Error(`V1 registry hash mismatch: expected ${TRAINING_SEMANTIC_V1_REGISTRY_HASH}, got ${source.registryHash}`);
+  const resultIds = new Set(results.map((result) => result.productId));
+  if (!acceptedBaseline && (source.records.length !== results.length || source.records.some((record) => !resultIds.has(record.productId)))) throw new Error('V1/V2 product universe mismatch');
   const sourceAssignments = source.records.flatMap((record) => record.assignments.map((assignment) => ({ productId: record.productId, assignment: projection(assignment) })));
-  const v2Assignments = results.flatMap((result) => result.exerciseCapabilities.filter((assignment) => assignment.provenance.classifierVersion === 'training-semantic-classifier-v1.1').map((assignment) => ({ productId: result.productId, assignment: projection(assignment) })));
-  if (sourceAssignments.length !== 180 || v2Assignments.length !== sourceAssignments.length) throw new Error(`V1 projection count drift: expected 180, source=${sourceAssignments.length}, V2=${v2Assignments.length}`);
+  const v2Assignments = results.flatMap((result) => result.exerciseCapabilities.filter((assignment) => assignment.provenance?.classifierVersion === 'training-semantic-classifier-v1.1').map((assignment) => ({ productId: result.productId, assignment: projection(assignment) })));
+  if ((acceptedBaseline && sourceAssignments.length !== 180) || v2Assignments.length !== sourceAssignments.length) throw new Error(`V1 projection count drift: source=${sourceAssignments.length}, V2=${v2Assignments.length}`);
   const left = canonicalizeTrainingSnapshotJson(sourceAssignments.sort((a, b) => a.productId - b.productId || assignmentKey(a.assignment).localeCompare(assignmentKey(b.assignment))));
   const right = canonicalizeTrainingSnapshotJson(v2Assignments.sort((a, b) => a.productId - b.productId || assignmentKey(a.assignment).localeCompare(assignmentKey(b.assignment))));
   if (left !== right) throw new Error('V1 projection drift: V2 does not preserve the accepted V1 exercise assignments');
   return sourceAssignments.length;
+}
+
+export function validateTrainingSemanticV2Source(snapshot: TrainingSemanticSnapshotV2, source: TrainingSemanticSnapshot): void {
+  if (snapshot.sourceV1SnapshotId !== source.snapshotId) throw new Error('Training V2/V1 snapshot link mismatch');
+  assertV1Lineage(snapshot.records, source, false);
 }
 
 export function calculateTrainingSemanticSnapshotV2Counts(records: readonly TrainingSemanticSnapshotV2Record[], parameters: TrainingSemanticSnapshotV2BuildParameters): TrainingSemanticSnapshotV2Counts {
@@ -130,7 +139,7 @@ export function validateTrainingSemanticSnapshotV2(snapshot: TrainingSemanticSna
   if (!parsed.success) throw new Error(`Training Semantic Snapshot V2 contract invalid: ${parsed.error.message}`);
   if (snapshot.registryHash !== registryHash) throw new Error(`Training Semantic Snapshot V2 registry hash mismatch: expected ${registryHash}`);
   if (snapshot.classifierVersion !== trainingSemanticClassifierV21Version) throw new Error('Training Semantic Snapshot V2 classifier lineage mismatch');
-  if ((snapshot.rulesHash ?? snapshot.classifierV2RulesHash) !== trainingSemanticClassifierV21RulesHash) throw new Error('Training Semantic Snapshot V2 rules hash mismatch');
+  if (snapshot.classifierV2RulesHash !== trainingSemanticClassifierV21RulesHash || (snapshot.rulesHash ?? snapshot.classifierV2RulesHash) !== trainingSemanticClassifierV21RulesHash) throw new Error('Training Semantic Snapshot V2 rules hash mismatch');
   if (snapshot.records.some((record) => !record.resolutionState)) throw new Error('Training Semantic Snapshot V2 records must persist resolutionState');
   if (new Set(snapshot.records.map((record) => record.productId)).size !== snapshot.records.length) throw new Error('Training Semantic Snapshot V2 contains duplicate productId');
   for (const record of snapshot.records) {
@@ -147,10 +156,19 @@ export function validateTrainingSemanticSnapshotV2(snapshot: TrainingSemanticSna
 
 export class DefaultTrainingSemanticSnapshotV2Builder {
   build(input: { readonly results: readonly TrainingSemanticClassificationV21Result[]; readonly parameters: TrainingSemanticSnapshotV2BuildParameters }): TrainingSemanticSnapshotV2 {
+    return this.buildVerified(input, true);
+  }
+
+  /** Native projections verify their actual V1 source; the legacy publisher keeps its pinned acceptance gate. */
+  buildProjection(input: { readonly results: readonly TrainingSemanticClassificationV21Result[]; readonly parameters: TrainingSemanticSnapshotV2BuildParameters }): TrainingSemanticSnapshotV2 {
+    return this.buildVerified(input, false);
+  }
+
+  private buildVerified(input: { readonly results: readonly TrainingSemanticClassificationV21Result[]; readonly parameters: TrainingSemanticSnapshotV2BuildParameters }, acceptedBaseline: boolean): TrainingSemanticSnapshotV2 {
     const { results, parameters } = input;
     if (results.length === 0) throw new Error('Training Semantic Snapshot V2 cannot be built from an empty source');
     if (results.length !== parameters.sourceProductCount) throw new Error(`sourceProductCount mismatch: ${parameters.sourceProductCount} != ${results.length}`);
-    if (parameters.sourceV1SnapshotId !== TRAINING_SEMANTIC_V1_SNAPSHOT_ID) throw new Error('V1 source snapshot missing or not accepted');
+    if (acceptedBaseline && parameters.sourceV1SnapshotId !== TRAINING_SEMANTIC_V1_SNAPSHOT_ID) throw new Error('V1 source snapshot missing or not accepted');
     if (parameters.sourceV1Snapshot.snapshotId !== parameters.sourceV1SnapshotId) throw new Error('V1 source snapshot id mismatch');
     if (computeTrainingSemanticRegistryV2Hash(registry) !== '7f7c6e88f31a7e4be4fb03761b58b380c6b37070297172a713b2d8a5ba9f14f8') throw new Error('Training Semantic Registry V2 authority hash drifted');
     const seen = new Set<number>();
@@ -164,7 +182,7 @@ export class DefaultTrainingSemanticSnapshotV2Builder {
       const functionKeys = result.trainingFunctions.map((item) => item.functionCode);
       if (new Set(exerciseKeys).size !== exerciseKeys.length || new Set(functionKeys).size !== functionKeys.length) throw new Error(`duplicate semantic assignment for product ${result.productId}`);
     }
-    const v1Assignments = assertV1Lineage(results, parameters.sourceV1Snapshot);
+    const v1Assignments = assertV1Lineage(results, parameters.sourceV1Snapshot, acceptedBaseline);
     const records = results.map((result) => cloneTrainingSnapshotJson(semanticRecord(result, parameters))).sort((a, b) => a.productId - b.productId);
     const counts = calculateTrainingSemanticSnapshotV2Counts(records, parameters);
     const active = parameters.activeTrainingRelevant ?? 0;

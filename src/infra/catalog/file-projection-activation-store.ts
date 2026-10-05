@@ -30,7 +30,7 @@ export class FileProjectionActivationStore implements ActivationStore {
     if (value && typeof value === 'object' && 'projections' in value && value.projections && typeof value.projections === 'object')
       for (const [name, projection] of Object.entries(value.projections))
         if (projection && typeof projection === 'object' && 'status' in projection && projection.status === 'present'
-          && 'schemaVersion' in projection && projection.schemaVersion !== '1')
+          && 'schemaVersion' in projection && projection.schemaVersion !== (name === 'trainingSemanticsV2' ? '2' : '1'))
           throw new BundleError('BUNDLE_RUNTIME_INCOMPATIBLE', `${name} schema ${String(projection.schemaVersion)}`);
     const parsed = bundleManifestSchema.safeParse(value);
     if (!parsed.success) throw new BundleError('BUNDLE_INVALID', parsed.error.message);
@@ -39,7 +39,7 @@ export class FileProjectionActivationStore implements ActivationStore {
     const report = await readJson(path.join(dir, 'validation-report.json'), 'BUNDLE_NOT_TECHNICALLY_VALID') as { status?: string; projectionBundleId?: string };
     if (report.status !== 'PASS' || report.projectionBundleId !== id) throw new BundleError('BUNDLE_NOT_TECHNICALLY_VALID', 'validation report is not PASS');
     const files: Record<string, string> = {};
-    for (const projection of Object.values(manifest.projections)) if (projection.status === 'present') {
+    for (const projection of Object.values(manifest.projections)) if (projection?.status === 'present') {
       try { files[projection.artifact] = await readFile(path.join(dir, projection.artifact), 'utf8'); }
       catch (error) { throw new BundleError('BUNDLE_INVALID', String(error)); }
     }

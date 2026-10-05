@@ -23,6 +23,7 @@
     "catalog:projection:rollback": "tsx scripts/catalog-v2/projection-activation.ts rollback",
     "catalog:projection:status": "tsx scripts/catalog-v2/projection-activation.ts status",
     "catalog:product-semantics:authority-audit": "tsx scripts/catalog-v2/audit-product-semantics-authority.ts",
+    "catalog:training-v2:authority-audit": "tsx scripts/catalog-v2/audit-training-semantics-v2-authority.ts",
     "relationship:snapshot:build": "tsx src/cli/buildRelationshipSnapshot.ts",
     "product:semantic:classify": "tsx scripts/product-semantic-classification/classify-catalog.ts",
     "product:semantic:v2-migration-audit": "tsx scripts/product-semantic-classification/non-product-policy-v2-migration.ts",

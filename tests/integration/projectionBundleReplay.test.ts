@@ -18,8 +18,10 @@ it('replays a PII-free source in independent processes and refuses in-place muta
     expect(b.status, b.stderr).toBe(0);
     const left = JSON.parse(a.stdout), right = JSON.parse(b.stdout);
     expect(left.projectionBundleId).toBe(right.projectionBundleId);
-    for (const name of ['productSemantics', 'trainingSemantics', 'specs', 'trustMaps']) {
+    for (const name of ['productSemantics', 'trainingSemantics', 'trainingSemanticsV2', 'specs', 'trustMaps']) {
       expect(left.projections[name].contentHash).toBe(right.projections[name].contentHash);
+      const artifactName = left.projections[name].artifact;
+      expect(readFileSync(path.join(left.directory, artifactName), 'utf8')).toBe(readFileSync(path.join(right.directory, artifactName), 'utf8'));
     }
     expect(left.validation.status).toBe('PASS');
     expect(JSON.parse(build('a').stdout).reused).toBe(true);

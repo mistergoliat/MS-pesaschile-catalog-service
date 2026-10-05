@@ -33,30 +33,34 @@ function unavailable<T>(authority: string | null, reason: string, fallbackUsed =
 function trainingValue(
   productId: number,
   reader: ActiveTrainingSemanticSnapshotV2Reader,
-): AuthorityValue<TrainingSemanticRuntimeV2Fact> & { migrationStatus: 'pending' } {
-  const metadata = reader.getMetadata();
+  projection: ReturnType<RuntimeProjectionManager['forRequest']>,
+): AuthorityValue<TrainingSemanticRuntimeV2Fact> & { migrationStatus: 'complete' } {
+  const metadata = projection?.trainingSemanticsV2?.snapshot;
   if (!metadata) {
-    return { ...unavailable('legacy-training-v2', 'training_v2_snapshot_unavailable'), migrationStatus: 'pending' };
+    return { ...unavailable('cat-v2-training-semantics-v2', 'training_v2_projection_unavailable'), migrationStatus: 'complete' };
   }
   const lineage: AuthorityLineage = {
+    ...bundleLineage(projection),
+    ...(projection?.manifest.projections.trainingSemanticsV2?.status === 'present'
+      ? { projectionId: projection.manifest.projections.trainingSemanticsV2.snapshotId } : {}),
     snapshotId: metadata.snapshotId,
     schemaVersion: metadata.schemaVersion,
   };
   try {
     const value = reader.getProductTrainingSemanticFact(productId);
     if (!value) {
-      return { ...unavailable('legacy-training-v2', 'training_v2_product_not_present', false, lineage), migrationStatus: 'pending' };
+      return { ...unavailable('cat-v2-training-semantics-v2', 'training_v2_product_not_present', false, lineage), migrationStatus: 'complete' };
     }
     return {
       status: 'available',
-      authority: 'legacy-training-v2',
+      authority: 'cat-v2-training-semantics-v2',
       value,
       fallbackUsed: false,
       lineage,
-      migrationStatus: 'pending',
+      migrationStatus: 'complete',
     };
   } catch {
-    return { ...unavailable('legacy-training-v2', 'training_v2_read_failed', false, lineage), migrationStatus: 'pending' };
+    return { ...unavailable('cat-v2-training-semantics-v2', 'training_v2_read_failed', false, lineage), migrationStatus: 'complete' };
   }
 }
 
@@ -111,7 +115,7 @@ export class CatalogRuntimeProductContextService {
       knowledge: {
         productSemantics: semantics,
         trainingSemanticsV1CatV2: trainingV1,
-        trainingSemantics: trainingValue(productId, this.dependencies.trainingSemanticSnapshotV2Reader),
+        trainingSemantics: trainingValue(productId, this.dependencies.trainingSemanticSnapshotV2Reader, projection),
         specs,
         trustMaps,
         relationships: unavailable(null, projection?.relationships.reason ?? 'cat_v2_relationships_unavailable'),

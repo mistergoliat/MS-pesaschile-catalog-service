@@ -19,7 +19,8 @@ export async function getCatalogAuthoritySnapshot(
   const projection = dependencies.projectionRuntimeManager.forRequest();
   const projectionStatus = dependencies.projectionRuntimeManager.status();
   const productSemanticsStatus = dependencies.productSemanticReader.getAuthorityStatus();
-  const trainingV2 = dependencies.trainingSemanticSnapshotV2Reader.getMetadata();
+  const trainingV2 = projection?.trainingSemanticsV2?.snapshot;
+  const trainingV2Entry = projection?.manifest.projections.trainingSemanticsV2;
   const relationship = dependencies.relationshipSnapshotReader.getActiveSnapshotMetadata();
   const commercialStatus = await dependencies.getCommercialV2Status();
 
@@ -47,10 +48,14 @@ export async function getCatalogAuthoritySnapshot(
         status: projection ? 'READY' : 'UNAVAILABLE',
       },
       trainingSemanticsV2: {
-        authority: 'legacy-training-v2',
+        authority: 'cat-v2-training-semantics-v2',
         status: trainingV2 ? 'READY' : 'UNAVAILABLE',
-        migrationStatus: 'PENDING',
+        migrationStatus: 'COMPLETE',
         snapshotId: trainingV2?.snapshotId ?? null,
+        projectionId: trainingV2Entry?.status === 'present' ? trainingV2Entry.snapshotId : null,
+        projectionBundleId: trainingV2 ? projection!.projectionBundleId : null,
+        activationId: trainingV2 ? projection!.activationId : null,
+        loadedAt: trainingV2 ? projection!.loadedAt : null,
       },
       trainingRegistry: { authority: 'code-training-semantic-registry-v2', status: 'READY' },
       specs: { authority: 'cat-v2-specs', status: projection ? 'READY' : 'UNAVAILABLE' },

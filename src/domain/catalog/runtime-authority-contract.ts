@@ -5,6 +5,7 @@ import type { TrainingSemanticRuntimeV2Fact } from '../training-semantic-snapsho
 import type { SpecsArtifact } from './projection-bundle.js';
 
 export type AuthorityLineage = {
+  projectionId?: string;
   projectionBundleId?: string;
   activationId?: string;
   loadedAt?: string;
@@ -60,7 +61,7 @@ export type CatalogRuntimeProductContext = {
   knowledge: {
     productSemantics: AuthorityValue<ProductSemanticSnapshotFact>;
     trainingSemanticsV1CatV2: AuthorityValue<TrainingSemanticSnapshotRecord>;
-    trainingSemantics: AuthorityValue<TrainingSemanticRuntimeV2Fact> & { migrationStatus: 'pending' };
+    trainingSemantics: AuthorityValue<TrainingSemanticRuntimeV2Fact> & { migrationStatus: 'complete' };
     specs: AuthorityValue<SpecsArtifact['records']>;
     trustMaps: AuthorityValue<RuntimeTrustMaps>;
     relationships: AuthorityValue<never>;
@@ -116,10 +117,14 @@ export type CatalogAuthoritySnapshot = {
     productOntologyRegistry: { authority: 'code-product-ontology-v3'; status: 'READY' };
     trainingSemanticsV1CatV2: { authority: 'cat-v2-training-semantics-v1'; status: CatalogAuthorityStatus };
     trainingSemanticsV2: {
-      authority: 'legacy-training-v2';
+      authority: 'cat-v2-training-semantics-v2';
       status: CatalogAuthorityStatus;
-      migrationStatus: 'PENDING';
+      migrationStatus: 'COMPLETE';
       snapshotId: string | null;
+      projectionId: string | null;
+      projectionBundleId: string | null;
+      activationId: string | null;
+      loadedAt: string | null;
     };
     trainingRegistry: { authority: 'code-training-semantic-registry-v2'; status: 'READY' };
     specs: { authority: 'cat-v2-specs'; status: CatalogAuthorityStatus };

@@ -2,12 +2,14 @@ import { z } from 'zod';
 import { contentHash, type CanonicalExtraction } from './projection-input/canonical.js';
 import { productSemanticSnapshotSchema } from '../product-semantic-snapshot/contracts.js';
 import { createProductSemanticSnapshotId } from '../product-semantic-snapshot/defaultSnapshotBuilder.js';
-import { trainingSemanticSnapshotSchema } from '../training-semantic-snapshot/contracts.js';
+import { trainingSemanticSnapshotSchema, type TrainingSemanticSnapshot } from '../training-semantic-snapshot/contracts.js';
 import { validateTrainingSemanticSnapshot } from '../training-semantic-snapshot/defaultSnapshotBuilder.js';
+import { validateTrainingSemanticSnapshotV2, validateTrainingSemanticV2Source } from '../training-semantic-snapshot/v2SnapshotBuilder.js';
+import { trainingSemanticsV2ProjectionSchema } from './training-semantics-v2-projection.js';
 
 const hash = z.string().regex(/^sha256:[a-f0-9]{64}$/u);
 const names = ['productSemantics', 'trainingSemantics', 'specs', 'relationships', 'capabilities', 'trustMaps'] as const;
-export type ProjectionName = typeof names[number];
+export type ProjectionName = typeof names[number] | 'trainingSemanticsV2';
 const present = z.object({ status: z.literal('present'), schemaVersion: z.literal('1'), snapshotId: hash,
   contentHash: hash, builderVersion: z.string().min(1), recordCount: z.number().int().nonnegative(),
   artifact: z.string().regex(/^[a-zA-Z0-9-]+\.json$/u) }).strict();
@@ -15,7 +17,10 @@ const unavailable = z.object({ status: z.literal('unavailable'), reason: z.strin
 export const bundleManifestSchema = z.object({ schemaVersion: z.literal('1'), projectionBundleId: hash,
   source: z.object({ sourceExtractionId: hash, canonicalInputHash: hash }).strict(),
   build: z.object({ codeRef: z.string().min(1), builtAt: z.string().datetime(), builderVersions: z.record(z.string()) }).strict(),
-  projections: z.object(Object.fromEntries(names.map((name) => [name, z.discriminatedUnion('status', [present, unavailable])])) as Record<ProjectionName, z.ZodDiscriminatedUnion<'status', [typeof present, typeof unavailable]>>).strict(),
+  projections: z.object({
+    ...Object.fromEntries(names.map((name) => [name, z.discriminatedUnion('status', [present, unavailable])])) as Record<typeof names[number], z.ZodDiscriminatedUnion<'status', [typeof present, typeof unavailable]>>,
+    trainingSemanticsV2: z.discriminatedUnion('status', [present.extend({ schemaVersion: z.literal('2') }), unavailable]).optional(),
+  }).strict(),
   validation: z.object({ status: z.literal('TECHNICALLY_VALID'), domainReview: z.enum(['PENDING', 'DOMAIN_REVIEWED']) }).strict(),
 }).strict();
 export type BundleManifest = z.infer<typeof bundleManifestSchema>;
@@ -98,8 +103,9 @@ export function validateBundle(manifestValue: unknown, files: Readonly<Record<st
   const validators = [] as { name: string; status: 'PASS'; checked: number; warnings: number; errors: number }[];
   const catalog = new Map(source?.products.map((p) => [`P${p.productId}`, p.catalogPresence]) ?? []);
   const artifactNames = new Set<string>();
-  for (const name of names) {
+  for (const name of [...names, 'trainingSemanticsV2'] as const) {
     const entry = manifest.projections[name];
+    if (!entry) continue; // Phase 1 bundle identity and compatibility stay intact.
     if (entry.status === 'unavailable') { warnings.push(`${name}: unavailable (${entry.reason})`); continue; }
     if (artifactNames.has(entry.artifact)) fail('INVALID_BUNDLE_MANIFEST', `duplicate artifact ${entry.artifact}`);
     artifactNames.add(entry.artifact);
@@ -161,6 +167,23 @@ export function validateBundle(manifestValue: unknown, files: Readonly<Record<st
         seen.add(key);
       }
       if (catalog.size > 0 && seen.size !== catalog.size) errors.push(`training semantics covers ${seen.size}/${catalog.size} product semantics products`);
+    } else if (name === 'trainingSemanticsV2') {
+      const wrapper = trainingSemanticsV2ProjectionSchema.safeParse(artifact);
+      if (!wrapper.success) fail('INVALID_PROJECTION_SCHEMA', wrapper.error.message);
+      const value = wrapper.data;
+      if (value.sourceExtractionId !== manifest.source.sourceExtractionId || value.codeRef !== manifest.build.codeRef) fail('SOURCE_LINEAGE_INVALID', 'training V2 source/code');
+      try { validateTrainingSemanticSnapshotV2(value.snapshot); } catch (error) { fail('INVALID_PROJECTION_SCHEMA', String(error)); }
+      const v1 = manifest.projections.trainingSemantics;
+      if (v1.status !== 'present') fail('SOURCE_LINEAGE_INVALID', 'training V2 requires native V1');
+      const sourceV1 = JSON.parse(files[v1.artifact]!) as { snapshot: TrainingSemanticSnapshot };
+      try { validateTrainingSemanticV2Source(value.snapshot, sourceV1.snapshot); } catch (error) { fail('SOURCE_LINEAGE_INVALID', String(error)); }
+      if (value.snapshot.records.length !== entry.recordCount || entry.builderVersion !== value.snapshot.classifierVersion) fail('INVALID_PROJECTION_SCHEMA', 'training V2 count/classifier');
+      const trust = manifest.projections.trustMaps;
+      if (trust.status !== 'present') fail('SOURCE_LINEAGE_INVALID', 'training V2 requires trust maps');
+      const maps = JSON.parse(files[trust.artifact]!) as { categoryHash: string; featureHash: string };
+      if (value.inputs.categoryTrustMap !== maps.categoryHash || value.inputs.featureTrustMap !== maps.featureHash) fail('SOURCE_LINEAGE_INVALID', 'training V2 trust inputs');
+      const ids = new Set(value.snapshot.records.map((row) => `P${row.productId}`));
+      if (ids.size !== catalog.size || [...ids].some((id) => !catalog.has(id))) fail('SOURCE_LINEAGE_INVALID', 'training V2 product universe');
     } else if (name === 'trustMaps') {
       const trust = z.object({ schemaVersion: z.literal('1'), sourceExtractionId: hash, categoryHash: hash, featureHash: hash }).strict().safeParse(artifact);
       if (!trust.success) fail('INVALID_PROJECTION_SCHEMA', 'trust maps');

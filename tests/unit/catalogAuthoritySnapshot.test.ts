@@ -6,9 +6,11 @@ import type { ActiveTrainingSemanticSnapshotV2Reader } from '../../src/domain/tr
 import type { ActiveProductRelationshipSnapshotReader } from '../../src/domain/recommendation/relationship-engine/runtime/index.js';
 
 describe('CatalogAuthoritySnapshot', () => {
-  it('distinguishes CAT-V2 Training V1, legacy Training V2, and the two relationship authorities', async () => {
+  it('distinguishes native CAT-V2 Training V1 and V2, and the two relationship authorities', async () => {
     const state = {
       projectionBundleId: 'sha256:bundle', activationId: 'activation', loadedAt: '2026-10-01T12:00:00.000Z',
+      trainingSemanticsV2: { snapshot: { snapshotId: 'training-v2-native' } },
+      manifest: { projections: { trainingSemanticsV2: { status: 'present', snapshotId: 'training-v2-projection' } } },
       relationships: { status: 'unavailable', reason: 'not_projected' },
       capabilities: { status: 'unavailable', reason: 'not_projected' },
     } as RuntimeProjectionState;
@@ -28,7 +30,8 @@ describe('CatalogAuthoritySnapshot', () => {
 
     expect(snapshot.projection).toMatchObject({ bundleId: 'sha256:bundle', activationId: 'activation' });
     expect(snapshot.authorities.trainingSemanticsV1CatV2).toEqual({ authority: 'cat-v2-training-semantics-v1', status: 'READY' });
-    expect(snapshot.authorities.trainingSemanticsV2).toMatchObject({ authority: 'legacy-training-v2', status: 'READY', migrationStatus: 'PENDING', snapshotId: 'training-v2-legacy' });
+    expect(snapshot.authorities.trainingSemanticsV2).toMatchObject({ authority: 'cat-v2-training-semantics-v2', status: 'READY', migrationStatus: 'COMPLETE', snapshotId: 'training-v2-native',
+      projectionId: 'training-v2-projection', projectionBundleId: 'sha256:bundle', activationId: 'activation' });
     expect(snapshot.authorities.relationshipsCatV2).toMatchObject({ authority: null, status: 'UNAVAILABLE' });
     expect(snapshot.authorities.relationshipsRecommendation).toMatchObject({ authority: 'legacy-relationship-snapshot', status: 'READY', snapshotId: 'relationship-legacy' });
     expect(snapshot.authorities.trustMaps).toMatchObject({ status: 'READY', consumedByCategorySelection: false, categorySelectionAuthority: 'static-category-trust-map' });

@@ -13,7 +13,8 @@ describe('GET /health/catalog-authority', () => {
         productSemantics: { authority: 'cat-v2-product-semantics', status: 'READY', fallbackEnabled: true, legacyFallbackReads: 0 },
         productOntologyRegistry: { authority: 'code-product-ontology-v3', status: 'READY' },
         trainingSemanticsV1CatV2: { authority: 'cat-v2-training-semantics-v1', status: 'READY' },
-        trainingSemanticsV2: { authority: 'legacy-training-v2', status: 'READY', migrationStatus: 'PENDING', snapshotId: 'legacy-v2' },
+        trainingSemanticsV2: { authority: 'cat-v2-training-semantics-v2', status: 'READY', migrationStatus: 'COMPLETE', snapshotId: 'native-v2',
+          projectionId: 'projection-v2', projectionBundleId: 'sha256:bundle', activationId: 'activation', loadedAt: '2026-10-01T12:00:00.000Z' },
         trainingRegistry: { authority: 'code-training-semantic-registry-v2', status: 'READY' },
         specs: { authority: 'cat-v2-specs', status: 'READY' },
         trustMaps: { authority: 'cat-v2-trust-maps', status: 'READY', consumedByCategorySelection: false,
@@ -35,7 +36,7 @@ describe('GET /health/catalog-authority', () => {
       expect(response.statusCode).toBe(200);
       expect(response.headers['cache-control']).toBe('no-store');
       expect(response.json().authorities.trainingSemanticsV1CatV2.authority).toBe('cat-v2-training-semantics-v1');
-      expect(response.json().authorities.trainingSemanticsV2.authority).toBe('legacy-training-v2');
+      expect(response.json().authorities.trainingSemanticsV2).toMatchObject({ authority: 'cat-v2-training-semantics-v2', migrationStatus: 'COMPLETE', projectionId: 'projection-v2' });
       expect(response.json().authorities.relationshipsCatV2.status).toBe('UNAVAILABLE');
       expect(response.json().authorities.relationshipsRecommendation.status).toBe('READY');
       expect(JSON.stringify(response.json())).not.toContain('DB_PASSWORD');

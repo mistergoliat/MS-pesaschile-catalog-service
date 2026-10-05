@@ -1,5 +1,4 @@
 import RedisJs from 'ioredis';
-import path from 'node:path';
 import { config } from './shared/config.js';
 import { createPool } from './infrastructure/database/pool.js';
 import { MemoryCacheProvider } from './infrastructure/cache/memory.js';
@@ -38,12 +37,10 @@ import { logger } from './shared/logger.js';
 import { createCorrelationId } from './shared/crypto.js';
 import { resolveProductSemanticSnapshotDir } from './shared/productSemanticSnapshotConfig.js';
 import { FileProductSemanticSnapshotStore } from './infrastructure/product-semantic/fileProductSemanticSnapshotStore.js';
-import { FileTrainingSemanticSnapshotV2Store } from './infrastructure/training-semantic/fileTrainingSemanticSnapshotV2Store.js';
-import { DefaultActiveTrainingSemanticSnapshotV2Reader } from './domain/training-semantic-snapshot/index.js';
+import { RuntimeTrainingSemanticV2Reader } from './domain/catalog/runtime-training-semantic-v2-reader.js';
 import { DefaultTrainingSemanticReadService } from './application/catalog/training-semantic-read/index.js';
 import { DefaultTrainingSemanticQueryService } from './application/catalog/training-semantic-query/index.js';
 import { DefaultSemanticDiscoveryService } from './application/catalog/semantic-discovery/index.js';
-import { resolveTrainingSemanticSnapshotDir } from './shared/trainingSemanticSnapshotConfig.js';
 import {
   DefaultActiveProductSemanticSnapshotReader,
   DefaultProductSemanticRuntimeIndexBuilder,
@@ -178,29 +175,12 @@ export async function createRuntime() {
     logger.error({ error }, 'product_semantic_snapshot_load_failed');
   }
 
-  // Training Semantics V2 is a degradable, read-only branch. The HTTP layer
-  // remains available when its active snapshot is absent or cannot be loaded;
-  // the dedicated endpoints then return 503 and never classify or query SQL.
-  const trainingSemanticSnapshotV2Reader = new DefaultActiveTrainingSemanticSnapshotV2Reader(
-    new FileTrainingSemanticSnapshotV2Store(path.join(resolveTrainingSemanticSnapshotDir(), 'v2')),
-  );
-  try {
-    await trainingSemanticSnapshotV2Reader.refresh();
-    const activeSnapshot = trainingSemanticSnapshotV2Reader.getMetadata();
-    if (activeSnapshot) {
-      logger.info({ snapshotId: activeSnapshot.snapshotId, recordCount: activeSnapshot.counts.sourceProducts }, 'training_semantic_snapshot_v2_loaded');
-    } else {
-      logger.warn({}, 'training_semantic_snapshot_v2_not_available');
-    }
-  } catch (error) {
-    logger.error({ error }, 'training_semantic_snapshot_v2_load_failed');
-  }
-
   const projectionRuntimeManager = new RuntimeProjectionManager(new FileProjectionActivationStore(), {
     pollIntervalMs: Number(process.env.CATALOG_PROJECTION_POLL_MS ?? 1000),
     onAttempt: (event) => logger.info(event, 'projection_runtime_reload'),
   });
   await projectionRuntimeManager.start();
+  const trainingSemanticSnapshotV2Reader = new RuntimeTrainingSemanticV2Reader(projectionRuntimeManager);
   const runtimeProductSemanticReader = new RuntimeProductSemanticReader(projectionRuntimeManager, productSemanticSnapshotReader);
   const catalogRuntimeProductContextService = new CatalogRuntimeProductContextService({
     commercialReader: catalogContractService,

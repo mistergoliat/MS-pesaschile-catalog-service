@@ -3,6 +3,7 @@ import { performance } from 'node:perf_hooks';
 import { deepFreeze } from '../product-semantic-snapshot/canonicalJson.js';
 import { DefaultProductSemanticRuntimeIndexBuilder, type ProductSemanticRuntimeIndex } from '../product-semantic-snapshot/runtime/index.js';
 import type { TrainingSemanticSnapshot } from '../training-semantic-snapshot/contracts.js';
+import type { TrainingSemanticsV2Projection } from './training-semantics-v2-projection.js';
 import { BundleError, type BundleManifest, type SpecsArtifact } from './projection-bundle.js';
 import { ActivationService, type ActivePointer, type ActivationStore } from './projection-activation.js';
 
@@ -13,6 +14,7 @@ export type RuntimeProjectionState = Readonly<{
   manifest: BundleManifest;
   productSemantics: ProductSemanticRuntimeIndex;
   trainingSemantics: TrainingSemanticSnapshot;
+  trainingSemanticsV2: TrainingSemanticsV2Projection | null;
   specs: SpecsArtifact;
   trustMaps: Readonly<{ schemaVersion: '1'; sourceExtractionId: string; categoryHash: string; featureHash: string }>;
   relationships: { status: 'unavailable'; reason: string };
@@ -29,7 +31,7 @@ export type RuntimeProjectionStatus = {
   reloadState: ReloadState;
   lastReloadAttemptAt: string | null;
   lastReloadError: { code: string; message: string; retryable: boolean } | null;
-  readiness: Record<'projectionRuntime' | 'productSemantics' | 'trainingSemantics' | 'specs' | 'trustMaps' | 'relationships' | 'capabilities', ProjectionCapabilityState>;
+  readiness: Record<'projectionRuntime' | 'productSemantics' | 'trainingSemantics' | 'trainingSemanticsV2' | 'specs' | 'trustMaps' | 'relationships' | 'capabilities', ProjectionCapabilityState>;
   lastAttemptMetrics: { validationMs: number; constructionMs: number; swapMs: number; totalMs: number; artifactBytes: number; heapBefore: number; heapCandidate: number; heapAfter: number; rssBefore: number; rssCandidate: number; rssAfter: number } | null;
 };
 type AttemptEvent = { activationId: string; desiredBundleId: string; loadedBundleIdBefore: string | null; loadedBundleIdAfter: string | null;
@@ -70,6 +72,7 @@ export class RuntimeProjectionManager {
       lastReloadError: this.lastReloadError,
       readiness: { projectionRuntime: converged ? 'READY' : hasState ? 'DEGRADED' : 'UNAVAILABLE',
         productSemantics: hasState ? 'READY' : 'UNAVAILABLE', trainingSemantics: hasState ? 'READY' : 'UNAVAILABLE',
+        trainingSemanticsV2: this.loaded?.trainingSemanticsV2 ? 'READY' : 'UNAVAILABLE',
         specs: hasState ? 'READY' : 'UNAVAILABLE', trustMaps: hasState ? 'READY' : 'UNAVAILABLE',
         relationships: 'UNAVAILABLE', capabilities: 'UNAVAILABLE' }, lastAttemptMetrics: this.lastAttemptMetrics };
   }
@@ -181,10 +184,14 @@ export class RuntimeProjectionManager {
     };
     const product = get('productSemantics');
     const training = get('trainingSemantics');
+    const trainingV2Entry = manifest.projections.trainingSemanticsV2;
+    const trainingSemanticsV2 = trainingV2Entry?.status === 'present'
+      ? deepFreeze(JSON.parse(bundle.files[trainingV2Entry.artifact]!) as TrainingSemanticsV2Projection) : null;
     const productSemantics = new DefaultProductSemanticRuntimeIndexBuilder().build(product.snapshot as Parameters<DefaultProductSemanticRuntimeIndexBuilder['build']>[0]);
     const state: RuntimeProjectionState = Object.freeze({ projectionBundleId: pointer.activeProjectionBundleId, activationId: pointer.activationId,
       loadedAt: new Date().toISOString(), manifest: deepFreeze(manifest), productSemantics,
       trainingSemantics: deepFreeze(training.snapshot as TrainingSemanticSnapshot), specs: deepFreeze(get('specs') as SpecsArtifact),
+      trainingSemanticsV2,
       trustMaps: deepFreeze(get('trustMaps') as RuntimeProjectionState['trustMaps']),
       relationships: deepFreeze(manifest.projections.relationships as RuntimeProjectionState['relationships']),
       capabilities: deepFreeze(manifest.projections.capabilities as RuntimeProjectionState['capabilities']) });

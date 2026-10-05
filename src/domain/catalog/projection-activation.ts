@@ -19,7 +19,7 @@ export interface ActivationStore {
   promote(expectedActivationId: string | null, next: ActivePointer, record: ActivationRecord): Promise<void>;
 }
 export const runtimeCompatibility = { bundleManifestSchemas: ['1'], projections: {
-  productSemantics: ['1'], trainingSemantics: ['1'], specs: ['1'], trustMaps: ['1'], relationships: [], capabilities: [],
+  productSemantics: ['1'], trainingSemantics: ['1'], trainingSemanticsV2: ['2'], specs: ['1'], trustMaps: ['1'], relationships: [], capabilities: [],
 } } as const;
 
 export class ActivationService {
@@ -34,7 +34,7 @@ export class ActivationService {
     for (const name of ['productSemantics', 'trainingSemantics', 'specs', 'trustMaps'] as const)
       if (bundle.manifest.projections[name].status !== 'present') throw new BundleError('BUNDLE_RUNTIME_INCOMPATIBLE', `${name} is required`);
     for (const [name, entry] of Object.entries(bundle.manifest.projections)) {
-      if (entry.status === 'present' && !(runtimeCompatibility.projections[name as keyof typeof runtimeCompatibility.projections] as readonly string[]).includes(entry.schemaVersion))
+      if (entry?.status === 'present' && !(runtimeCompatibility.projections[name as keyof typeof runtimeCompatibility.projections] as readonly string[]).includes(entry.schemaVersion))
         throw new BundleError('BUNDLE_RUNTIME_INCOMPATIBLE', `${name} schema ${entry.schemaVersion}`);
     }
     try { validateBundle(bundle.manifest, bundle.files); }

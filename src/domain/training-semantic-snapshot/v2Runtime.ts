@@ -3,7 +3,7 @@ import { cloneTrainingSnapshotJson, deepFreezeTrainingSnapshot } from './canonic
 import { validateTrainingSemanticSnapshotV2 } from './v2SnapshotBuilder.js';
 import type { ActiveTrainingSemanticSnapshotV2Reader, TrainingSemanticRuntimeV2Fact, TrainingSemanticSnapshotV2, TrainingSemanticSnapshotV2Metadata, TrainingSemanticSnapshotV2Store } from './v2-contracts.js';
 
-function fact(record: TrainingSemanticSnapshotV2['records'][number]): TrainingSemanticRuntimeV2Fact {
+export function fact(record: TrainingSemanticSnapshotV2['records'][number]): TrainingSemanticRuntimeV2Fact {
   return {
     ...record,
     exerciseCapabilities: record.exerciseCapabilities.map((assignment) => ({ ...assignment, derivedExerciseSemantics: deriveExerciseSemantics(assignment.capabilityCode) })),
