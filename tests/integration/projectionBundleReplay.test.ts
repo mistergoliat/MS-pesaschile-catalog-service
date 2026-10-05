@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, it } from 'vitest';
@@ -23,10 +23,25 @@ it('replays a PII-free source in independent processes and refuses in-place muta
     }
     expect(left.validation.status).toBe('PASS');
     expect(JSON.parse(build('a').stdout).reused).toBe(true);
+    const audit = path.resolve('scripts/catalog-v2/audit-product-semantics-authority.ts');
+    const auditArgs = [audit, `--projection-root=${root}`, `--bundle-id=${left.projectionBundleId}`, '--replay-accepted-baseline=true'];
+    // The activation store expects <root>/bundles/<id>; use the already published fixture directory.
+    const auditRoot = path.join(root, 'audit-runtime');
+    cpSync(path.join(root, 'a'), path.join(auditRoot, 'bundles'), { recursive: true });
+    auditArgs[1] = `--projection-root=${auditRoot}`;
+    const reportA = path.join(root, 'parity-a.json'), reportB = path.join(root, 'parity-b.json');
+    const diffA = run([...auditArgs, `--output=${reportA}`]), diffB = run([...auditArgs, `--output=${reportB}`]);
+    expect(diffA.status, diffA.stderr).toBe(2);
+    expect(diffB.status, diffB.stderr).toBe(2);
+    expect(readFileSync(reportA, 'utf8')).toBe(readFileSync(reportB, 'utf8'));
+    const parity = JSON.parse(readFileSync(reportA, 'utf8'));
+    expect(parity.inputs.legacy.presenceVerified).toBe(false);
+    expect(parity.coverage.legacy.recordCount).toBe(2011);
+    expect(parity.status).toBe('RETIREMENT_BLOCKED');
     const artifact = path.join(left.directory, 'specs.json');
     writeFileSync(artifact, `${readFileSync(artifact, 'utf8')}corrupt`);
     const conflict = build('a');
     expect(conflict.status).not.toBe(0);
     expect(JSON.parse(conflict.stderr).code).toBe('IMMUTABLE_ARTIFACT_CONFLICT');
   } finally { rmSync(root, { recursive: true, force: true }); }
-}, 30_000);
+}, 60_000);

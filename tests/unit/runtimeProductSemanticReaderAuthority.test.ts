@@ -41,6 +41,22 @@ describe('RuntimeProductSemanticReader authority metadata', () => {
     expect(reader.getAuthorityStatus()).toMatchObject({ authority: 'legacy-product-semantic-snapshot', status: 'READY', fallbackEnabled: true, legacyFallbackReads: 1 });
   });
 
+  it('never fills a missing active-bundle product from legacy through any reader surface', async () => {
+    const state = { projectionBundleId: 'sha256:bundle', activationId: 'activation', loadedAt: '2026-10-01T12:00:00.000Z',
+      productSemantics: { snapshotId: 'cat-snapshot', schemaVersion: '1', recordCount: 0, factsByProductId: new Map(), facts: [] },
+    } as unknown as RuntimeProjectionState;
+    const legacy = { getActiveSnapshotMetadata: vi.fn(() => metadata), getProductSemanticFact: vi.fn(() => fact),
+      getAllProductSemanticFacts: vi.fn(() => [fact]), hasProduct: vi.fn(() => true), refresh: vi.fn() } as unknown as ActiveProductSemanticSnapshotReader;
+    const reader = new RuntimeProductSemanticReader(manager(state, 'READY'), legacy);
+    expect(reader.readWithAuthority('10')).toMatchObject({ status: 'unavailable', reason: 'product_semantics_product_not_present', fallbackUsed: false });
+    expect(reader.getProductSemanticFact('10')).toBeNull();
+    expect(reader.hasProduct('10')).toBe(false);
+    expect(reader.getAllProductSemanticFacts()).toEqual([]);
+    expect(reader.getActiveSnapshotMetadata()?.snapshotId).toBe('cat-snapshot');
+    await reader.refresh();
+    for (const fn of Object.values(legacy)) expect(fn).not.toHaveBeenCalled();
+  });
+
   it.each(['FAILED', 'CONTROL_PLANE_INVALID'])('never uses legacy when projection runtime is %s', (reloadState) => {
     const legacy = { getActiveSnapshotMetadata: vi.fn(() => metadata), getProductSemanticFact: vi.fn(() => fact) } as unknown as ActiveProductSemanticSnapshotReader;
     const reader = new RuntimeProductSemanticReader(manager(null, reloadState), legacy);

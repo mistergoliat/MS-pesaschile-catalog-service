@@ -10,6 +10,8 @@ import { FileProjectionActivationStore } from '../../src/infra/catalog/file-proj
 import { buildApp } from '../../src/interfaces/http/app.js';
 import { collectRuntimeReadinessChecks } from '../../src/shared/readiness.js';
 import { createRepositoryStub } from '../support/fakes.js';
+import { aggregateContentHash, canonicalContent, contentHash, type CanonicalExtraction } from '../../src/domain/catalog/projection-input/canonical.js';
+import { compatibilityCsv } from '../../scripts/catalog-v2/extractionArtifacts.js';
 
 let base: string;
 let ids: string[];
@@ -34,9 +36,26 @@ describe('CAT-V2 runtime projection hot reload', () => {
     base = await mkdtemp(path.join(os.tmpdir(), 'catalog-runtime-'));
     const source = path.join(base, 'source');
     script('write-bundle-replay-fixture.ts', [source]);
-    for (const ref of ['runtime-a', 'runtime-b', 'runtime-c'])
+    for (const ref of ['runtime-a', 'runtime-b', 'runtime-c']) {
+      if (ref === 'runtime-b') {
+        const canonical = JSON.parse(await readFile(path.join(source, 'canonical_input.json'), 'utf8')) as CanonicalExtraction;
+        canonical.products.find((product) => product.productId === 101)!.name = 'Barra de prueba';
+        const raw = canonicalContent(canonical), csv = compatibilityCsv(canonical);
+        const manifestFile = path.join(source, 'projection_input_manifest.json');
+        const manifest = JSON.parse(await readFile(manifestFile, 'utf8'));
+        manifest.artifacts.canonicalInput = contentHash(raw);
+        manifest.artifacts.compatibilityCsv = contentHash(csv);
+        manifest.sourceExtractionId = manifest.artifacts.canonicalInput;
+        manifest.aggregateContentHash = aggregateContentHash(manifest.artifacts);
+        await writeFile(path.join(source, 'canonical_input.json'), raw);
+        await writeFile(path.join(source, 'product_catalog_exploration.csv'), csv);
+        await writeFile(manifestFile, JSON.stringify(manifest));
+      }
       script('build-projection-bundle.ts', [`--source-dir=${source}`, `--output-dir=${path.join(base, 'published')}`, `--code-ref=${ref}`]);
-    ids = (await readdir(path.join(base, 'published'))).filter((name) => /^[a-f0-9]{64}$/u.test(name)).sort().map((name) => `sha256:${name}`);
+    }
+    const manifests = await Promise.all((await readdir(path.join(base, 'published'))).filter((name) => /^[a-f0-9]{64}$/u.test(name))
+      .map(async (name) => JSON.parse(await readFile(path.join(base, 'published', name, 'manifest.json'), 'utf8'))));
+    ids = manifests.sort((a, b) => a.build.codeRef.localeCompare(b.build.codeRef)).map((manifest) => manifest.projectionBundleId);
     if (ids.length !== 3) throw new Error('expected three published bundles');
     await rm(source, { recursive: true }); // Archived build input must not block activation or load.
   }, 60000);
@@ -71,6 +90,8 @@ describe('CAT-V2 runtime projection hot reload', () => {
     expect(first.relationships.status).toBe('unavailable');
     const semanticResponse = await app.inject({ method: 'GET', url: '/v1/products/101/semantics', headers: { 'x-api-key': 'test-api-key' } });
     expect(semanticResponse.statusCode).toBe(200);
+    const s1 = semanticResponse.json();
+    expect(s1.primaryProductFamily.code).toBe('BENCH');
     const inFlight = app.inject({ method: 'GET', url: '/health/projection-capture-test' });
     await entered;
     const promoted = await activation.activate(b2!, { actor, reason: 'promotion', expectedActiveBundleId: b1 });
@@ -81,6 +102,9 @@ describe('CAT-V2 runtime projection hot reload', () => {
     expect((await inFlight).json()).toEqual({ firstBundleId: b1, secondBundleId: b1 });
     expect((await app.inject({ method: 'GET', url: '/health/projection-capture-test' })).json()).toEqual({ firstBundleId: b2, secondBundleId: b2 });
     expect(manager.current()).not.toBe(first);
+    const s2 = (await app.inject({ method: 'GET', url: '/v1/products/101/semantics', headers: { 'x-api-key': 'test-api-key' } })).json();
+    expect(s2.primaryProductFamily.code).toBe('BARBELL');
+    expect(s2.snapshotId).not.toBe(s1.snapshotId);
     expect((await app.inject({ method: 'GET', url: '/health/projections' })).json()).toMatchObject({ desiredProjectionBundleId: b2, loadedProjectionBundleId: b2, reloadState: 'READY' });
     const rolled = await activation.rollback({ actor });
     await waitFor(() => manager.status().loadedProjectionBundleId === b1);
@@ -88,6 +112,7 @@ describe('CAT-V2 runtime projection hot reload', () => {
     const rollbackConvergenceMs = Date.parse(manager.status().loadedAt!) - Date.parse(rolled.active.activatedAt);
     console.log('P1.5_DRILL_METRICS', JSON.stringify({ startupMetrics, promotionMetrics, rollbackMetrics, promotionConvergenceMs, rollbackConvergenceMs }));
     expect(manager.status()).toMatchObject({ desiredProjectionBundleId: b1, loadedProjectionBundleId: b1, reloadState: 'READY' });
+    expect((await app.inject({ method: 'GET', url: '/v1/products/101/semantics', headers: { 'x-api-key': 'test-api-key' } })).json()).toEqual(s1);
     expect((await app.inject({ method: 'GET', url: '/health/ready' })).statusCode).toBe(200);
     manager.stop(); await app.close();
   }, 30000);
