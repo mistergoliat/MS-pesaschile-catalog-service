@@ -13,3 +13,10 @@ artifacts/
 # by `npm run product:semantic:classify` / `npm run product:semantic:v2-migration-audit` — never committed.
 scripts/product-semantic-classification/outputs/*
 !scripts/product-semantic-classification/outputs/.gitkeep
+
+# Cross-projection evidence is generated locally from verified inputs.
+cross-projection-audit/*
+!cross-projection-audit/*.mjs
+!cross-projection-audit/README.md
+!cross-projection-audit/invariants.md
+!cross-projection-audit/new-product-admission.md

@@ -1,0 +1,3922 @@
+{
+  "provenance": {
+    "sourceDir": "artifacts/catalog-projection-input/36ef08110d3444e750c5c94b00009777425d8f86c9e77d6c55bc39d0f180aef2",
+    "bundleDir": "artifacts/catalog-v2/p2-2b-final/bundles/ee4881b5875ee098c8b54c5ee6dfdcd4d4a92d8c91263bd4ce02c1b5e8e0a347",
+    "sourceExtractionId": "sha256:3694b291c89d5f011904b44dc7fe51eb6f355da63d5bb25c485009fadd67d007",
+    "projectionBundleId": "sha256:ee4881b5875ee098c8b54c5ee6dfdcd4d4a92d8c91263bd4ce02c1b5e8e0a347",
+    "note": "Exact real source/projection facts, trust rows restricted to used source IDs. No reclassification. P_NEW is synthetic in test code. Ambiguous fixture is real Specs ambiguity; Product NEEDS_REVIEW test is an explicit counterfactual."
+  },
+  "fixtures": {
+    "classified": {
+      "canonical": {
+        "productId": 7,
+        "catalogPresence": "current_catalog",
+        "name": "Pack 4 Bandas de Resistencia | HWM®",
+        "active": true,
+        "categoryIds": [
+          {
+            "categoryId": 2,
+            "name": "CATEGORÍAS"
+          },
+          {
+            "categoryId": 69,
+            "name": "Gimnasia y Acondicionamiento"
+          },
+          {
+            "categoryId": 143,
+            "name": "Accesorios y Complementos"
+          },
+          {
+            "categoryId": 317,
+            "name": "ACONDICIONAMIENTO"
+          },
+          {
+            "categoryId": 320,
+            "name": "Bandas"
+          },
+          {
+            "categoryId": 323,
+            "name": "Gimnasia & Funcional"
+          },
+          {
+            "categoryId": 386,
+            "name": "PACKS"
+          },
+          {
+            "categoryId": 391,
+            "name": "Otros Packs"
+          },
+          {
+            "categoryId": 431,
+            "name": "Bandas de Resistencia"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 8,
+            "featureValueId": 224813,
+            "name": "Espesor",
+            "value": "4.5 mm."
+          },
+          {
+            "featureId": 14,
+            "featureValueId": 224814,
+            "name": "Resistencia",
+            "value": "Roja: 25 lbs."
+          },
+          {
+            "featureId": 14,
+            "featureValueId": 224815,
+            "name": "Resistencia",
+            "value": "Negra: 50 lbs."
+          },
+          {
+            "featureId": 14,
+            "featureValueId": 224816,
+            "name": "Resistencia",
+            "value": "Morada: 80 lbs."
+          },
+          {
+            "featureId": 14,
+            "featureValueId": 224817,
+            "name": "Resistencia",
+            "value": "Verde: 120 lbs."
+          },
+          {
+            "featureId": 42,
+            "featureValueId": 1566,
+            "name": "Largo total",
+            "value": "104 cm."
+          },
+          {
+            "featureId": 43,
+            "featureValueId": 224818,
+            "name": "Ancho",
+            "value": "Roja: 13 mm."
+          },
+          {
+            "featureId": 43,
+            "featureValueId": 224819,
+            "name": "Ancho",
+            "value": "Negra: 22 mm."
+          },
+          {
+            "featureId": 43,
+            "featureValueId": 224820,
+            "name": "Ancho",
+            "value": "Morada: 32 mm."
+          },
+          {
+            "featureId": 43,
+            "featureValueId": 224821,
+            "name": "Ancho",
+            "value": "Verde: 45 mm."
+          },
+          {
+            "featureId": 44,
+            "featureValueId": 1668,
+            "name": "Circunferencia",
+            "value": "208 cm."
+          },
+          {
+            "featureId": 51,
+            "featureValueId": 1869,
+            "name": "Material",
+            "value": "100% Látex natural"
+          },
+          {
+            "featureId": 62,
+            "featureValueId": 2200,
+            "name": "Marca",
+            "value": "HWM"
+          },
+          {
+            "featureId": 64,
+            "featureValueId": 2238,
+            "name": "Garantía Legal",
+            "value": "6 meses por fallas de fábrica"
+          }
+        ],
+        "variantIds": [],
+        "revenueTaxIncl": "37166521.800000"
+      },
+      "productSemantics": {
+        "catalogPresence": "current_catalog",
+        "classificationStatus": "CLASSIFIED",
+        "disciplines": [],
+        "needsReviewCandidates": [],
+        "ontologyHash": "f2de79fbedaee83202a133de5af1d86395470ddbf349103dfa2b3bd2f6bdb955",
+        "ontologyVersion": "commercial-product-ontology-v3",
+        "primaryProductFamily": {
+          "axis": "PRODUCT_FAMILY",
+          "code": "BAND_SUSPENSION",
+          "confidence": "EXPLICIT",
+          "ruleId": "PF_BAND_SUSPENSION_NAME_V1"
+        },
+        "productId": "7",
+        "provenance": {
+          "evidence": [
+            {
+              "axis": "PRODUCT_FAMILY",
+              "code": "BAND_SUSPENSION",
+              "normalizedValue": "pack 4 bandas de resistencia hwm",
+              "rawValue": "Pack 4 Bandas de Resistencia | HWM®",
+              "ruleId": "PF_BAND_SUSPENSION_NAME_V1",
+              "sourceId": "NAME",
+              "sourceType": "NAME_TEXT"
+            }
+          ],
+          "exclusion": null
+        },
+        "secondaryProductFamilies": [],
+        "useContexts": []
+      },
+      "training": {
+        "activeTrainingRelevant": false,
+        "coverageStatus": "NO_CAPABILITY_APPLICABLE",
+        "exerciseCapabilities": [],
+        "productId": 7,
+        "resolutionState": "VERIFIED_NO_APPLICABLE_CAPABILITY",
+        "resolved": true,
+        "trainingFunctions": [],
+        "warnings": []
+      },
+      "specs": [],
+      "trust": {
+        "categories": [
+          {
+            "categoryId": 2,
+            "trustClass": "NAVIGATION"
+          },
+          {
+            "categoryId": 69,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 143,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 317,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 320,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 323,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 386,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 391,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 431,
+            "trustClass": "SEMANTIC_STRONG"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 8,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 14,
+            "trustClass": "NOISE"
+          },
+          {
+            "featureId": 42,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 43,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 44,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 51,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 62,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 64,
+            "trustClass": "LOGISTICS"
+          }
+        ],
+        "sourceHashesVerified": true,
+        "consumedByCategorySelection": false
+      },
+      "lineage": {
+        "productVerified": true,
+        "trainingVerified": true,
+        "specsVerified": true
+      }
+    },
+    "training": {
+      "canonical": {
+        "productId": 176,
+        "catalogPresence": "current_catalog",
+        "name": "Crossover Lat Pulldown ZR Series | PROmachine",
+        "active": true,
+        "categoryIds": [
+          {
+            "categoryId": 2,
+            "name": "CATEGORÍAS"
+          },
+          {
+            "categoryId": 280,
+            "name": "EQUIPAMIENTO"
+          },
+          {
+            "categoryId": 290,
+            "name": "Máquinas con Poleas"
+          },
+          {
+            "categoryId": 291,
+            "name": "Máquinas Multifuncionales"
+          },
+          {
+            "categoryId": 314,
+            "name": "Máquinas Home Gym"
+          },
+          {
+            "categoryId": 404,
+            "name": "Zero Series"
+          },
+          {
+            "categoryId": 418,
+            "name": "EN TENDENCIA"
+          },
+          {
+            "categoryId": 419,
+            "name": "DESTACADOS"
+          },
+          {
+            "categoryId": 470,
+            "name": "FALL SEASON"
+          },
+          {
+            "categoryId": 496,
+            "name": "Máquinas"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 1,
+            "featureValueId": 95531,
+            "name": "Clasificación de Uso",
+            "value": "USO REGULAR - HOGAR"
+          },
+          {
+            "featureId": 2,
+            "featureValueId": 5,
+            "name": "Categoría",
+            "value": "Olímpico"
+          },
+          {
+            "featureId": 3,
+            "featureValueId": 224928,
+            "name": "Peso Neto (N.W.)",
+            "value": "CAJA 3: 20.7 kg."
+          },
+          {
+            "featureId": 3,
+            "featureValueId": 224929,
+            "name": "Peso Neto (N.W.)",
+            "value": "CAJA 1: 25.5 kg."
+          },
+          {
+            "featureId": 3,
+            "featureValueId": 224930,
+            "name": "Peso Neto (N.W.)",
+            "value": "CAJA 2: 21.5 kg."
+          },
+          {
+            "featureId": 10,
+            "featureValueId": 224931,
+            "name": "Peso Bruto (G.W.)",
+            "value": "CAJA 1: 27.5 kg."
+          },
+          {
+            "featureId": 10,
+            "featureValueId": 224932,
+            "name": "Peso Bruto (G.W.)",
+            "value": "CAJA 2: 23.5 kg."
+          },
+          {
+            "featureId": 10,
+            "featureValueId": 224933,
+            "name": "Peso Bruto (G.W.)",
+            "value": "CAJA 3: 22 kg."
+          },
+          {
+            "featureId": 11,
+            "featureValueId": 224934,
+            "name": "Peso máximo de usuario",
+            "value": "Barra Pull Up: 100 kg."
+          },
+          {
+            "featureId": 12,
+            "featureValueId": 224935,
+            "name": "Peso máximo de carga",
+            "value": "120 kg."
+          },
+          {
+            "featureId": 15,
+            "featureValueId": 224936,
+            "name": "Dimensiones del producto armado",
+            "value": "Largo: 198 cm. Ancho: 140 cm. Alto: 207 cm."
+          },
+          {
+            "featureId": 17,
+            "featureValueId": 224937,
+            "name": "Dimensiones del Empaque",
+            "value": "CAJA 1. Largo: 198 cm. Ancho: 27.5 cm. Alto: 13 cm."
+          },
+          {
+            "featureId": 17,
+            "featureValueId": 224938,
+            "name": "Dimensiones del Empaque",
+            "value": "CAJA 2. Largo: 160 cm. Ancho: 55.5 cm. Alto: 16.5 cm."
+          },
+          {
+            "featureId": 17,
+            "featureValueId": 224939,
+            "name": "Dimensiones del Empaque",
+            "value": "CAJA 3. Largo: 108 cm. Ancho: 29.5 cm. Alto: 16.5 cm."
+          },
+          {
+            "featureId": 36,
+            "featureValueId": 224940,
+            "name": "Perfiles",
+            "value": "50*50*1.5 mm."
+          },
+          {
+            "featureId": 39,
+            "featureValueId": 1528,
+            "name": "Estructura",
+            "value": "Acero"
+          },
+          {
+            "featureId": 45,
+            "featureValueId": 224941,
+            "name": "Largo de la manga",
+            "value": "Manga cargable: 21 cm."
+          },
+          {
+            "featureId": 47,
+            "featureValueId": 224942,
+            "name": "Diámetro de agarre",
+            "value": "Barra Pull Up: 32 mm."
+          },
+          {
+            "featureId": 47,
+            "featureValueId": 224943,
+            "name": "Diámetro de agarre",
+            "value": "Agarres de Polea: 30 mm."
+          },
+          {
+            "featureId": 48,
+            "featureValueId": 1819,
+            "name": "Diámetro de manga",
+            "value": "Ø50 mm"
+          },
+          {
+            "featureId": 55,
+            "featureValueId": 2074,
+            "name": "Acabado",
+            "value": "Black powder coat finish (Acabado mate)"
+          },
+          {
+            "featureId": 61,
+            "featureValueId": 2139,
+            "name": "Color(es)",
+            "value": "Negro / Gris plata"
+          },
+          {
+            "featureId": 62,
+            "featureValueId": 2202,
+            "name": "Marca",
+            "value": "PROMACHINE"
+          },
+          {
+            "featureId": 63,
+            "featureValueId": 91280,
+            "name": "Modelo ",
+            "value": "Zero Series"
+          },
+          {
+            "featureId": 64,
+            "featureValueId": 2238,
+            "name": "Garantía Legal",
+            "value": "6 meses por fallas de fábrica"
+          },
+          {
+            "featureId": 65,
+            "featureValueId": 224944,
+            "name": "Relación de cable y polea",
+            "value": "1:1 - 2:1"
+          },
+          {
+            "featureId": 66,
+            "featureValueId": 96584,
+            "name": "Servicio de Armado",
+            "value": "No incluido (Se vende por separado)"
+          }
+        ],
+        "variantIds": [],
+        "revenueTaxIncl": "97367776.000000"
+      },
+      "productSemantics": {
+        "catalogPresence": "current_catalog",
+        "classificationStatus": "CLASSIFIED",
+        "disciplines": [],
+        "needsReviewCandidates": [],
+        "ontologyHash": "f2de79fbedaee83202a133de5af1d86395470ddbf349103dfa2b3bd2f6bdb955",
+        "ontologyVersion": "commercial-product-ontology-v3",
+        "primaryProductFamily": {
+          "axis": "PRODUCT_FAMILY",
+          "code": "CABLE_MACHINE",
+          "confidence": "EXPLICIT",
+          "ruleId": "PF_CABLE_MACHINE_NAME_V1"
+        },
+        "productId": "176",
+        "provenance": {
+          "evidence": [
+            {
+              "axis": "PRODUCT_FAMILY",
+              "code": "CABLE_MACHINE",
+              "normalizedValue": "crossover lat pulldown zr series promachine",
+              "rawValue": "Crossover Lat Pulldown ZR Series | PROmachine",
+              "ruleId": "PF_CABLE_MACHINE_NAME_V1",
+              "sourceId": "NAME",
+              "sourceType": "NAME_TEXT"
+            },
+            {
+              "axis": "USE_CONTEXT",
+              "code": "HOME_GYM",
+              "normalizedValue": "uso regular hogar",
+              "rawValue": "USO REGULAR - HOGAR",
+              "ruleId": "CTX_HOME_USE_CLASSIFICATION_V1",
+              "sourceId": "1",
+              "sourceType": "STRUCTURED_FEATURE"
+            }
+          ],
+          "exclusion": null
+        },
+        "secondaryProductFamilies": [],
+        "useContexts": [
+          {
+            "axis": "USE_CONTEXT",
+            "code": "HOME_GYM",
+            "confidence": "EXPLICIT",
+            "ruleId": "CTX_HOME_USE_CLASSIFICATION_V1"
+          }
+        ]
+      },
+      "training": {
+        "activeTrainingRelevant": true,
+        "coverageStatus": "UNMODELED",
+        "exerciseCapabilities": [
+          {
+            "capabilityCode": "LAT_PULLDOWN",
+            "classificationConfidence": "EXPLICIT",
+            "evidence": [
+              {
+                "kind": "NAME",
+                "matchedText": "lat pulldown",
+                "ruleId": "NAME_LAT_PULLDOWN_EXPLICIT_V1",
+                "sourceId": "NAME"
+              }
+            ],
+            "provenance": {
+              "classifierVersion": "training-semantic-classifier-v1.1",
+              "sourceCatalogExport": "product_catalog_exploration.csv"
+            },
+            "relationType": "DIRECT",
+            "reviewState": "AUTO"
+          },
+          {
+            "capabilityCode": "PULL_UP",
+            "classificationConfidence": "HIGH",
+            "evidence": [
+              {
+                "kind": "STRUCTURED_FEATURE",
+                "matchedText": "Peso máximo de usuario: Barra Pull Up: 100 kg.",
+                "note": "Explicit module/configuration evidence; supported relation.",
+                "ruleId": "FEATURE_NAME_PULL_UP_DIRECT_EXPLICIT_V1",
+                "sourceId": "11"
+              },
+              {
+                "kind": "STRUCTURED_FEATURE",
+                "matchedText": "Diámetro de agarre: Barra Pull Up: 32 mm.",
+                "note": "Explicit module/configuration evidence; supported relation.",
+                "ruleId": "FEATURE_NAME_PULL_UP_DIRECT_EXPLICIT_V1",
+                "sourceId": "47"
+              }
+            ],
+            "provenance": {
+              "classifierVersion": "training-semantic-classifier-v1.1",
+              "sourceCatalogExport": "product_catalog_exploration.csv"
+            },
+            "relationType": "SUPPORTED",
+            "reviewState": "AUTO"
+          }
+        ],
+        "productId": 176,
+        "resolutionState": "SEMANTIC_COMPLETE",
+        "resolved": true,
+        "trainingFunctions": [
+          {
+            "classificationConfidence": "HIGH",
+            "evidence": [
+              {
+                "kind": "STRUCTURED_FEATURE",
+                "matchedText": "Relación de cable y polea: 1:1 - 2:1",
+                "ruleId": "FEATURE_NAME_CABLE_RESISTANCE_EXPLICIT_V2",
+                "sourceId": "65"
+              },
+              {
+                "kind": "TRUSTED_CATEGORY",
+                "matchedText": "maquinas con poleas",
+                "note": "SEMANTIC_STRONG",
+                "ruleId": "CATEGORY_NAME_CABLE_RESISTANCE_EXPLICIT_V2",
+                "sourceId": "CATEGORY"
+              }
+            ],
+            "functionCode": "CABLE_RESISTANCE",
+            "provenance": {
+              "classifierVersion": "training-semantic-classifier-v2",
+              "sourceCatalogExport": "product_catalog_exploration.csv"
+            },
+            "relationType": "DIRECT",
+            "reviewState": "AUTO"
+          },
+          {
+            "classificationConfidence": "EXPLICIT",
+            "evidence": [
+              {
+                "kind": "NAME",
+                "matchedText": "crossover",
+                "ruleId": "NAME_MULTI_DIRECTIONAL_RESISTANCE_EXPLICIT_V2",
+                "sourceId": "NAME"
+              }
+            ],
+            "functionCode": "MULTI_DIRECTIONAL_RESISTANCE",
+            "provenance": {
+              "classifierVersion": "training-semantic-classifier-v2",
+              "sourceCatalogExport": "product_catalog_exploration.csv"
+            },
+            "relationType": "DIRECT",
+            "reviewState": "AUTO"
+          }
+        ],
+        "warnings": [
+          "SUPPORTED assignment requires explicit module/configuration evidence."
+        ]
+      },
+      "specs": [
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-15-cm-v1",
+          "key": "assembled_height_cm",
+          "productKey": "P176",
+          "rawValue": "Largo: 198 cm. Ancho: 140 cm. Alto: 207 cm.",
+          "sourceFeature": {
+            "featureId": 15,
+            "featureValueId": 224936
+          },
+          "status": "parsed",
+          "unit": "cm",
+          "value": 207
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-15-cm-v1",
+          "key": "assembled_length_cm",
+          "productKey": "P176",
+          "rawValue": "Largo: 198 cm. Ancho: 140 cm. Alto: 207 cm.",
+          "sourceFeature": {
+            "featureId": 15,
+            "featureValueId": 224936
+          },
+          "status": "parsed",
+          "unit": "cm",
+          "value": 198
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-15-cm-v1",
+          "key": "assembled_width_cm",
+          "productKey": "P176",
+          "rawValue": "Largo: 198 cm. Ancho: 140 cm. Alto: 207 cm.",
+          "sourceFeature": {
+            "featureId": 15,
+            "featureValueId": 224936
+          },
+          "status": "parsed",
+          "unit": "cm",
+          "value": 140
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-12-kg-v1",
+          "key": "max_load_kg",
+          "productKey": "P176",
+          "rawValue": "120 kg.",
+          "sourceFeature": {
+            "featureId": 12,
+            "featureValueId": 224935
+          },
+          "status": "parsed",
+          "unit": "kg",
+          "value": 120
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-11-kg-v1",
+          "key": "max_user_weight_kg",
+          "productKey": "P176",
+          "rawValue": "Barra Pull Up: 100 kg.",
+          "sourceFeature": {
+            "featureId": 11,
+            "featureValueId": 224934
+          },
+          "status": "parsed",
+          "unit": "kg",
+          "value": 100
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-3-kg-v1",
+          "key": "weight_kg",
+          "productKey": "P176",
+          "rawValue": "CAJA 3: 20.7 kg.",
+          "sourceFeature": {
+            "featureId": 3,
+            "featureValueId": 224928
+          },
+          "status": "ambiguous",
+          "unit": "kg",
+          "value": null
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-3-kg-v1",
+          "key": "weight_kg",
+          "productKey": "P176",
+          "rawValue": "CAJA 1: 25.5 kg.",
+          "sourceFeature": {
+            "featureId": 3,
+            "featureValueId": 224929
+          },
+          "status": "ambiguous",
+          "unit": "kg",
+          "value": null
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-3-kg-v1",
+          "key": "weight_kg",
+          "productKey": "P176",
+          "rawValue": "CAJA 2: 21.5 kg.",
+          "sourceFeature": {
+            "featureId": 3,
+            "featureValueId": 224930
+          },
+          "status": "ambiguous",
+          "unit": "kg",
+          "value": null
+        }
+      ],
+      "trust": {
+        "categories": [
+          {
+            "categoryId": 2,
+            "trustClass": "NAVIGATION"
+          },
+          {
+            "categoryId": 280,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 290,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 291,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 314,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 404,
+            "trustClass": "LEGACY"
+          },
+          {
+            "categoryId": 418,
+            "trustClass": "CAMPAIGN"
+          },
+          {
+            "categoryId": 419,
+            "trustClass": "CAMPAIGN"
+          },
+          {
+            "categoryId": 470,
+            "trustClass": "CAMPAIGN"
+          },
+          {
+            "categoryId": 496,
+            "trustClass": "SEMANTIC_WEAK"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 1,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 2,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 3,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 10,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 11,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 12,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 15,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 17,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 36,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 39,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 45,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 47,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 48,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 55,
+            "trustClass": "PRESENTATION"
+          },
+          {
+            "featureId": 61,
+            "trustClass": "PRESENTATION"
+          },
+          {
+            "featureId": 62,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 63,
+            "trustClass": "PRESENTATION"
+          },
+          {
+            "featureId": 64,
+            "trustClass": "LOGISTICS"
+          },
+          {
+            "featureId": 65,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 66,
+            "trustClass": "LOGISTICS"
+          }
+        ],
+        "sourceHashesVerified": true,
+        "consumedByCategorySelection": false
+      },
+      "lineage": {
+        "productVerified": true,
+        "trainingVerified": true,
+        "specsVerified": true
+      }
+    },
+    "negative": {
+      "canonical": {
+        "productId": 7,
+        "catalogPresence": "current_catalog",
+        "name": "Pack 4 Bandas de Resistencia | HWM®",
+        "active": true,
+        "categoryIds": [
+          {
+            "categoryId": 2,
+            "name": "CATEGORÍAS"
+          },
+          {
+            "categoryId": 69,
+            "name": "Gimnasia y Acondicionamiento"
+          },
+          {
+            "categoryId": 143,
+            "name": "Accesorios y Complementos"
+          },
+          {
+            "categoryId": 317,
+            "name": "ACONDICIONAMIENTO"
+          },
+          {
+            "categoryId": 320,
+            "name": "Bandas"
+          },
+          {
+            "categoryId": 323,
+            "name": "Gimnasia & Funcional"
+          },
+          {
+            "categoryId": 386,
+            "name": "PACKS"
+          },
+          {
+            "categoryId": 391,
+            "name": "Otros Packs"
+          },
+          {
+            "categoryId": 431,
+            "name": "Bandas de Resistencia"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 8,
+            "featureValueId": 224813,
+            "name": "Espesor",
+            "value": "4.5 mm."
+          },
+          {
+            "featureId": 14,
+            "featureValueId": 224814,
+            "name": "Resistencia",
+            "value": "Roja: 25 lbs."
+          },
+          {
+            "featureId": 14,
+            "featureValueId": 224815,
+            "name": "Resistencia",
+            "value": "Negra: 50 lbs."
+          },
+          {
+            "featureId": 14,
+            "featureValueId": 224816,
+            "name": "Resistencia",
+            "value": "Morada: 80 lbs."
+          },
+          {
+            "featureId": 14,
+            "featureValueId": 224817,
+            "name": "Resistencia",
+            "value": "Verde: 120 lbs."
+          },
+          {
+            "featureId": 42,
+            "featureValueId": 1566,
+            "name": "Largo total",
+            "value": "104 cm."
+          },
+          {
+            "featureId": 43,
+            "featureValueId": 224818,
+            "name": "Ancho",
+            "value": "Roja: 13 mm."
+          },
+          {
+            "featureId": 43,
+            "featureValueId": 224819,
+            "name": "Ancho",
+            "value": "Negra: 22 mm."
+          },
+          {
+            "featureId": 43,
+            "featureValueId": 224820,
+            "name": "Ancho",
+            "value": "Morada: 32 mm."
+          },
+          {
+            "featureId": 43,
+            "featureValueId": 224821,
+            "name": "Ancho",
+            "value": "Verde: 45 mm."
+          },
+          {
+            "featureId": 44,
+            "featureValueId": 1668,
+            "name": "Circunferencia",
+            "value": "208 cm."
+          },
+          {
+            "featureId": 51,
+            "featureValueId": 1869,
+            "name": "Material",
+            "value": "100% Látex natural"
+          },
+          {
+            "featureId": 62,
+            "featureValueId": 2200,
+            "name": "Marca",
+            "value": "HWM"
+          },
+          {
+            "featureId": 64,
+            "featureValueId": 2238,
+            "name": "Garantía Legal",
+            "value": "6 meses por fallas de fábrica"
+          }
+        ],
+        "variantIds": [],
+        "revenueTaxIncl": "37166521.800000"
+      },
+      "productSemantics": {
+        "catalogPresence": "current_catalog",
+        "classificationStatus": "CLASSIFIED",
+        "disciplines": [],
+        "needsReviewCandidates": [],
+        "ontologyHash": "f2de79fbedaee83202a133de5af1d86395470ddbf349103dfa2b3bd2f6bdb955",
+        "ontologyVersion": "commercial-product-ontology-v3",
+        "primaryProductFamily": {
+          "axis": "PRODUCT_FAMILY",
+          "code": "BAND_SUSPENSION",
+          "confidence": "EXPLICIT",
+          "ruleId": "PF_BAND_SUSPENSION_NAME_V1"
+        },
+        "productId": "7",
+        "provenance": {
+          "evidence": [
+            {
+              "axis": "PRODUCT_FAMILY",
+              "code": "BAND_SUSPENSION",
+              "normalizedValue": "pack 4 bandas de resistencia hwm",
+              "rawValue": "Pack 4 Bandas de Resistencia | HWM®",
+              "ruleId": "PF_BAND_SUSPENSION_NAME_V1",
+              "sourceId": "NAME",
+              "sourceType": "NAME_TEXT"
+            }
+          ],
+          "exclusion": null
+        },
+        "secondaryProductFamilies": [],
+        "useContexts": []
+      },
+      "training": {
+        "activeTrainingRelevant": false,
+        "coverageStatus": "NO_CAPABILITY_APPLICABLE",
+        "exerciseCapabilities": [],
+        "productId": 7,
+        "resolutionState": "VERIFIED_NO_APPLICABLE_CAPABILITY",
+        "resolved": true,
+        "trainingFunctions": [],
+        "warnings": []
+      },
+      "specs": [],
+      "trust": {
+        "categories": [
+          {
+            "categoryId": 2,
+            "trustClass": "NAVIGATION"
+          },
+          {
+            "categoryId": 69,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 143,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 317,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 320,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 323,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 386,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 391,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 431,
+            "trustClass": "SEMANTIC_STRONG"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 8,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 14,
+            "trustClass": "NOISE"
+          },
+          {
+            "featureId": 42,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 43,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 44,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 51,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 62,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 64,
+            "trustClass": "LOGISTICS"
+          }
+        ],
+        "sourceHashesVerified": true,
+        "consumedByCategorySelection": false
+      },
+      "lineage": {
+        "productVerified": true,
+        "trainingVerified": true,
+        "specsVerified": true
+      }
+    },
+    "invalid": {
+      "canonical": {
+        "productId": 12,
+        "catalogPresence": "current_catalog",
+        "name": "Barra Pull Ups Multigrip 2.0 | HWM®",
+        "active": true,
+        "categoryIds": [
+          {
+            "categoryId": 2,
+            "name": "CATEGORÍAS"
+          },
+          {
+            "categoryId": 69,
+            "name": "Gimnasia y Acondicionamiento"
+          },
+          {
+            "categoryId": 143,
+            "name": "Accesorios y Complementos"
+          },
+          {
+            "categoryId": 317,
+            "name": "ACONDICIONAMIENTO"
+          },
+          {
+            "categoryId": 319,
+            "name": "Barras Pull Up & Push Up"
+          },
+          {
+            "categoryId": 429,
+            "name": "Barras de Dominadas"
+          },
+          {
+            "categoryId": 458,
+            "name": "CYBERMONDAY"
+          },
+          {
+            "categoryId": 503,
+            "name": "Home Gym"
+          },
+          {
+            "categoryId": 508,
+            "name": "Home Gym"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 3,
+            "featureValueId": 223303,
+            "name": "Peso Neto (N.W.)",
+            "value": "15 kg."
+          },
+          {
+            "featureId": 10,
+            "featureValueId": 223304,
+            "name": "Peso Bruto (G.W.)",
+            "value": "17 kg."
+          },
+          {
+            "featureId": 11,
+            "featureValueId": 223305,
+            "name": "Peso máximo de usuario",
+            "value": "150 kg."
+          },
+          {
+            "featureId": 15,
+            "featureValueId": 223306,
+            "name": "Dimensiones del producto armado",
+            "value": "Largo: 120 cm.  Ancho: 84 cm. Alto: 79 cm."
+          },
+          {
+            "featureId": 17,
+            "featureValueId": 223307,
+            "name": "Dimensiones del Empaque",
+            "value": "CAJA 1. Largo: 60 cm. Ancho: 60 cm. Alto: 13 cm."
+          },
+          {
+            "featureId": 17,
+            "featureValueId": 223308,
+            "name": "Dimensiones del Empaque",
+            "value": "CAJA 2. Largo: 110 cm. Ancho: 28 cm. Alto: 15 cm."
+          },
+          {
+            "featureId": 36,
+            "featureValueId": 223309,
+            "name": "Perfiles",
+            "value": "50*50*2.0 mm."
+          },
+          {
+            "featureId": 39,
+            "featureValueId": 1528,
+            "name": "Estructura",
+            "value": "Acero"
+          },
+          {
+            "featureId": 47,
+            "featureValueId": 223310,
+            "name": "Diámetro de agarre",
+            "value": "32 mm."
+          },
+          {
+            "featureId": 55,
+            "featureValueId": 2074,
+            "name": "Acabado",
+            "value": "Black powder coat finish (Acabado mate)"
+          },
+          {
+            "featureId": 61,
+            "featureValueId": 2132,
+            "name": "Color(es)",
+            "value": "Negro"
+          },
+          {
+            "featureId": 62,
+            "featureValueId": 2200,
+            "name": "Marca",
+            "value": "HWM"
+          },
+          {
+            "featureId": 64,
+            "featureValueId": 2238,
+            "name": "Garantía Legal",
+            "value": "6 meses por fallas de fábrica"
+          },
+          {
+            "featureId": 64,
+            "featureValueId": 223246,
+            "name": "Garantía Legal",
+            "value": "No cubre: Daños en pintura y óxido, desgaste por uso negligente, mal manejo, alteraciones técnicas o daños derivados de un almacenamiento o mantenimiento deficiente por parte del usuario"
+          },
+          {
+            "featureId": 66,
+            "featureValueId": 96584,
+            "name": "Servicio de Armado",
+            "value": "No incluido (Se vende por separado)"
+          },
+          {
+            "featureId": 70,
+            "featureValueId": 223294,
+            "name": "Precauciones Importantes",
+            "value": "Instalar solo en muros de hormigón armado."
+          }
+        ],
+        "variantIds": [],
+        "revenueTaxIncl": "7735149.000000"
+      },
+      "productSemantics": {
+        "catalogPresence": "current_catalog",
+        "classificationStatus": "CLASSIFIED",
+        "disciplines": [
+          {
+            "axis": "DISCIPLINE",
+            "code": "CALISTHENICS",
+            "confidence": "STRONGLY_INFERRED",
+            "ruleId": "DISC_CALISTHENICS_FAMILY_V1"
+          }
+        ],
+        "needsReviewCandidates": [],
+        "ontologyHash": "f2de79fbedaee83202a133de5af1d86395470ddbf349103dfa2b3bd2f6bdb955",
+        "ontologyVersion": "commercial-product-ontology-v3",
+        "primaryProductFamily": {
+          "axis": "PRODUCT_FAMILY",
+          "code": "BODYWEIGHT_GYMNASTICS",
+          "confidence": "EXPLICIT",
+          "ruleId": "PF_BODYWEIGHT_GYMNASTICS_NAME_V1"
+        },
+        "productId": "12",
+        "provenance": {
+          "evidence": [
+            {
+              "axis": "PRODUCT_FAMILY",
+              "code": "BODYWEIGHT_GYMNASTICS",
+              "normalizedValue": "barra pull ups multigrip 2 0 hwm",
+              "rawValue": "Barra Pull Ups Multigrip 2.0 | HWM®",
+              "ruleId": "PF_BODYWEIGHT_GYMNASTICS_NAME_V1",
+              "sourceId": "NAME",
+              "sourceType": "NAME_TEXT"
+            },
+            {
+              "axis": "DISCIPLINE",
+              "code": "CALISTHENICS",
+              "normalizedValue": "bodyweight_gymnastics",
+              "rawValue": "BODYWEIGHT_GYMNASTICS",
+              "ruleId": "DISC_CALISTHENICS_FAMILY_V1",
+              "sourceId": "FAMILY:BODYWEIGHT_GYMNASTICS",
+              "sourceType": "FAMILY_INFERENCE"
+            }
+          ],
+          "exclusion": null
+        },
+        "secondaryProductFamilies": [],
+        "useContexts": []
+      },
+      "training": {
+        "activeTrainingRelevant": true,
+        "coverageStatus": "UNMODELED",
+        "exerciseCapabilities": [
+          {
+            "capabilityCode": "PULL_UP",
+            "classificationConfidence": "EXPLICIT",
+            "evidence": [
+              {
+                "kind": "NAME",
+                "matchedText": "pull ups",
+                "ruleId": "CATEGORY_PULL_UP_PUSH_UP_BARS_CLOSURE_V2",
+                "sourceId": "NAME"
+              },
+              {
+                "kind": "TRUSTED_CATEGORY",
+                "matchedText": "barras de dominadas",
+                "note": "SEMANTIC_STRONG",
+                "ruleId": "CATEGORY_CATEGORY_PULL_UP_PUSH_UP_BARS_CLOSURE_V2",
+                "sourceId": "CATEGORY"
+              },
+              {
+                "kind": "TRUSTED_CATEGORY",
+                "matchedText": "barras pull up push up",
+                "note": "SEMANTIC_STRONG",
+                "ruleId": "CATEGORY_CATEGORY_PULL_UP_PUSH_UP_BARS_CLOSURE_V2",
+                "sourceId": "CATEGORY"
+              }
+            ],
+            "provenance": {
+              "classifierVersion": "training-semantic-classifier-v2",
+              "sourceCatalogExport": "product_catalog_exploration.csv"
+            },
+            "relationType": "DIRECT",
+            "reviewState": "AUTO"
+          }
+        ],
+        "productId": 12,
+        "resolutionState": "VERIFIED_NO_APPLICABLE_CAPABILITY",
+        "resolved": true,
+        "trainingFunctions": [],
+        "warnings": []
+      },
+      "specs": [
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-15-cm-v1",
+          "key": "assembled_height_cm",
+          "productKey": "P12",
+          "rawValue": "Largo: 120 cm.  Ancho: 84 cm. Alto: 79 cm.",
+          "sourceFeature": {
+            "featureId": 15,
+            "featureValueId": 223306
+          },
+          "status": "parsed",
+          "unit": "cm",
+          "value": 79
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-15-cm-v1",
+          "key": "assembled_length_cm",
+          "productKey": "P12",
+          "rawValue": "Largo: 120 cm.  Ancho: 84 cm. Alto: 79 cm.",
+          "sourceFeature": {
+            "featureId": 15,
+            "featureValueId": 223306
+          },
+          "status": "parsed",
+          "unit": "cm",
+          "value": 120
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-15-cm-v1",
+          "key": "assembled_width_cm",
+          "productKey": "P12",
+          "rawValue": "Largo: 120 cm.  Ancho: 84 cm. Alto: 79 cm.",
+          "sourceFeature": {
+            "featureId": 15,
+            "featureValueId": 223306
+          },
+          "status": "parsed",
+          "unit": "cm",
+          "value": 84
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-11-kg-v1",
+          "key": "max_user_weight_kg",
+          "productKey": "P12",
+          "rawValue": "150 kg.",
+          "sourceFeature": {
+            "featureId": 11,
+            "featureValueId": 223305
+          },
+          "status": "parsed",
+          "unit": "kg",
+          "value": 150
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-3-kg-v1",
+          "key": "weight_kg",
+          "productKey": "P12",
+          "rawValue": "15 kg.",
+          "sourceFeature": {
+            "featureId": 3,
+            "featureValueId": 223303
+          },
+          "status": "parsed",
+          "unit": "kg",
+          "value": 15
+        }
+      ],
+      "trust": {
+        "categories": [
+          {
+            "categoryId": 2,
+            "trustClass": "NAVIGATION"
+          },
+          {
+            "categoryId": 69,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 143,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 317,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 319,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 429,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 458,
+            "trustClass": "CAMPAIGN"
+          },
+          {
+            "categoryId": 503,
+            "trustClass": "CAMPAIGN"
+          },
+          {
+            "categoryId": 508,
+            "trustClass": "CAMPAIGN"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 3,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 10,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 11,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 15,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 17,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 36,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 39,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 47,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 55,
+            "trustClass": "PRESENTATION"
+          },
+          {
+            "featureId": 61,
+            "trustClass": "PRESENTATION"
+          },
+          {
+            "featureId": 62,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 64,
+            "trustClass": "LOGISTICS"
+          },
+          {
+            "featureId": 66,
+            "trustClass": "LOGISTICS"
+          },
+          {
+            "featureId": 70,
+            "trustClass": "LOGISTICS"
+          }
+        ],
+        "sourceHashesVerified": true,
+        "consumedByCategorySelection": false
+      },
+      "lineage": {
+        "productVerified": true,
+        "trainingVerified": true,
+        "specsVerified": true
+      }
+    },
+    "specConflict": {
+      "canonical": {
+        "productId": 176,
+        "catalogPresence": "current_catalog",
+        "name": "Crossover Lat Pulldown ZR Series | PROmachine",
+        "active": true,
+        "categoryIds": [
+          {
+            "categoryId": 2,
+            "name": "CATEGORÍAS"
+          },
+          {
+            "categoryId": 280,
+            "name": "EQUIPAMIENTO"
+          },
+          {
+            "categoryId": 290,
+            "name": "Máquinas con Poleas"
+          },
+          {
+            "categoryId": 291,
+            "name": "Máquinas Multifuncionales"
+          },
+          {
+            "categoryId": 314,
+            "name": "Máquinas Home Gym"
+          },
+          {
+            "categoryId": 404,
+            "name": "Zero Series"
+          },
+          {
+            "categoryId": 418,
+            "name": "EN TENDENCIA"
+          },
+          {
+            "categoryId": 419,
+            "name": "DESTACADOS"
+          },
+          {
+            "categoryId": 470,
+            "name": "FALL SEASON"
+          },
+          {
+            "categoryId": 496,
+            "name": "Máquinas"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 1,
+            "featureValueId": 95531,
+            "name": "Clasificación de Uso",
+            "value": "USO REGULAR - HOGAR"
+          },
+          {
+            "featureId": 2,
+            "featureValueId": 5,
+            "name": "Categoría",
+            "value": "Olímpico"
+          },
+          {
+            "featureId": 3,
+            "featureValueId": 224928,
+            "name": "Peso Neto (N.W.)",
+            "value": "CAJA 3: 20.7 kg."
+          },
+          {
+            "featureId": 3,
+            "featureValueId": 224929,
+            "name": "Peso Neto (N.W.)",
+            "value": "CAJA 1: 25.5 kg."
+          },
+          {
+            "featureId": 3,
+            "featureValueId": 224930,
+            "name": "Peso Neto (N.W.)",
+            "value": "CAJA 2: 21.5 kg."
+          },
+          {
+            "featureId": 10,
+            "featureValueId": 224931,
+            "name": "Peso Bruto (G.W.)",
+            "value": "CAJA 1: 27.5 kg."
+          },
+          {
+            "featureId": 10,
+            "featureValueId": 224932,
+            "name": "Peso Bruto (G.W.)",
+            "value": "CAJA 2: 23.5 kg."
+          },
+          {
+            "featureId": 10,
+            "featureValueId": 224933,
+            "name": "Peso Bruto (G.W.)",
+            "value": "CAJA 3: 22 kg."
+          },
+          {
+            "featureId": 11,
+            "featureValueId": 224934,
+            "name": "Peso máximo de usuario",
+            "value": "Barra Pull Up: 100 kg."
+          },
+          {
+            "featureId": 12,
+            "featureValueId": 224935,
+            "name": "Peso máximo de carga",
+            "value": "120 kg."
+          },
+          {
+            "featureId": 15,
+            "featureValueId": 224936,
+            "name": "Dimensiones del producto armado",
+            "value": "Largo: 198 cm. Ancho: 140 cm. Alto: 207 cm."
+          },
+          {
+            "featureId": 17,
+            "featureValueId": 224937,
+            "name": "Dimensiones del Empaque",
+            "value": "CAJA 1. Largo: 198 cm. Ancho: 27.5 cm. Alto: 13 cm."
+          },
+          {
+            "featureId": 17,
+            "featureValueId": 224938,
+            "name": "Dimensiones del Empaque",
+            "value": "CAJA 2. Largo: 160 cm. Ancho: 55.5 cm. Alto: 16.5 cm."
+          },
+          {
+            "featureId": 17,
+            "featureValueId": 224939,
+            "name": "Dimensiones del Empaque",
+            "value": "CAJA 3. Largo: 108 cm. Ancho: 29.5 cm. Alto: 16.5 cm."
+          },
+          {
+            "featureId": 36,
+            "featureValueId": 224940,
+            "name": "Perfiles",
+            "value": "50*50*1.5 mm."
+          },
+          {
+            "featureId": 39,
+            "featureValueId": 1528,
+            "name": "Estructura",
+            "value": "Acero"
+          },
+          {
+            "featureId": 45,
+            "featureValueId": 224941,
+            "name": "Largo de la manga",
+            "value": "Manga cargable: 21 cm."
+          },
+          {
+            "featureId": 47,
+            "featureValueId": 224942,
+            "name": "Diámetro de agarre",
+            "value": "Barra Pull Up: 32 mm."
+          },
+          {
+            "featureId": 47,
+            "featureValueId": 224943,
+            "name": "Diámetro de agarre",
+            "value": "Agarres de Polea: 30 mm."
+          },
+          {
+            "featureId": 48,
+            "featureValueId": 1819,
+            "name": "Diámetro de manga",
+            "value": "Ø50 mm"
+          },
+          {
+            "featureId": 55,
+            "featureValueId": 2074,
+            "name": "Acabado",
+            "value": "Black powder coat finish (Acabado mate)"
+          },
+          {
+            "featureId": 61,
+            "featureValueId": 2139,
+            "name": "Color(es)",
+            "value": "Negro / Gris plata"
+          },
+          {
+            "featureId": 62,
+            "featureValueId": 2202,
+            "name": "Marca",
+            "value": "PROMACHINE"
+          },
+          {
+            "featureId": 63,
+            "featureValueId": 91280,
+            "name": "Modelo ",
+            "value": "Zero Series"
+          },
+          {
+            "featureId": 64,
+            "featureValueId": 2238,
+            "name": "Garantía Legal",
+            "value": "6 meses por fallas de fábrica"
+          },
+          {
+            "featureId": 65,
+            "featureValueId": 224944,
+            "name": "Relación de cable y polea",
+            "value": "1:1 - 2:1"
+          },
+          {
+            "featureId": 66,
+            "featureValueId": 96584,
+            "name": "Servicio de Armado",
+            "value": "No incluido (Se vende por separado)"
+          }
+        ],
+        "variantIds": [],
+        "revenueTaxIncl": "97367776.000000"
+      },
+      "productSemantics": {
+        "catalogPresence": "current_catalog",
+        "classificationStatus": "CLASSIFIED",
+        "disciplines": [],
+        "needsReviewCandidates": [],
+        "ontologyHash": "f2de79fbedaee83202a133de5af1d86395470ddbf349103dfa2b3bd2f6bdb955",
+        "ontologyVersion": "commercial-product-ontology-v3",
+        "primaryProductFamily": {
+          "axis": "PRODUCT_FAMILY",
+          "code": "CABLE_MACHINE",
+          "confidence": "EXPLICIT",
+          "ruleId": "PF_CABLE_MACHINE_NAME_V1"
+        },
+        "productId": "176",
+        "provenance": {
+          "evidence": [
+            {
+              "axis": "PRODUCT_FAMILY",
+              "code": "CABLE_MACHINE",
+              "normalizedValue": "crossover lat pulldown zr series promachine",
+              "rawValue": "Crossover Lat Pulldown ZR Series | PROmachine",
+              "ruleId": "PF_CABLE_MACHINE_NAME_V1",
+              "sourceId": "NAME",
+              "sourceType": "NAME_TEXT"
+            },
+            {
+              "axis": "USE_CONTEXT",
+              "code": "HOME_GYM",
+              "normalizedValue": "uso regular hogar",
+              "rawValue": "USO REGULAR - HOGAR",
+              "ruleId": "CTX_HOME_USE_CLASSIFICATION_V1",
+              "sourceId": "1",
+              "sourceType": "STRUCTURED_FEATURE"
+            }
+          ],
+          "exclusion": null
+        },
+        "secondaryProductFamilies": [],
+        "useContexts": [
+          {
+            "axis": "USE_CONTEXT",
+            "code": "HOME_GYM",
+            "confidence": "EXPLICIT",
+            "ruleId": "CTX_HOME_USE_CLASSIFICATION_V1"
+          }
+        ]
+      },
+      "training": {
+        "activeTrainingRelevant": true,
+        "coverageStatus": "UNMODELED",
+        "exerciseCapabilities": [
+          {
+            "capabilityCode": "LAT_PULLDOWN",
+            "classificationConfidence": "EXPLICIT",
+            "evidence": [
+              {
+                "kind": "NAME",
+                "matchedText": "lat pulldown",
+                "ruleId": "NAME_LAT_PULLDOWN_EXPLICIT_V1",
+                "sourceId": "NAME"
+              }
+            ],
+            "provenance": {
+              "classifierVersion": "training-semantic-classifier-v1.1",
+              "sourceCatalogExport": "product_catalog_exploration.csv"
+            },
+            "relationType": "DIRECT",
+            "reviewState": "AUTO"
+          },
+          {
+            "capabilityCode": "PULL_UP",
+            "classificationConfidence": "HIGH",
+            "evidence": [
+              {
+                "kind": "STRUCTURED_FEATURE",
+                "matchedText": "Peso máximo de usuario: Barra Pull Up: 100 kg.",
+                "note": "Explicit module/configuration evidence; supported relation.",
+                "ruleId": "FEATURE_NAME_PULL_UP_DIRECT_EXPLICIT_V1",
+                "sourceId": "11"
+              },
+              {
+                "kind": "STRUCTURED_FEATURE",
+                "matchedText": "Diámetro de agarre: Barra Pull Up: 32 mm.",
+                "note": "Explicit module/configuration evidence; supported relation.",
+                "ruleId": "FEATURE_NAME_PULL_UP_DIRECT_EXPLICIT_V1",
+                "sourceId": "47"
+              }
+            ],
+            "provenance": {
+              "classifierVersion": "training-semantic-classifier-v1.1",
+              "sourceCatalogExport": "product_catalog_exploration.csv"
+            },
+            "relationType": "SUPPORTED",
+            "reviewState": "AUTO"
+          }
+        ],
+        "productId": 176,
+        "resolutionState": "SEMANTIC_COMPLETE",
+        "resolved": true,
+        "trainingFunctions": [
+          {
+            "classificationConfidence": "HIGH",
+            "evidence": [
+              {
+                "kind": "STRUCTURED_FEATURE",
+                "matchedText": "Relación de cable y polea: 1:1 - 2:1",
+                "ruleId": "FEATURE_NAME_CABLE_RESISTANCE_EXPLICIT_V2",
+                "sourceId": "65"
+              },
+              {
+                "kind": "TRUSTED_CATEGORY",
+                "matchedText": "maquinas con poleas",
+                "note": "SEMANTIC_STRONG",
+                "ruleId": "CATEGORY_NAME_CABLE_RESISTANCE_EXPLICIT_V2",
+                "sourceId": "CATEGORY"
+              }
+            ],
+            "functionCode": "CABLE_RESISTANCE",
+            "provenance": {
+              "classifierVersion": "training-semantic-classifier-v2",
+              "sourceCatalogExport": "product_catalog_exploration.csv"
+            },
+            "relationType": "DIRECT",
+            "reviewState": "AUTO"
+          },
+          {
+            "classificationConfidence": "EXPLICIT",
+            "evidence": [
+              {
+                "kind": "NAME",
+                "matchedText": "crossover",
+                "ruleId": "NAME_MULTI_DIRECTIONAL_RESISTANCE_EXPLICIT_V2",
+                "sourceId": "NAME"
+              }
+            ],
+            "functionCode": "MULTI_DIRECTIONAL_RESISTANCE",
+            "provenance": {
+              "classifierVersion": "training-semantic-classifier-v2",
+              "sourceCatalogExport": "product_catalog_exploration.csv"
+            },
+            "relationType": "DIRECT",
+            "reviewState": "AUTO"
+          }
+        ],
+        "warnings": [
+          "SUPPORTED assignment requires explicit module/configuration evidence."
+        ]
+      },
+      "specs": [
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-15-cm-v1",
+          "key": "assembled_height_cm",
+          "productKey": "P176",
+          "rawValue": "Largo: 198 cm. Ancho: 140 cm. Alto: 207 cm.",
+          "sourceFeature": {
+            "featureId": 15,
+            "featureValueId": 224936
+          },
+          "status": "parsed",
+          "unit": "cm",
+          "value": 207
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-15-cm-v1",
+          "key": "assembled_length_cm",
+          "productKey": "P176",
+          "rawValue": "Largo: 198 cm. Ancho: 140 cm. Alto: 207 cm.",
+          "sourceFeature": {
+            "featureId": 15,
+            "featureValueId": 224936
+          },
+          "status": "parsed",
+          "unit": "cm",
+          "value": 198
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-15-cm-v1",
+          "key": "assembled_width_cm",
+          "productKey": "P176",
+          "rawValue": "Largo: 198 cm. Ancho: 140 cm. Alto: 207 cm.",
+          "sourceFeature": {
+            "featureId": 15,
+            "featureValueId": 224936
+          },
+          "status": "parsed",
+          "unit": "cm",
+          "value": 140
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-12-kg-v1",
+          "key": "max_load_kg",
+          "productKey": "P176",
+          "rawValue": "120 kg.",
+          "sourceFeature": {
+            "featureId": 12,
+            "featureValueId": 224935
+          },
+          "status": "parsed",
+          "unit": "kg",
+          "value": 120
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-11-kg-v1",
+          "key": "max_user_weight_kg",
+          "productKey": "P176",
+          "rawValue": "Barra Pull Up: 100 kg.",
+          "sourceFeature": {
+            "featureId": 11,
+            "featureValueId": 224934
+          },
+          "status": "parsed",
+          "unit": "kg",
+          "value": 100
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-3-kg-v1",
+          "key": "weight_kg",
+          "productKey": "P176",
+          "rawValue": "CAJA 3: 20.7 kg.",
+          "sourceFeature": {
+            "featureId": 3,
+            "featureValueId": 224928
+          },
+          "status": "ambiguous",
+          "unit": "kg",
+          "value": null
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-3-kg-v1",
+          "key": "weight_kg",
+          "productKey": "P176",
+          "rawValue": "CAJA 1: 25.5 kg.",
+          "sourceFeature": {
+            "featureId": 3,
+            "featureValueId": 224929
+          },
+          "status": "ambiguous",
+          "unit": "kg",
+          "value": null
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-3-kg-v1",
+          "key": "weight_kg",
+          "productKey": "P176",
+          "rawValue": "CAJA 2: 21.5 kg.",
+          "sourceFeature": {
+            "featureId": 3,
+            "featureValueId": 224930
+          },
+          "status": "ambiguous",
+          "unit": "kg",
+          "value": null
+        }
+      ],
+      "trust": {
+        "categories": [
+          {
+            "categoryId": 2,
+            "trustClass": "NAVIGATION"
+          },
+          {
+            "categoryId": 280,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 290,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 291,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 314,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 404,
+            "trustClass": "LEGACY"
+          },
+          {
+            "categoryId": 418,
+            "trustClass": "CAMPAIGN"
+          },
+          {
+            "categoryId": 419,
+            "trustClass": "CAMPAIGN"
+          },
+          {
+            "categoryId": 470,
+            "trustClass": "CAMPAIGN"
+          },
+          {
+            "categoryId": 496,
+            "trustClass": "SEMANTIC_WEAK"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 1,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 2,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 3,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 10,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 11,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 12,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 15,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 17,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 36,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 39,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 45,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 47,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 48,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 55,
+            "trustClass": "PRESENTATION"
+          },
+          {
+            "featureId": 61,
+            "trustClass": "PRESENTATION"
+          },
+          {
+            "featureId": 62,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 63,
+            "trustClass": "PRESENTATION"
+          },
+          {
+            "featureId": 64,
+            "trustClass": "LOGISTICS"
+          },
+          {
+            "featureId": 65,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 66,
+            "trustClass": "LOGISTICS"
+          }
+        ],
+        "sourceHashesVerified": true,
+        "consumedByCategorySelection": false
+      },
+      "lineage": {
+        "productVerified": true,
+        "trainingVerified": true,
+        "specsVerified": true
+      }
+    },
+    "ambiguous": {
+      "canonical": {
+        "productId": 16,
+        "catalogPresence": "current_catalog",
+        "name": "Bola de Masaje Lacrosse | HWM®",
+        "active": true,
+        "categoryIds": [
+          {
+            "categoryId": 2,
+            "name": "CATEGORÍAS"
+          },
+          {
+            "categoryId": 143,
+            "name": "Accesorios y Complementos"
+          },
+          {
+            "categoryId": 348,
+            "name": "ACCESORIOS"
+          },
+          {
+            "categoryId": 366,
+            "name": "RECOVERY"
+          },
+          {
+            "categoryId": 369,
+            "name": "Masajeadores"
+          },
+          {
+            "categoryId": 458,
+            "name": "CYBERMONDAY"
+          },
+          {
+            "categoryId": 461,
+            "name": "NAVIDAD"
+          },
+          {
+            "categoryId": 484,
+            "name": "Accesorios"
+          },
+          {
+            "categoryId": 502,
+            "name": "Recovery"
+          },
+          {
+            "categoryId": 507,
+            "name": "Recovery"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 3,
+            "featureValueId": 233124,
+            "name": "Peso Neto (N.W.)",
+            "value": "140 gr."
+          },
+          {
+            "featureId": 5,
+            "featureValueId": 233125,
+            "name": "Diámetro externo",
+            "value": "6,35 cm."
+          },
+          {
+            "featureId": 9,
+            "featureValueId": 233126,
+            "name": "Densidad",
+            "value": "Alta."
+          },
+          {
+            "featureId": 10,
+            "featureValueId": 233127,
+            "name": "Peso Bruto (G.W.)",
+            "value": "250 gr."
+          },
+          {
+            "featureId": 17,
+            "featureValueId": 233128,
+            "name": "Dimensiones del Empaque",
+            "value": "Largo: 7 cm. Ancho: 7 cm. Alto: 7 cm."
+          },
+          {
+            "featureId": 51,
+            "featureValueId": 1855,
+            "name": "Material",
+            "value": "Caucho"
+          },
+          {
+            "featureId": 61,
+            "featureValueId": 2141,
+            "name": "Color(es)",
+            "value": "Negro mate"
+          },
+          {
+            "featureId": 62,
+            "featureValueId": 2200,
+            "name": "Marca",
+            "value": "HWM"
+          },
+          {
+            "featureId": 64,
+            "featureValueId": 2238,
+            "name": "Garantía Legal",
+            "value": "6 meses por fallas de fábrica"
+          }
+        ],
+        "variantIds": [],
+        "revenueTaxIncl": "7002652.700000"
+      },
+      "productSemantics": {
+        "catalogPresence": "current_catalog",
+        "classificationStatus": "CLASSIFIED",
+        "disciplines": [],
+        "needsReviewCandidates": [],
+        "ontologyHash": "f2de79fbedaee83202a133de5af1d86395470ddbf349103dfa2b3bd2f6bdb955",
+        "ontologyVersion": "commercial-product-ontology-v3",
+        "primaryProductFamily": {
+          "axis": "PRODUCT_FAMILY",
+          "code": "RECOVERY_TOOL",
+          "confidence": "EXPLICIT",
+          "ruleId": "PF_RECOVERY_TOOL_NAME_V1"
+        },
+        "productId": "16",
+        "provenance": {
+          "evidence": [
+            {
+              "axis": "PRODUCT_FAMILY",
+              "code": "RECOVERY_TOOL",
+              "normalizedValue": "bola de masaje lacrosse hwm",
+              "rawValue": "Bola de Masaje Lacrosse | HWM®",
+              "ruleId": "PF_RECOVERY_TOOL_NAME_V1",
+              "sourceId": "NAME",
+              "sourceType": "NAME_TEXT"
+            }
+          ],
+          "exclusion": null
+        },
+        "secondaryProductFamilies": [],
+        "useContexts": []
+      },
+      "training": {
+        "activeTrainingRelevant": false,
+        "coverageStatus": "UNMODELED",
+        "exerciseCapabilities": [],
+        "productId": 16,
+        "resolutionState": "ONTOLOGY_GAP",
+        "resolved": false,
+        "trainingFunctions": [],
+        "warnings": []
+      },
+      "specs": [
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-3-kg-v1",
+          "key": "weight_kg",
+          "productKey": "P16",
+          "rawValue": "140 gr.",
+          "sourceFeature": {
+            "featureId": 3,
+            "featureValueId": 233124
+          },
+          "status": "ambiguous",
+          "unit": "kg",
+          "value": null
+        }
+      ],
+      "trust": {
+        "categories": [
+          {
+            "categoryId": 2,
+            "trustClass": "NAVIGATION"
+          },
+          {
+            "categoryId": 143,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 348,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 366,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 369,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 458,
+            "trustClass": "CAMPAIGN"
+          },
+          {
+            "categoryId": 461,
+            "trustClass": "CAMPAIGN"
+          },
+          {
+            "categoryId": 484,
+            "trustClass": "CAMPAIGN"
+          },
+          {
+            "categoryId": 502,
+            "trustClass": "CAMPAIGN"
+          },
+          {
+            "categoryId": 507,
+            "trustClass": "CAMPAIGN"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 3,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 5,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 9,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 10,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 17,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 51,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 61,
+            "trustClass": "PRESENTATION"
+          },
+          {
+            "featureId": 62,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 64,
+            "trustClass": "LOGISTICS"
+          }
+        ],
+        "sourceHashesVerified": true,
+        "consumedByCategorySelection": false
+      },
+      "lineage": {
+        "productVerified": true,
+        "trainingVerified": true,
+        "specsVerified": true
+      }
+    },
+    "historical": {
+      "canonical": {
+        "productId": 744,
+        "catalogPresence": "historical_order_detail_only",
+        "name": "Media Jaula de Potencia Black | 2° Selección | HWM",
+        "active": null,
+        "categoryIds": null,
+        "features": null,
+        "variantIds": null,
+        "revenueTaxIncl": "159990.000000"
+      },
+      "productSemantics": {
+        "catalogPresence": "historical_order_detail_only",
+        "classificationStatus": "PARTIALLY_CLASSIFIED",
+        "disciplines": [],
+        "needsReviewCandidates": [],
+        "ontologyHash": "f2de79fbedaee83202a133de5af1d86395470ddbf349103dfa2b3bd2f6bdb955",
+        "ontologyVersion": "commercial-product-ontology-v3",
+        "primaryProductFamily": {
+          "axis": "PRODUCT_FAMILY",
+          "code": "RACK_CAGE",
+          "confidence": "EXPLICIT",
+          "ruleId": "PF_RACK_CAGE_NAME_V1"
+        },
+        "productId": "744",
+        "provenance": {
+          "evidence": [
+            {
+              "axis": "PRODUCT_FAMILY",
+              "code": "RACK_CAGE",
+              "normalizedValue": "media jaula de potencia black 2 seleccion hwm",
+              "rawValue": "Media Jaula de Potencia Black | 2° Selección | HWM",
+              "ruleId": "PF_RACK_CAGE_NAME_V1",
+              "sourceId": "NAME",
+              "sourceType": "NAME_TEXT"
+            }
+          ],
+          "exclusion": null
+        },
+        "secondaryProductFamilies": [],
+        "useContexts": []
+      },
+      "training": {
+        "activeTrainingRelevant": false,
+        "coverageStatus": "UNMODELED",
+        "exerciseCapabilities": [],
+        "productId": 744,
+        "resolutionState": "SEMANTIC_COMPLETE",
+        "resolved": true,
+        "trainingFunctions": [
+          {
+            "classificationConfidence": "EXPLICIT",
+            "evidence": [
+              {
+                "kind": "NAME",
+                "matchedText": "jaula",
+                "ruleId": "NAME_BARBELL_SUPPORT_EXPLICIT_V2",
+                "sourceId": "NAME"
+              }
+            ],
+            "functionCode": "BARBELL_SUPPORT",
+            "provenance": {
+              "classifierVersion": "training-semantic-classifier-v2",
+              "sourceCatalogExport": "product_catalog_exploration.csv"
+            },
+            "relationType": "DIRECT",
+            "reviewState": "AUTO"
+          }
+        ],
+        "warnings": [
+          "Training Function assignment does not imply complete exercise semantic coverage."
+        ]
+      },
+      "specs": [],
+      "trust": {
+        "categories": [],
+        "features": [],
+        "sourceHashesVerified": true,
+        "consumedByCategorySelection": false
+      },
+      "lineage": {
+        "productVerified": true,
+        "trainingVerified": true,
+        "specsVerified": true
+      }
+    },
+    "nonProduct": {
+      "canonical": {
+        "productId": 903,
+        "catalogPresence": "current_catalog",
+        "name": "INSTALACION JAULA A LA PARED",
+        "active": false,
+        "categoryIds": [
+          {
+            "categoryId": 2,
+            "name": "CATEGORÍAS"
+          }
+        ],
+        "features": [],
+        "variantIds": [],
+        "revenueTaxIncl": null
+      },
+      "productSemantics": {
+        "catalogPresence": "current_catalog",
+        "classificationStatus": "EXCLUDED_NON_PRODUCT",
+        "disciplines": [],
+        "needsReviewCandidates": [],
+        "ontologyHash": "f2de79fbedaee83202a133de5af1d86395470ddbf349103dfa2b3bd2f6bdb955",
+        "ontologyVersion": "commercial-product-ontology-v3",
+        "primaryProductFamily": null,
+        "productId": "903",
+        "provenance": {
+          "evidence": [],
+          "exclusion": {
+            "reason": "productId 903 is in the registry's knownExcludedProductIds list (confirmed service/installation/logistics line item).",
+            "ruleId": "NON_PRODUCT_KNOWN_ID_V1"
+          }
+        },
+        "secondaryProductFamilies": [],
+        "useContexts": []
+      },
+      "training": {
+        "activeTrainingRelevant": false,
+        "coverageStatus": "UNMODELED",
+        "exerciseCapabilities": [],
+        "productId": 903,
+        "resolutionState": "SEMANTIC_COMPLETE",
+        "resolved": true,
+        "trainingFunctions": [
+          {
+            "classificationConfidence": "EXPLICIT",
+            "evidence": [
+              {
+                "kind": "NAME",
+                "matchedText": "jaula",
+                "ruleId": "NAME_BARBELL_SUPPORT_EXPLICIT_V2",
+                "sourceId": "NAME"
+              }
+            ],
+            "functionCode": "BARBELL_SUPPORT",
+            "provenance": {
+              "classifierVersion": "training-semantic-classifier-v2",
+              "sourceCatalogExport": "product_catalog_exploration.csv"
+            },
+            "relationType": "DIRECT",
+            "reviewState": "AUTO"
+          }
+        ],
+        "warnings": [
+          "Training Function assignment does not imply complete exercise semantic coverage."
+        ]
+      },
+      "specs": [],
+      "trust": {
+        "categories": [
+          {
+            "categoryId": 2,
+            "trustClass": "NAVIGATION"
+          }
+        ],
+        "features": [],
+        "sourceHashesVerified": true,
+        "consumedByCategorySelection": false
+      },
+      "lineage": {
+        "productVerified": true,
+        "trainingVerified": true,
+        "specsVerified": true
+      }
+    },
+    "functionOnly": {
+      "canonical": {
+        "productId": 382,
+        "catalogPresence": "current_catalog",
+        "name": "Set 10 Pares Mancuernas PU (desde 2.5kg a 25kg) + Rack | Obelix",
+        "active": true,
+        "categoryIds": [
+          {
+            "categoryId": 2,
+            "name": "CATEGORÍAS"
+          },
+          {
+            "categoryId": 8,
+            "name": "Test"
+          },
+          {
+            "categoryId": 248,
+            "name": "FUERZA"
+          },
+          {
+            "categoryId": 267,
+            "name": "Mancuernas"
+          },
+          {
+            "categoryId": 269,
+            "name": "Mancuernas Pu"
+          },
+          {
+            "categoryId": 273,
+            "name": "Set de Mancuernas"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 3,
+            "featureValueId": 239156,
+            "name": "Peso Neto (N.W.)",
+            "value": "275 kg. en mancuernas + rack de 51 kg."
+          },
+          {
+            "featureId": 16,
+            "featureValueId": 239157,
+            "name": "Dimensiones del producto",
+            "value": "Largo: 245 cm Ancho: 71 cm Alto: 83"
+          },
+          {
+            "featureId": 51,
+            "featureValueId": 239158,
+            "name": "Material",
+            "value": "Mancuernas de Pu / Rack de acero."
+          },
+          {
+            "featureId": 58,
+            "featureValueId": 2096,
+            "name": "Tolerancia (Margen de error en peso)",
+            "value": "± 3% de su peso declarado"
+          },
+          {
+            "featureId": 62,
+            "featureValueId": 2199,
+            "name": "Marca",
+            "value": "OBELIX"
+          },
+          {
+            "featureId": 64,
+            "featureValueId": 2238,
+            "name": "Garantía Legal",
+            "value": "6 meses por fallas de fábrica"
+          },
+          {
+            "featureId": 66,
+            "featureValueId": 96584,
+            "name": "Servicio de Armado",
+            "value": "No incluido (Se vende por separado)"
+          }
+        ],
+        "variantIds": [],
+        "revenueTaxIncl": "10065796.000000"
+      },
+      "productSemantics": {
+        "catalogPresence": "current_catalog",
+        "classificationStatus": "CLASSIFIED",
+        "disciplines": [],
+        "needsReviewCandidates": [],
+        "ontologyHash": "f2de79fbedaee83202a133de5af1d86395470ddbf349103dfa2b3bd2f6bdb955",
+        "ontologyVersion": "commercial-product-ontology-v3",
+        "primaryProductFamily": {
+          "axis": "PRODUCT_FAMILY",
+          "code": "DUMBBELL",
+          "confidence": "EXPLICIT",
+          "ruleId": "PF_DUMBBELL_NAME_V1"
+        },
+        "productId": "382",
+        "provenance": {
+          "evidence": [
+            {
+              "axis": "PRODUCT_FAMILY",
+              "code": "DUMBBELL",
+              "normalizedValue": "set 10 pares mancuernas pu desde 2 5kg a 25kg",
+              "rawValue": "Set 10 Pares Mancuernas PU (desde 2.5kg a 25kg) + Rack | Obelix",
+              "ruleId": "PF_DUMBBELL_NAME_V1",
+              "sourceId": "NAME",
+              "sourceType": "NAME_TEXT"
+            },
+            {
+              "axis": "PRODUCT_FAMILY",
+              "code": "RACK_CAGE",
+              "normalizedValue": "rack obelix",
+              "rawValue": "Set 10 Pares Mancuernas PU (desde 2.5kg a 25kg) + Rack | Obelix",
+              "ruleId": "PF_RACK_CAGE_NAME_V1",
+              "sourceId": "NAME",
+              "sourceType": "NAME_TEXT"
+            }
+          ],
+          "exclusion": null
+        },
+        "secondaryProductFamilies": [
+          {
+            "axis": "PRODUCT_FAMILY",
+            "code": "RACK_CAGE",
+            "confidence": "EXPLICIT",
+            "ruleId": "PF_RACK_CAGE_NAME_V1"
+          }
+        ],
+        "useContexts": []
+      },
+      "training": {
+        "activeTrainingRelevant": false,
+        "coverageStatus": "NO_CAPABILITY_APPLICABLE",
+        "exerciseCapabilities": [],
+        "productId": 382,
+        "resolutionState": "SEMANTIC_COMPLETE",
+        "resolved": true,
+        "trainingFunctions": [
+          {
+            "classificationConfidence": "EXPLICIT",
+            "evidence": [
+              {
+                "kind": "NAME",
+                "matchedText": "rack",
+                "ruleId": "NAME_BARBELL_SUPPORT_EXPLICIT_V2",
+                "sourceId": "NAME"
+              }
+            ],
+            "functionCode": "BARBELL_SUPPORT",
+            "provenance": {
+              "classifierVersion": "training-semantic-classifier-v2",
+              "sourceCatalogExport": "product_catalog_exploration.csv"
+            },
+            "relationType": "DIRECT",
+            "reviewState": "AUTO"
+          }
+        ],
+        "warnings": [
+          "Training Function assignment does not imply complete exercise semantic coverage."
+        ]
+      },
+      "specs": [
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-3-kg-v1",
+          "key": "weight_kg",
+          "productKey": "P382",
+          "rawValue": "275 kg. en mancuernas + rack de 51 kg.",
+          "sourceFeature": {
+            "featureId": 3,
+            "featureValueId": 239156
+          },
+          "status": "ambiguous",
+          "unit": "kg",
+          "value": null
+        }
+      ],
+      "trust": {
+        "categories": [
+          {
+            "categoryId": 2,
+            "trustClass": "NAVIGATION"
+          },
+          {
+            "categoryId": 8,
+            "trustClass": "UNKNOWN"
+          },
+          {
+            "categoryId": 248,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 267,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 269,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 273,
+            "trustClass": "SEMANTIC_STRONG"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 3,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 16,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 51,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 58,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 62,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 64,
+            "trustClass": "LOGISTICS"
+          },
+          {
+            "featureId": 66,
+            "trustClass": "LOGISTICS"
+          }
+        ],
+        "sourceHashesVerified": true,
+        "consumedByCategorySelection": false
+      },
+      "lineage": {
+        "productVerified": true,
+        "trainingVerified": true,
+        "specsVerified": true
+      }
+    },
+    "inactive": {
+      "canonical": {
+        "productId": 14,
+        "catalogPresence": "current_catalog",
+        "name": "Barra Olímpica Log | HWM",
+        "active": false,
+        "categoryIds": [
+          {
+            "categoryId": 2,
+            "name": "CATEGORÍAS"
+          },
+          {
+            "categoryId": 67,
+            "name": "Barras Olímpicas"
+          },
+          {
+            "categoryId": 248,
+            "name": "FUERZA"
+          },
+          {
+            "categoryId": 253,
+            "name": "Barras Especiales"
+          },
+          {
+            "categoryId": 254,
+            "name": "Barras Powerlifting"
+          },
+          {
+            "categoryId": 258,
+            "name": "Barras"
+          },
+          {
+            "categoryId": 459,
+            "name": "PRIMAVERA"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 2,
+            "featureValueId": 5,
+            "name": "Categoría",
+            "value": "Olímpico"
+          },
+          {
+            "featureId": 3,
+            "featureValueId": 16,
+            "name": "Peso Neto (N.W.)",
+            "value": "25 kg."
+          },
+          {
+            "featureId": 5,
+            "featureValueId": 146829,
+            "name": "Diámetro externo",
+            "value": "Tubo: 21 cm."
+          },
+          {
+            "featureId": 12,
+            "featureValueId": 146830,
+            "name": "Peso máximo de carga",
+            "value": "330 lb. / 150 kg."
+          },
+          {
+            "featureId": 42,
+            "featureValueId": 146831,
+            "name": "Largo total",
+            "value": "166 cm."
+          },
+          {
+            "featureId": 45,
+            "featureValueId": 146832,
+            "name": "Largo de la manga",
+            "value": "34,5 cm."
+          },
+          {
+            "featureId": 46,
+            "featureValueId": 146833,
+            "name": "Largo de agarre",
+            "value": "Entre agarres: 62 cm."
+          },
+          {
+            "featureId": 47,
+            "featureValueId": 1739,
+            "name": "Diámetro de agarre",
+            "value": "Ø28 mm"
+          },
+          {
+            "featureId": 48,
+            "featureValueId": 146834,
+            "name": "Diámetro de manga",
+            "value": "48 mm."
+          },
+          {
+            "featureId": 49,
+            "featureValueId": 1831,
+            "name": "Rodamiento / Cojinete",
+            "value": "Barra fija, no contiene bujes ni rodamientos"
+          },
+          {
+            "featureId": 51,
+            "featureValueId": 1847,
+            "name": "Material",
+            "value": "Acero"
+          },
+          {
+            "featureId": 55,
+            "featureValueId": 146835,
+            "name": "Acabado",
+            "value": "Black Powder Coat Finish (Acabado mate) / Mangas: Bright Zinc"
+          },
+          {
+            "featureId": 58,
+            "featureValueId": 2095,
+            "name": "Tolerancia (Margen de error en peso)",
+            "value": "± 5% de su peso declarado"
+          },
+          {
+            "featureId": 64,
+            "featureValueId": 2238,
+            "name": "Garantía Legal",
+            "value": "6 meses por fallas de fábrica"
+          }
+        ],
+        "variantIds": [],
+        "revenueTaxIncl": "2491014.000000"
+      },
+      "productSemantics": {
+        "catalogPresence": "current_catalog",
+        "classificationStatus": "CLASSIFIED",
+        "disciplines": [
+          {
+            "axis": "DISCIPLINE",
+            "code": "POWERLIFTING",
+            "confidence": "EXPLICIT",
+            "ruleId": "DISC_POWERLIFTING_CATEGORY_V1"
+          }
+        ],
+        "needsReviewCandidates": [],
+        "ontologyHash": "f2de79fbedaee83202a133de5af1d86395470ddbf349103dfa2b3bd2f6bdb955",
+        "ontologyVersion": "commercial-product-ontology-v3",
+        "primaryProductFamily": {
+          "axis": "PRODUCT_FAMILY",
+          "code": "BARBELL",
+          "confidence": "EXPLICIT",
+          "ruleId": "PF_BARBELL_NAME_V1"
+        },
+        "productId": "14",
+        "provenance": {
+          "evidence": [
+            {
+              "axis": "PRODUCT_FAMILY",
+              "code": "BARBELL",
+              "normalizedValue": "barra olimpica log hwm",
+              "rawValue": "Barra Olímpica Log | HWM",
+              "ruleId": "PF_BARBELL_NAME_V1",
+              "sourceId": "NAME",
+              "sourceType": "NAME_TEXT"
+            },
+            {
+              "axis": "DISCIPLINE",
+              "code": "POWERLIFTING",
+              "normalizedValue": "barras powerlifting",
+              "rawValue": "Barras Powerlifting",
+              "ruleId": "DISC_POWERLIFTING_CATEGORY_V1",
+              "sourceId": "254",
+              "sourceType": "TRUSTED_CATEGORY"
+            }
+          ],
+          "exclusion": null
+        },
+        "secondaryProductFamilies": [],
+        "useContexts": []
+      },
+      "training": {
+        "activeTrainingRelevant": false,
+        "coverageStatus": "NO_CAPABILITY_APPLICABLE",
+        "exerciseCapabilities": [],
+        "productId": 14,
+        "resolutionState": "VERIFIED_NO_APPLICABLE_CAPABILITY",
+        "resolved": true,
+        "trainingFunctions": [],
+        "warnings": []
+      },
+      "specs": [
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-12-kg-v1",
+          "key": "max_load_kg",
+          "productKey": "P14",
+          "rawValue": "330 lb. / 150 kg.",
+          "sourceFeature": {
+            "featureId": 12,
+            "featureValueId": 146830
+          },
+          "status": "parsed",
+          "unit": "kg",
+          "value": 150
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-3-kg-v1",
+          "key": "weight_kg",
+          "productKey": "P14",
+          "rawValue": "25 kg.",
+          "sourceFeature": {
+            "featureId": 3,
+            "featureValueId": 16
+          },
+          "status": "parsed",
+          "unit": "kg",
+          "value": 25
+        }
+      ],
+      "trust": {
+        "categories": [
+          {
+            "categoryId": 2,
+            "trustClass": "NAVIGATION"
+          },
+          {
+            "categoryId": 67,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 248,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 253,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 254,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 258,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 459,
+            "trustClass": "CAMPAIGN"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 2,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 3,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 5,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 12,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 42,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 45,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 46,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 47,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 48,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 49,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 51,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 55,
+            "trustClass": "PRESENTATION"
+          },
+          {
+            "featureId": 58,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 64,
+            "trustClass": "LOGISTICS"
+          }
+        ],
+        "sourceHashesVerified": true,
+        "consumedByCategorySelection": false
+      },
+      "lineage": {
+        "productVerified": true,
+        "trainingVerified": true,
+        "specsVerified": true
+      }
+    },
+    "parsedSpecs": {
+      "canonical": {
+        "productId": 12,
+        "catalogPresence": "current_catalog",
+        "name": "Barra Pull Ups Multigrip 2.0 | HWM®",
+        "active": true,
+        "categoryIds": [
+          {
+            "categoryId": 2,
+            "name": "CATEGORÍAS"
+          },
+          {
+            "categoryId": 69,
+            "name": "Gimnasia y Acondicionamiento"
+          },
+          {
+            "categoryId": 143,
+            "name": "Accesorios y Complementos"
+          },
+          {
+            "categoryId": 317,
+            "name": "ACONDICIONAMIENTO"
+          },
+          {
+            "categoryId": 319,
+            "name": "Barras Pull Up & Push Up"
+          },
+          {
+            "categoryId": 429,
+            "name": "Barras de Dominadas"
+          },
+          {
+            "categoryId": 458,
+            "name": "CYBERMONDAY"
+          },
+          {
+            "categoryId": 503,
+            "name": "Home Gym"
+          },
+          {
+            "categoryId": 508,
+            "name": "Home Gym"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 3,
+            "featureValueId": 223303,
+            "name": "Peso Neto (N.W.)",
+            "value": "15 kg."
+          },
+          {
+            "featureId": 10,
+            "featureValueId": 223304,
+            "name": "Peso Bruto (G.W.)",
+            "value": "17 kg."
+          },
+          {
+            "featureId": 11,
+            "featureValueId": 223305,
+            "name": "Peso máximo de usuario",
+            "value": "150 kg."
+          },
+          {
+            "featureId": 15,
+            "featureValueId": 223306,
+            "name": "Dimensiones del producto armado",
+            "value": "Largo: 120 cm.  Ancho: 84 cm. Alto: 79 cm."
+          },
+          {
+            "featureId": 17,
+            "featureValueId": 223307,
+            "name": "Dimensiones del Empaque",
+            "value": "CAJA 1. Largo: 60 cm. Ancho: 60 cm. Alto: 13 cm."
+          },
+          {
+            "featureId": 17,
+            "featureValueId": 223308,
+            "name": "Dimensiones del Empaque",
+            "value": "CAJA 2. Largo: 110 cm. Ancho: 28 cm. Alto: 15 cm."
+          },
+          {
+            "featureId": 36,
+            "featureValueId": 223309,
+            "name": "Perfiles",
+            "value": "50*50*2.0 mm."
+          },
+          {
+            "featureId": 39,
+            "featureValueId": 1528,
+            "name": "Estructura",
+            "value": "Acero"
+          },
+          {
+            "featureId": 47,
+            "featureValueId": 223310,
+            "name": "Diámetro de agarre",
+            "value": "32 mm."
+          },
+          {
+            "featureId": 55,
+            "featureValueId": 2074,
+            "name": "Acabado",
+            "value": "Black powder coat finish (Acabado mate)"
+          },
+          {
+            "featureId": 61,
+            "featureValueId": 2132,
+            "name": "Color(es)",
+            "value": "Negro"
+          },
+          {
+            "featureId": 62,
+            "featureValueId": 2200,
+            "name": "Marca",
+            "value": "HWM"
+          },
+          {
+            "featureId": 64,
+            "featureValueId": 2238,
+            "name": "Garantía Legal",
+            "value": "6 meses por fallas de fábrica"
+          },
+          {
+            "featureId": 64,
+            "featureValueId": 223246,
+            "name": "Garantía Legal",
+            "value": "No cubre: Daños en pintura y óxido, desgaste por uso negligente, mal manejo, alteraciones técnicas o daños derivados de un almacenamiento o mantenimiento deficiente por parte del usuario"
+          },
+          {
+            "featureId": 66,
+            "featureValueId": 96584,
+            "name": "Servicio de Armado",
+            "value": "No incluido (Se vende por separado)"
+          },
+          {
+            "featureId": 70,
+            "featureValueId": 223294,
+            "name": "Precauciones Importantes",
+            "value": "Instalar solo en muros de hormigón armado."
+          }
+        ],
+        "variantIds": [],
+        "revenueTaxIncl": "7735149.000000"
+      },
+      "productSemantics": {
+        "catalogPresence": "current_catalog",
+        "classificationStatus": "CLASSIFIED",
+        "disciplines": [
+          {
+            "axis": "DISCIPLINE",
+            "code": "CALISTHENICS",
+            "confidence": "STRONGLY_INFERRED",
+            "ruleId": "DISC_CALISTHENICS_FAMILY_V1"
+          }
+        ],
+        "needsReviewCandidates": [],
+        "ontologyHash": "f2de79fbedaee83202a133de5af1d86395470ddbf349103dfa2b3bd2f6bdb955",
+        "ontologyVersion": "commercial-product-ontology-v3",
+        "primaryProductFamily": {
+          "axis": "PRODUCT_FAMILY",
+          "code": "BODYWEIGHT_GYMNASTICS",
+          "confidence": "EXPLICIT",
+          "ruleId": "PF_BODYWEIGHT_GYMNASTICS_NAME_V1"
+        },
+        "productId": "12",
+        "provenance": {
+          "evidence": [
+            {
+              "axis": "PRODUCT_FAMILY",
+              "code": "BODYWEIGHT_GYMNASTICS",
+              "normalizedValue": "barra pull ups multigrip 2 0 hwm",
+              "rawValue": "Barra Pull Ups Multigrip 2.0 | HWM®",
+              "ruleId": "PF_BODYWEIGHT_GYMNASTICS_NAME_V1",
+              "sourceId": "NAME",
+              "sourceType": "NAME_TEXT"
+            },
+            {
+              "axis": "DISCIPLINE",
+              "code": "CALISTHENICS",
+              "normalizedValue": "bodyweight_gymnastics",
+              "rawValue": "BODYWEIGHT_GYMNASTICS",
+              "ruleId": "DISC_CALISTHENICS_FAMILY_V1",
+              "sourceId": "FAMILY:BODYWEIGHT_GYMNASTICS",
+              "sourceType": "FAMILY_INFERENCE"
+            }
+          ],
+          "exclusion": null
+        },
+        "secondaryProductFamilies": [],
+        "useContexts": []
+      },
+      "training": {
+        "activeTrainingRelevant": true,
+        "coverageStatus": "UNMODELED",
+        "exerciseCapabilities": [
+          {
+            "capabilityCode": "PULL_UP",
+            "classificationConfidence": "EXPLICIT",
+            "evidence": [
+              {
+                "kind": "NAME",
+                "matchedText": "pull ups",
+                "ruleId": "CATEGORY_PULL_UP_PUSH_UP_BARS_CLOSURE_V2",
+                "sourceId": "NAME"
+              },
+              {
+                "kind": "TRUSTED_CATEGORY",
+                "matchedText": "barras de dominadas",
+                "note": "SEMANTIC_STRONG",
+                "ruleId": "CATEGORY_CATEGORY_PULL_UP_PUSH_UP_BARS_CLOSURE_V2",
+                "sourceId": "CATEGORY"
+              },
+              {
+                "kind": "TRUSTED_CATEGORY",
+                "matchedText": "barras pull up push up",
+                "note": "SEMANTIC_STRONG",
+                "ruleId": "CATEGORY_CATEGORY_PULL_UP_PUSH_UP_BARS_CLOSURE_V2",
+                "sourceId": "CATEGORY"
+              }
+            ],
+            "provenance": {
+              "classifierVersion": "training-semantic-classifier-v2",
+              "sourceCatalogExport": "product_catalog_exploration.csv"
+            },
+            "relationType": "DIRECT",
+            "reviewState": "AUTO"
+          }
+        ],
+        "productId": 12,
+        "resolutionState": "VERIFIED_NO_APPLICABLE_CAPABILITY",
+        "resolved": true,
+        "trainingFunctions": [],
+        "warnings": []
+      },
+      "specs": [
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-15-cm-v1",
+          "key": "assembled_height_cm",
+          "productKey": "P12",
+          "rawValue": "Largo: 120 cm.  Ancho: 84 cm. Alto: 79 cm.",
+          "sourceFeature": {
+            "featureId": 15,
+            "featureValueId": 223306
+          },
+          "status": "parsed",
+          "unit": "cm",
+          "value": 79
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-15-cm-v1",
+          "key": "assembled_length_cm",
+          "productKey": "P12",
+          "rawValue": "Largo: 120 cm.  Ancho: 84 cm. Alto: 79 cm.",
+          "sourceFeature": {
+            "featureId": 15,
+            "featureValueId": 223306
+          },
+          "status": "parsed",
+          "unit": "cm",
+          "value": 120
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-15-cm-v1",
+          "key": "assembled_width_cm",
+          "productKey": "P12",
+          "rawValue": "Largo: 120 cm.  Ancho: 84 cm. Alto: 79 cm.",
+          "sourceFeature": {
+            "featureId": 15,
+            "featureValueId": 223306
+          },
+          "status": "parsed",
+          "unit": "cm",
+          "value": 84
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-11-kg-v1",
+          "key": "max_user_weight_kg",
+          "productKey": "P12",
+          "rawValue": "150 kg.",
+          "sourceFeature": {
+            "featureId": 11,
+            "featureValueId": 223305
+          },
+          "status": "parsed",
+          "unit": "kg",
+          "value": 150
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-3-kg-v1",
+          "key": "weight_kg",
+          "productKey": "P12",
+          "rawValue": "15 kg.",
+          "sourceFeature": {
+            "featureId": 3,
+            "featureValueId": 223303
+          },
+          "status": "parsed",
+          "unit": "kg",
+          "value": 15
+        }
+      ],
+      "trust": {
+        "categories": [
+          {
+            "categoryId": 2,
+            "trustClass": "NAVIGATION"
+          },
+          {
+            "categoryId": 69,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 143,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 317,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 319,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 429,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 458,
+            "trustClass": "CAMPAIGN"
+          },
+          {
+            "categoryId": 503,
+            "trustClass": "CAMPAIGN"
+          },
+          {
+            "categoryId": 508,
+            "trustClass": "CAMPAIGN"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 3,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 10,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 11,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 15,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 17,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 36,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 39,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 47,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 55,
+            "trustClass": "PRESENTATION"
+          },
+          {
+            "featureId": 61,
+            "trustClass": "PRESENTATION"
+          },
+          {
+            "featureId": 62,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 64,
+            "trustClass": "LOGISTICS"
+          },
+          {
+            "featureId": 66,
+            "trustClass": "LOGISTICS"
+          },
+          {
+            "featureId": 70,
+            "trustClass": "LOGISTICS"
+          }
+        ],
+        "sourceHashesVerified": true,
+        "consumedByCategorySelection": false
+      },
+      "lineage": {
+        "productVerified": true,
+        "trainingVerified": true,
+        "specsVerified": true
+      }
+    },
+    "combinedEvidence": {
+      "canonical": {
+        "productId": 1450,
+        "catalogPresence": "current_catalog",
+        "name": "Máquina Home Gym PRO FZ402B 68kg | Forza",
+        "active": true,
+        "categoryIds": [
+          {
+            "categoryId": 2,
+            "name": "CATEGORÍAS"
+          },
+          {
+            "categoryId": 280,
+            "name": "EQUIPAMIENTO"
+          },
+          {
+            "categoryId": 290,
+            "name": "Máquinas con Poleas"
+          },
+          {
+            "categoryId": 291,
+            "name": "Máquinas Multifuncionales"
+          },
+          {
+            "categoryId": 314,
+            "name": "Máquinas Home Gym"
+          },
+          {
+            "categoryId": 407,
+            "name": "Home FZ Series"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 1,
+            "featureValueId": 95530,
+            "name": "Clasificación de Uso",
+            "value": "USO BAJO - HOGAR"
+          },
+          {
+            "featureId": 3,
+            "featureValueId": 213823,
+            "name": "Peso Neto (N.W.)",
+            "value": "81 kg."
+          },
+          {
+            "featureId": 10,
+            "featureValueId": 213824,
+            "name": "Peso Bruto (G.W.)",
+            "value": "CAJA 1: 39.5 kg."
+          },
+          {
+            "featureId": 10,
+            "featureValueId": 213825,
+            "name": "Peso Bruto (G.W.)",
+            "value": "CAJA 2: 23.3 kg."
+          },
+          {
+            "featureId": 10,
+            "featureValueId": 213826,
+            "name": "Peso Bruto (G.W.)",
+            "value": "CAJA 3: 22.7 kg."
+          },
+          {
+            "featureId": 11,
+            "featureValueId": 213827,
+            "name": "Peso máximo de usuario",
+            "value": "100 kg."
+          },
+          {
+            "featureId": 15,
+            "featureValueId": 213828,
+            "name": "Dimensiones del producto armado",
+            "value": "Largo: 178 cm. Ancho: 108 cm. Alto: 210 cm."
+          },
+          {
+            "featureId": 17,
+            "featureValueId": 213829,
+            "name": "Dimensiones del Empaque",
+            "value": "CAJA 1. Largo: 188 cm. Ancho: 42 cm. Alto: 16.5 cm."
+          },
+          {
+            "featureId": 17,
+            "featureValueId": 213830,
+            "name": "Dimensiones del Empaque",
+            "value": "CAJA 2. Largo: 39 cm. Ancho: 20 cm. Alto: 27.5 cm."
+          },
+          {
+            "featureId": 17,
+            "featureValueId": 213831,
+            "name": "Dimensiones del Empaque",
+            "value": "CAJA 3. Largo: 39 cm. Ancho: 20 cm. Alto: 24.5 cm."
+          },
+          {
+            "featureId": 34,
+            "featureValueId": 213832,
+            "name": "Pila de Stack",
+            "value": "68 kg."
+          },
+          {
+            "featureId": 36,
+            "featureValueId": 213833,
+            "name": "Perfiles",
+            "value": "45 x 45 x 1.5 mm."
+          },
+          {
+            "featureId": 62,
+            "featureValueId": 91298,
+            "name": "Marca",
+            "value": "FORZA"
+          },
+          {
+            "featureId": 64,
+            "featureValueId": 2238,
+            "name": "Garantía Legal",
+            "value": "6 meses por fallas de fábrica"
+          },
+          {
+            "featureId": 65,
+            "featureValueId": 91275,
+            "name": "Relación de cable y polea",
+            "value": "2:1"
+          },
+          {
+            "featureId": 66,
+            "featureValueId": 96584,
+            "name": "Servicio de Armado",
+            "value": "No incluido (Se vende por separado)"
+          }
+        ],
+        "variantIds": [],
+        "revenueTaxIncl": "9207185.000000"
+      },
+      "productSemantics": {
+        "catalogPresence": "current_catalog",
+        "classificationStatus": "CLASSIFIED",
+        "disciplines": [],
+        "needsReviewCandidates": [],
+        "ontologyHash": "f2de79fbedaee83202a133de5af1d86395470ddbf349103dfa2b3bd2f6bdb955",
+        "ontologyVersion": "commercial-product-ontology-v3",
+        "primaryProductFamily": {
+          "axis": "PRODUCT_FAMILY",
+          "code": "CABLE_MACHINE",
+          "confidence": "STRONGLY_INFERRED",
+          "ruleId": "PF_CABLE_MACHINE_STRUCTURED_CATEGORY_V3"
+        },
+        "productId": "1450",
+        "provenance": {
+          "evidence": [
+            {
+              "axis": "PRODUCT_FAMILY",
+              "code": "CABLE_MACHINE",
+              "normalizedValue": "category 290 maquinas con poleas feature 34 pila de stack 68 kg",
+              "rawValue": "category[290] Máquinas con Poleas | feature[34] Pila de Stack: 68 kg.",
+              "ruleId": "PF_CABLE_MACHINE_STRUCTURED_CATEGORY_V3",
+              "sourceId": "34",
+              "sourceType": "STRUCTURED_FEATURE"
+            },
+            {
+              "axis": "USE_CONTEXT",
+              "code": "HOME_GYM",
+              "normalizedValue": "uso bajo hogar",
+              "rawValue": "USO BAJO - HOGAR",
+              "ruleId": "CTX_HOME_USE_CLASSIFICATION_V1",
+              "sourceId": "1",
+              "sourceType": "STRUCTURED_FEATURE"
+            }
+          ],
+          "exclusion": null
+        },
+        "secondaryProductFamilies": [],
+        "useContexts": [
+          {
+            "axis": "USE_CONTEXT",
+            "code": "HOME_GYM",
+            "confidence": "EXPLICIT",
+            "ruleId": "CTX_HOME_USE_CLASSIFICATION_V1"
+          }
+        ]
+      },
+      "training": {
+        "activeTrainingRelevant": true,
+        "coverageStatus": "UNMODELED",
+        "exerciseCapabilities": [],
+        "productId": 1450,
+        "resolutionState": "SEMANTIC_COMPLETE",
+        "resolved": true,
+        "trainingFunctions": [
+          {
+            "classificationConfidence": "HIGH",
+            "evidence": [
+              {
+                "kind": "STRUCTURED_FEATURE",
+                "matchedText": "Relación de cable y polea: 2:1",
+                "ruleId": "FEATURE_NAME_CABLE_RESISTANCE_EXPLICIT_V2",
+                "sourceId": "65"
+              },
+              {
+                "kind": "TRUSTED_CATEGORY",
+                "matchedText": "maquinas con poleas",
+                "note": "SEMANTIC_STRONG",
+                "ruleId": "CATEGORY_NAME_CABLE_RESISTANCE_EXPLICIT_V2",
+                "sourceId": "CATEGORY"
+              }
+            ],
+            "functionCode": "CABLE_RESISTANCE",
+            "provenance": {
+              "classifierVersion": "training-semantic-classifier-v2",
+              "sourceCatalogExport": "product_catalog_exploration.csv"
+            },
+            "relationType": "DIRECT",
+            "reviewState": "AUTO"
+          }
+        ],
+        "warnings": [
+          "Training Function assignment does not imply complete exercise semantic coverage."
+        ]
+      },
+      "specs": [
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-15-cm-v1",
+          "key": "assembled_height_cm",
+          "productKey": "P1450",
+          "rawValue": "Largo: 178 cm. Ancho: 108 cm. Alto: 210 cm.",
+          "sourceFeature": {
+            "featureId": 15,
+            "featureValueId": 213828
+          },
+          "status": "parsed",
+          "unit": "cm",
+          "value": 210
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-15-cm-v1",
+          "key": "assembled_length_cm",
+          "productKey": "P1450",
+          "rawValue": "Largo: 178 cm. Ancho: 108 cm. Alto: 210 cm.",
+          "sourceFeature": {
+            "featureId": 15,
+            "featureValueId": 213828
+          },
+          "status": "parsed",
+          "unit": "cm",
+          "value": 178
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-15-cm-v1",
+          "key": "assembled_width_cm",
+          "productKey": "P1450",
+          "rawValue": "Largo: 178 cm. Ancho: 108 cm. Alto: 210 cm.",
+          "sourceFeature": {
+            "featureId": 15,
+            "featureValueId": 213828
+          },
+          "status": "parsed",
+          "unit": "cm",
+          "value": 108
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-11-kg-v1",
+          "key": "max_user_weight_kg",
+          "productKey": "P1450",
+          "rawValue": "100 kg.",
+          "sourceFeature": {
+            "featureId": 11,
+            "featureValueId": 213827
+          },
+          "status": "parsed",
+          "unit": "kg",
+          "value": 100
+        },
+        {
+          "catalogPresence": "current_catalog",
+          "derivationRule": "feature-3-kg-v1",
+          "key": "weight_kg",
+          "productKey": "P1450",
+          "rawValue": "81 kg.",
+          "sourceFeature": {
+            "featureId": 3,
+            "featureValueId": 213823
+          },
+          "status": "parsed",
+          "unit": "kg",
+          "value": 81
+        }
+      ],
+      "trust": {
+        "categories": [
+          {
+            "categoryId": 2,
+            "trustClass": "NAVIGATION"
+          },
+          {
+            "categoryId": 280,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 290,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 291,
+            "trustClass": "SEMANTIC_WEAK"
+          },
+          {
+            "categoryId": 314,
+            "trustClass": "SEMANTIC_STRONG"
+          },
+          {
+            "categoryId": 407,
+            "trustClass": "LEGACY"
+          }
+        ],
+        "features": [
+          {
+            "featureId": 1,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 3,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 10,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 11,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 15,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 17,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 34,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 36,
+            "trustClass": "TECHNICAL"
+          },
+          {
+            "featureId": 62,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 64,
+            "trustClass": "LOGISTICS"
+          },
+          {
+            "featureId": 65,
+            "trustClass": "SEMANTIC"
+          },
+          {
+            "featureId": 66,
+            "trustClass": "LOGISTICS"
+          }
+        ],
+        "sourceHashesVerified": true,
+        "consumedByCategorySelection": false
+      },
+      "lineage": {
+        "productVerified": true,
+        "trainingVerified": true,
+        "specsVerified": true
+      }
+    }
+  }
+}
