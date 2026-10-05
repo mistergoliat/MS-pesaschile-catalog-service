@@ -1,6 +1,7 @@
 import { getOntologyTagsForAxis, getCommercialProductOntologyRegistry, computeCommercialProductOntologyRegistryHash, deepFreeze } from '../commercial-product-ontology/index.js';
 import { getTrainingSemanticRegistryV2 } from '../training-semantics-v2/index.js';
 import { sha256Stable } from '../../shared/checksum.js';
+import type { AdmissionContract } from './contracts-v2.js';
 import { semanticObligationContractSchema, semanticDimensions, admissionSurfaces, type SemanticObligationContract,
   type SemanticDimensionRequirement, type EvidenceRequirement, type SurfaceAdmissionPolicy, type ProductFamilyObligation } from './contracts.js';
 
@@ -61,7 +62,7 @@ const requirementsForFamily = (family: string): SemanticDimensionRequirement[] =
   }
   return base;
 };
-export function computeSemanticObligationContractHash(contract: Omit<SemanticObligationContract, 'contentHash'> | SemanticObligationContract): string {
+export function computeSemanticObligationContractHash(contract: object & { contentHash?: string }): string {
   const { contentHash: _hash, ...content } = contract as SemanticObligationContract;
   return `sha256:${sha256Stable(JSON.parse(JSON.stringify(content)))}`;
 }
@@ -104,6 +105,6 @@ const content: Omit<SemanticObligationContract, 'contentHash'> = {
   })), defaultFamily,
 };
 export const semanticObligationContract: SemanticObligationContract = deepFreeze(validateSemanticObligationContract({ ...content, contentHash: computeSemanticObligationContractHash(content) }));
-export function getProductFamilyObligation(family: string | null | undefined, contract = semanticObligationContract): ProductFamilyObligation {
+export function getProductFamilyObligation(family: string | null | undefined, contract: AdmissionContract = semanticObligationContract): AdmissionContract['families'][number] {
   return contract.families.find(f => f.productFamily === family) ?? contract.defaultFamily;
 }

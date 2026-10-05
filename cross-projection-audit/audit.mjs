@@ -14,6 +14,7 @@ process.chdir(root);
 const options = {};
 for (const arg of process.argv.slice(2)) {
   if (arg === '--p2-3a' && !options.p23a) { options.p23a = true; continue; }
+  if (arg === '--p2-3b' && !options.p23b) { options.p23b = true; continue; }
   const m = /^--(source-dir|bundle-dir|output-dir)=(.+)$/.exec(arg);
   if (!m || options[m[1]]) throw new Error(`Unsupported/duplicate argument: ${arg}`);
   options[m[1]] = m[2];
@@ -94,6 +95,13 @@ assert.equal(source.products.length, new Set(source.products.map(p => p.productI
 for (const map of [pInputs, tInputs, pById, tById, v1ById]) {
   assert.equal(map.size, source.products.length);
   assert(source.products.every(p => map.has(p.productId)));
+}
+if (options.p23a && options.p23b) throw new Error('SELECT_ONE_ADMISSION_CONTRACT_VERSION');
+if (options.p23b) {
+  const { runFamilyApplicabilityAudit } = await import('./family-applicability-audit.mjs');
+  await runFamilyApplicabilityAudit({ source, manifest, ps, t2, specsById, pById, tById, categoryRows, featureRows,
+    sourceHashes, extraction, sourceDir, bundleDir, output, root, before, fingerprint, hash, validation, baselineDirectory: auditDirectory });
+  process.exit(0);
 }
 if (options.p23a) {
   const { runAdmissionAudit } = await import('./admission-audit.mjs');

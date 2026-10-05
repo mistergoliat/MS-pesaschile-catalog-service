@@ -163,7 +163,7 @@ export function specMeasurementCandidate(spec: NonNullable<ProductAdmissionConte
   const matches = [...text.matchAll(new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*${spec.unit}\\b`, 'giu'))];
   return matches.length === 1 ? Number(matches[0]![1]!.replace(',', '.')) : null;
 }
-export function mapSpecs(context: ProductAdmissionContext): NormalizedResolution {
+export function mapSpecs(context: ProductAdmissionContext, specKey?: string): NormalizedResolution {
   const dim = 'SPECS', specs = context.specs;
   if (!specs) return empty(dim, 'UNAVAILABLE_PROJECTION');
   if (!specsArtifactSchema.shape.records.safeParse(specs).success) return invalid(dim, 'Specs records schema');
@@ -178,7 +178,7 @@ export function mapSpecs(context: ProductAdmissionContext): NormalizedResolution
     if (values.size > 1 || parsedValues.size > 1) { conflict = true; reasons.push(reason(dim, 'SPEC_SOURCE_CONFLICT', `${key}: ${[...values].sort((a, b) => a - b).join(', ')}`)); }
   }
   if (specs.some(s => !specKeysByFeature[s.sourceFeature.featureId]?.includes(s.key) || s.derivationRule !== `feature-${s.sourceFeature.featureId}-${s.unit}-v1`)) return invalid(dim, 'Unsupported spec source/key/derivation binding');
-  const missing = (context.canonical?.features ?? []).some(f => specKeysByFeature[f.featureId]?.some(key => !specs.some(s => s.key === key && s.sourceFeature.featureId === f.featureId && s.sourceFeature.featureValueId === f.featureValueId)));
+  const missing = (context.canonical?.features ?? []).some(f => specKeysByFeature[f.featureId]?.some(key => (!specKey || key === specKey) && !specs.some(s => s.key === key && s.sourceFeature.featureId === f.featureId && s.sourceFeature.featureValueId === f.featureValueId)));
   if (missing) reasons.push(reason(dim, 'SPEC_MISSING', 'Supported source did not publish every promised key'));
   const evidenceFacts = specs.map(s => {
     const bound = context.canonical?.features?.some(f => f.featureId === s.sourceFeature.featureId && f.featureValueId === s.sourceFeature.featureValueId && (f.value ?? '') === s.rawValue);

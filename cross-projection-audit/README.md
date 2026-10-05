@@ -32,3 +32,6 @@ node cross-projection-audit/audit.mjs --p2-3a --output-dir=cross-projection-audi
 Sin test report, los gates que dependen del runner quedan pendientes; la verificación offline continúa disponible. Se rechaza usar `artifacts/` o `data/` como destino de auditoría para preservar los stores.
 
 `build-admission-fixtures.mjs` es una herramienta de desarrollo para extraer fixtures representativos. No se ejecuta en la auditoría ni es necesario para correr los tests del checkout.
+# P2.3B offline family applicability
+
+`node cross-projection-audit/audit.mjs --p2-3b` evaluates `semantic-obligations-v2` against the same verified source/bundle. It preserves prior outputs and compares every v1 product payload with `product-admission.json`. Run the complete suite directly through Vitest with `--reporter=json --outputFile=cross-projection-audit/test-results-P2.3B.json`, then run the audit twice for all 12 gates and full-output reproducibility. Do not use the snapshot-publishing npm pretest for this phase. Generated P2.3B artifacts remain ignored; `--output-dir` supports an independent v2 output directory. Methodology: [P2.3B contract documentation](../docs/catalog-v2/P2_3B_FAMILY_APPLICABILITY_AND_OBLIGATIONS.md).
