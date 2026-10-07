@@ -6,7 +6,7 @@ import { DefaultTrainingSemanticSnapshotV2Builder, calculateTrainingSemanticSnap
   recomputeTrainingSemanticSnapshotV2Identity, validateTrainingSemanticV2Source } from '../../src/domain/training-semantic-snapshot/v2SnapshotBuilder.js';
 import type { TrainingSemanticSnapshotV2 } from '../../src/domain/training-semantic-snapshot/v2-contracts.js';
 import { canonicalizeTrainingSnapshotJson } from '../../src/domain/training-semantic-snapshot/canonicalJson.js';
-import { acceptedTrainingV2SnapshotId, compareTrainingV2, replayAcceptedTrainingV2, trainingV2Coverage } from '../../scripts/catalog-v2/audit-training-semantics-v2-authority.js';
+import { acceptedTrainingV2SnapshotId, compareTrainingV2, readAcceptedTrainingV2Evidence, trainingV2Coverage } from '../../scripts/catalog-v2/audit-training-semantics-v2-authority.js';
 import { FileTrainingSemanticSnapshotV2Store } from '../../src/infrastructure/training-semantic/fileTrainingSemanticSnapshotV2Store.js';
 import { RuntimeTrainingSemanticV2Reader } from '../../src/domain/catalog/runtime-training-semantic-v2-reader.js';
 import type { RuntimeProjectionManager } from '../../src/domain/catalog/runtime-projection.js';
@@ -89,10 +89,10 @@ describe('native Training V2 authority gates', () => {
   });
 });
 
-describe('accepted Training V2 reproduction', () => {
-  let replay: Awaited<ReturnType<typeof replayAcceptedTrainingV2>>;
-  beforeAll(async () => { replay = await replayAcceptedTrainingV2(); }, 30000);
-  it('reproduces the approved identity, fixed-time bytes and 240-product review cohort', async () => {
+describe('accepted Training V2 frozen evidence', () => {
+  let replay: Awaited<ReturnType<typeof readAcceptedTrainingV2Evidence>>;
+  beforeAll(async () => { replay = await readAcceptedTrainingV2Evidence(); }, 30000);
+  it('validates the historical identity, fixed-time bytes and 240-product review cohort', async () => {
     expect(replay.snapshot.snapshotId).toBe(acceptedTrainingV2SnapshotId);
     expect(replay.contentHash).toBe('sha256:57ec370d6f54347d56e952b6b1e934228e3bbadd41a17b5a2fbfd1b5a5f9d414');
     expect(replay.snapshot.counts).toMatchObject({ sourceProducts: 2011, activeTrainingRelevant: 240, resolvedCount: 234, unresolvedCount: 6,

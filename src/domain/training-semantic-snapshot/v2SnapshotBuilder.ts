@@ -12,6 +12,7 @@ import { canonicalizeTrainingSnapshotJson, cloneTrainingSnapshotJson, hashTraini
 import { trainingSemanticSnapshotV2Schema, trainingSemanticResolutionStates, type TrainingSemanticResolutionState, type TrainingSemanticSnapshotV2, type TrainingSemanticSnapshotV2BuildParameters, type TrainingSemanticSnapshotV2Counts, type TrainingSemanticSnapshotV2Record } from './v2-contracts.js';
 import type { TrainingSemanticSnapshot } from './contracts.js';
 import { validateTrainingSemanticSnapshot } from './defaultSnapshotBuilder.js';
+import { validateTrainingSemanticInvariants } from './semanticInvariants.js';
 
 export const TRAINING_SEMANTIC_V1_SNAPSHOT_ID = 'sha256:63fd41033347c4bd4bcc6382ce432a8a5d0876c8de0a5bec2dd54ac9297ab90d';
 export const TRAINING_SEMANTIC_V1_REGISTRY_HASH = '82fcbe9a014522257ab8b2d460286d0c6ecbeffc6a01814d8d4e2f6b8849023f';
@@ -33,6 +34,7 @@ function resolutionStateFor(result: TrainingSemanticClassificationV21Result, par
   if (result.exerciseCapabilities.length > 0 || result.trainingFunctions.length > 0) return 'SEMANTIC_COMPLETE';
   if (result.coverageStatus === 'NO_CAPABILITY_APPLICABLE') return 'VERIFIED_NO_APPLICABLE_CAPABILITY';
   if (result.coverageStatus === 'INSUFFICIENT_EVIDENCE') return 'DATA_GAP';
+  if (result.warnings.some(w => w.startsWith('TRAINING_EVIDENCE_DOMAIN_SUPPRESSED:'))) return 'DATA_GAP';
   return 'ONTOLOGY_GAP';
 }
 function resolutionEvidenceFor(result: TrainingSemanticClassificationV21Result, parameters: TrainingSemanticSnapshotV2BuildParameters) {
@@ -139,7 +141,10 @@ export function validateTrainingSemanticSnapshotV2(snapshot: TrainingSemanticSna
   if (!parsed.success) throw new Error(`Training Semantic Snapshot V2 contract invalid: ${parsed.error.message}`);
   if (snapshot.registryHash !== registryHash) throw new Error(`Training Semantic Snapshot V2 registry hash mismatch: expected ${registryHash}`);
   if (snapshot.classifierVersion !== trainingSemanticClassifierV21Version) throw new Error('Training Semantic Snapshot V2 classifier lineage mismatch');
-  if (snapshot.classifierV2RulesHash !== trainingSemanticClassifierV21RulesHash || (snapshot.rulesHash ?? snapshot.classifierV2RulesHash) !== trainingSemanticClassifierV21RulesHash) throw new Error('Training Semantic Snapshot V2 rules hash mismatch');
+  const readableRules = new Set([trainingSemanticClassifierV21RulesHash,
+    '75718209edd239bd15ba03a65242adaf75863c6de630061198e2d12da87a6839', // Frozen P2.3C-FIX evidence; identity remains hash-validated.
+    '5e4e591b45e7704975552f305d59d73535c3889ed655754aa0113844c9c03b6d']);
+  if (!readableRules.has(snapshot.classifierV2RulesHash) || (snapshot.rulesHash ?? snapshot.classifierV2RulesHash) !== snapshot.classifierV2RulesHash) throw new Error('Training Semantic Snapshot V2 rules hash mismatch');
   if (snapshot.records.some((record) => !record.resolutionState)) throw new Error('Training Semantic Snapshot V2 records must persist resolutionState');
   if (new Set(snapshot.records.map((record) => record.productId)).size !== snapshot.records.length) throw new Error('Training Semantic Snapshot V2 contains duplicate productId');
   for (const record of snapshot.records) {
@@ -149,7 +154,8 @@ export function validateTrainingSemanticSnapshotV2(snapshot: TrainingSemanticSna
   }
   const counts = calculateTrainingSemanticSnapshotV2Counts(snapshot.records, { sourceProductCount: snapshot.records.length, sourceV1SnapshotId: snapshot.sourceV1SnapshotId, sourceV1Snapshot: {} as TrainingSemanticSnapshot, activeTrainingRelevant: snapshot.counts.activeTrainingRelevant });
   if (canonicalizeTrainingSnapshotJson(counts) !== canonicalizeTrainingSnapshotJson(snapshot.counts)) throw new Error(`Training Semantic Snapshot V2 counts are inconsistent: actual=${canonicalizeTrainingSnapshotJson(counts)} expected=${canonicalizeTrainingSnapshotJson(snapshot.counts)}`);
-  if ((snapshot.counts.activeTrainingRelevant ?? 0) === ACTIVE_TRAINING_RELEVANT_BASELINE && (snapshot.counts.resolutionRate ?? 0) < 95) throw new Error('Training Semantic Snapshot V2 resolution rate is below the accepted gate');
+  // The historical coverage target cannot certify facts rejected by precision review.
+  if (snapshot.classifierV2RulesHash === '5e4e591b45e7704975552f305d59d73535c3889ed655754aa0113844c9c03b6d' && (snapshot.counts.activeTrainingRelevant ?? 0) === ACTIVE_TRAINING_RELEVANT_BASELINE && (snapshot.counts.resolutionRate ?? 0) < 95) throw new Error('Training Semantic Snapshot V2 resolution rate is below the accepted gate');
   const identity = recomputeTrainingSemanticSnapshotV2Identity(snapshot);
   if (identity.semanticChecksum !== snapshot.semanticChecksum || identity.snapshotId !== snapshot.snapshotId) throw new Error('Training Semantic Snapshot V2 identity does not match canonical semantic content');
 }
@@ -164,7 +170,12 @@ export class DefaultTrainingSemanticSnapshotV2Builder {
     return this.buildVerified(input, false);
   }
 
-  private buildVerified(input: { readonly results: readonly TrainingSemanticClassificationV21Result[]; readonly parameters: TrainingSemanticSnapshotV2BuildParameters }, acceptedBaseline: boolean): TrainingSemanticSnapshotV2 {
+  /** Read-only historical reproduction. The result must never pass a publication gate when inconsistent. */
+  replayHistorical(input: { readonly results: readonly TrainingSemanticClassificationV21Result[]; readonly parameters: TrainingSemanticSnapshotV2BuildParameters }, acceptedBaseline = true): TrainingSemanticSnapshotV2 {
+    return this.buildVerified(input, acceptedBaseline, true);
+  }
+
+  private buildVerified(input: { readonly results: readonly TrainingSemanticClassificationV21Result[]; readonly parameters: TrainingSemanticSnapshotV2BuildParameters }, acceptedBaseline: boolean, historicalReplay = false): TrainingSemanticSnapshotV2 {
     const { results, parameters } = input;
     if (results.length === 0) throw new Error('Training Semantic Snapshot V2 cannot be built from an empty source');
     if (results.length !== parameters.sourceProductCount) throw new Error(`sourceProductCount mismatch: ${parameters.sourceProductCount} != ${results.length}`);
@@ -176,14 +187,15 @@ export class DefaultTrainingSemanticSnapshotV2Builder {
       if (seen.has(result.productId)) throw new Error(`duplicate productId: ${result.productId}`);
       seen.add(result.productId);
       if (result.classifierVersion !== trainingSemanticClassifierV21Version || result.registryHash !== registryHash || result.rulesHash !== trainingSemanticClassifierV21RulesHash) throw new Error(`classifier lineage mismatch for product ${result.productId}`);
-      if (result.reviewCandidates.length > 0 || result.coverageStatus === 'NEEDS_REVIEW') throw new Error(`NEEDS_REVIEW is not publishable for product ${result.productId}`);
-      if (resolutionStateFor(result, parameters) === 'NEEDS_REVIEW' && (parameters.acceptedResolutionStates?.NEEDS_REVIEW ?? 0) === 0) throw new Error(`NEEDS_REVIEW exceeds accepted baseline for product ${result.productId}`);
+      if (!historicalReplay && (result.reviewCandidates.length > 0 || result.coverageStatus === 'NEEDS_REVIEW')) throw new Error(`NEEDS_REVIEW is not publishable for product ${result.productId}`);
+      if (!historicalReplay && resolutionStateFor(result, parameters) === 'NEEDS_REVIEW' && (parameters.acceptedResolutionStates?.NEEDS_REVIEW ?? 0) === 0) throw new Error(`NEEDS_REVIEW exceeds accepted baseline for product ${result.productId}`);
       const exerciseKeys = result.exerciseCapabilities.map((item) => item.capabilityCode);
       const functionKeys = result.trainingFunctions.map((item) => item.functionCode);
       if (new Set(exerciseKeys).size !== exerciseKeys.length || new Set(functionKeys).size !== functionKeys.length) throw new Error(`duplicate semantic assignment for product ${result.productId}`);
     }
     const v1Assignments = assertV1Lineage(results, parameters.sourceV1Snapshot, acceptedBaseline);
     const records = results.map((result) => cloneTrainingSnapshotJson(semanticRecord(result, parameters))).sort((a, b) => a.productId - b.productId);
+    if (!historicalReplay) validateTrainingSemanticInvariants({ records });
     const counts = calculateTrainingSemanticSnapshotV2Counts(records, parameters);
     const active = parameters.activeTrainingRelevant ?? 0;
     const resolved = counts.resolvedActiveTrainingRelevant ?? 0;

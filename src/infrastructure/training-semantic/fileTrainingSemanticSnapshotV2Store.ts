@@ -2,6 +2,7 @@ import { mkdir, open, readFile, rename, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { canonicalizeTrainingSnapshotJson, cloneTrainingSnapshotJson, deepFreezeTrainingSnapshot } from '../../domain/training-semantic-snapshot/canonicalJson.js';
 import { validateTrainingSemanticSnapshotV2 } from '../../domain/training-semantic-snapshot/v2SnapshotBuilder.js';
+import { validateTrainingSemanticInvariants } from '../../domain/training-semantic-snapshot/semanticInvariants.js';
 import { trainingSemanticSnapshotV2Schema, type TrainingSemanticSnapshotV2, type TrainingSemanticSnapshotV2SaveResult, type TrainingSemanticSnapshotV2Store } from '../../domain/training-semantic-snapshot/v2-contracts.js';
 
 type ActivePointer = Pick<TrainingSemanticSnapshotV2, 'snapshotId' | 'schemaVersion' | 'registryVersion' | 'registryHash' | 'classifierVersion' | 'classifierV2RulesHash' | 'semanticChecksum'> & { readonly rulesHash?: string; readonly activatedAt: string };
@@ -25,6 +26,7 @@ export class FileTrainingSemanticSnapshotV2Store implements TrainingSemanticSnap
 
   async save(snapshot: TrainingSemanticSnapshotV2): Promise<TrainingSemanticSnapshotV2SaveResult> {
     validateTrainingSemanticSnapshotV2(snapshot);
+    validateTrainingSemanticInvariants(snapshot);
     await mkdir(this.snapshotsDirectory, { recursive: true });
     const target = join(this.snapshotsDirectory, fileName(snapshot.snapshotId));
     const existing = await this.readSnapshot(target);
@@ -39,6 +41,7 @@ export class FileTrainingSemanticSnapshotV2Store implements TrainingSemanticSnap
   async activate(snapshotId: string): Promise<void> {
     const snapshot = await this.getById(snapshotId);
     if (!snapshot) throw new Error(`SNAPSHOT_NOT_FOUND: ${snapshotId}`);
+    validateTrainingSemanticInvariants(snapshot);
     const pointer: ActivePointer = { snapshotId: snapshot.snapshotId, schemaVersion: snapshot.schemaVersion, registryVersion: snapshot.registryVersion, registryHash: snapshot.registryHash, classifierVersion: snapshot.classifierVersion, classifierV2RulesHash: snapshot.classifierV2RulesHash, ...(snapshot.rulesHash ? { rulesHash: snapshot.rulesHash } : {}), semanticChecksum: snapshot.semanticChecksum, activatedAt: new Date().toISOString() };
     await this.writeJsonAtomically(this.activePointerPath, JSON.stringify(pointer, null, 2));
   }

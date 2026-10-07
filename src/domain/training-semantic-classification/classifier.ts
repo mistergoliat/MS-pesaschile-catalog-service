@@ -27,6 +27,11 @@ const clearlyNonApplicableNamePattern = new RegExp([
 const accessoryNamePattern = /\b(?:accesorio|attachment|agarre|grip|handle|pad|cinturon|rueda abdominal|abmat|correa|strap)\b/;
 const machineFamilies = new Set(['CABLE_MACHINE', 'SELECTORIZED_MACHINE', 'PLATE_LOADED_MACHINE', 'RACK_CAGE', 'MACHINE_ATTACHMENT']);
 
+export const trainingNegativeRuleCatalog = Object.freeze({
+  families: [...clearlyNonApplicableFamilies].sort(), namePattern: clearlyNonApplicableNamePattern.source,
+  accessoryNamePattern: accessoryNamePattern.source, scope: 'V1 modeled exercise coverage; V2 positive/review veto required',
+});
+
 function assignmentFromMatch(input: TrainingSemanticClassificationInput, match: ReturnType<typeof evaluateTrainingSemanticRules>['matches'][number], generatedAt: string, sourceCatalogExport?: string): ProductTrainingCapabilityAssignment {
   const assignment: ProductTrainingCapabilityAssignment = {
     productId: input.productId,
@@ -59,6 +64,15 @@ function determineCoverageStatus(input: TrainingSemanticClassificationInput, mat
   if (matches.length === 0 && (machineFamilies.has(input.productFamily ?? '') || input.productFamily === '')) return 'UNMODELED';
   if (matches.length === 0) return 'UNMODELED';
   return 'UNMODELED';
+}
+
+/** Explains the existing negative branches without changing historical classification or hashes. */
+export function explainTrainingNegativeRule(input: TrainingSemanticClassificationInput): string | undefined {
+  if (classifyTrainingSemanticProduct(input).coverageStatus !== 'NO_CAPABILITY_APPLICABLE') return undefined;
+  if (clearlyNonApplicableFamilies.has(input.productFamily ?? '')) return 'V1_NON_APPLICABLE_FAMILY';
+  if (clearlyNonApplicableNamePattern.test(normalizeTrainingText(input.name))) return 'V1_NON_APPLICABLE_NAME';
+  if (accessoryNamePattern.test(normalizeTrainingText(input.name))) return 'V1_ACCESSORY_NAME';
+  return undefined;
 }
 
 export function classifyTrainingSemanticProduct(

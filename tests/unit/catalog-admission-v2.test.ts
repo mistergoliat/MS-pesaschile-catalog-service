@@ -126,10 +126,16 @@ describe('source applicability precedes content', () => {
   });
   it('keeps exercise and function discovery independent', () => {
     const c = fixture('functionOnly');
+    // The historical fixture's generic storage rack is insufficient; explicitly sell a squat rack in this positive bundle.
+    c.canonical!.name = c.canonical!.name.replace('+ Rack', '+ Squat Rack');
     expect(dim(c, 'TRAINING_FUNCTION').effectiveRequirement).toBe('REQUIRED');
     expect(dim(c, 'TRAINING_EXERCISE').effectiveRequirement).toBe('NOT_REQUIRED');
     expect(evaluateProductAdmission({ ...c, trainingDiscoveryDimension: 'TRAINING_FUNCTION' }, 'TRAINING_DISCOVERY', contract).decision).toBe('ADMITTED');
     expect(evaluateProductAdmission(c, 'TRAINING_DISCOVERY', contract).decision).toBe('NOT_APPLICABLE');
+  });
+  it('does not create a barbell-support obligation from a dumbbell storage bundle', () => {
+    expect(trainingSourceObligations(fixture('functionOnly'))!.function).not.toContain('BARBELL_SUPPORT');
+    expect(dim(fixture('functionOnly'), 'TRAINING_FUNCTION').effectiveRequirement).toBe('NOT_REQUIRED');
   });
   it('requires Trust only when semantic evidence uses it, never because a map exists', () => {
     const c = fixture('classified');

@@ -5,7 +5,10 @@ const hash = z.string().regex(/^sha256:[a-f0-9]{64}$/u);
 export const trainingSemanticsV2ProjectionSchema = z.object({
   schemaVersion: z.literal('2'), sourceExtractionId: hash, codeRef: z.string().min(1),
   inputs: z.object({ catalog: hash, categoryTrustMap: hash, featureTrustMap: hash,
-    resolutionPolicy: z.object({ file: z.string().min(1), hash, cohort: z.literal('accepted-a00.6.7') }).strict(),
+    resolutionPolicy: z.object({ file: z.string().min(1), hash, cohort: z.literal('accepted-a00.6.7'),
+      version: z.string().min(1).optional(), builderVersion: z.string().min(1).optional(),
+      previousPolicy: z.object({ file: z.string().min(1), hash }).strict().optional(),
+    }).strict(),
   }).strict(),
   snapshot: trainingSemanticSnapshotV2Schema,
 }).strict();

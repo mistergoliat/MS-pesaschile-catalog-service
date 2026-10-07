@@ -8,3 +8,6 @@ export * from './runtime.js';
 export * from './v2-contracts.js';
 export * from './v2SnapshotBuilder.js';
 export * from './v2Runtime.js';
+export * from './semanticInvariants.js';
+export * from './reconcileResolution.js';
+export * from './resolutionPolicy.js';

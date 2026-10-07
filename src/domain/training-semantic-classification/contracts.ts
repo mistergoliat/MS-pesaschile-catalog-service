@@ -32,6 +32,8 @@ export type TrainingSemanticClassificationInput = {
   readonly productId: number;
   readonly name: string;
   readonly productFamily?: string | null;
+  /** Optional Product Truth provenance, consumed only by V2 derivation guards. */
+  readonly productFamilyEvidence?: readonly { readonly axis: string; readonly code: string; readonly sourceType: string; readonly rawValue: string }[];
   readonly activeStatus?: boolean | null;
   readonly catalogPresence?: 'current_catalog' | 'historical_order_detail_only';
   readonly revenue?: number | null;

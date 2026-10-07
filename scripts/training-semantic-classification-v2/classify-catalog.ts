@@ -69,7 +69,7 @@ function assignedCodes(result: TrainingSemanticClassificationV2Result): readonly
   return [...result.exerciseCapabilities.map((assignment) => assignment.capabilityCode), ...result.trainingFunctions.map((assignment) => assignment.functionCode)].sort((left, right) => left.localeCompare(right));
 }
 
-function isResolved(record: BaselineRecord, result: TrainingSemanticClassificationV2Result, expectedConcepts: readonly string[]): boolean {
+export function isResolved(record: BaselineRecord, result: TrainingSemanticClassificationV2Result, expectedConcepts: readonly string[]): boolean {
   const assigned = new Set(assignedCodes(result));
   if (record.resolutionState === 'SEMANTIC_COMPLETE' || record.resolutionState === 'VERIFIED_NO_APPLICABLE_CAPABILITY') return true;
   if (record.resolutionState === 'SEMANTIC_PARTIAL' || record.resolutionState === 'RULE_GAP') return record.missingCapabilities.every((code) => assigned.has(code));
@@ -77,7 +77,7 @@ function isResolved(record: BaselineRecord, result: TrainingSemanticClassificati
   return false;
 }
 
-function resolutionState(record: BaselineRecord, resolved: boolean): ResolutionState {
+export function resolutionState(record: BaselineRecord, resolved: boolean): ResolutionState {
   if (resolved && (record.resolutionState === 'SEMANTIC_PARTIAL' || record.resolutionState === 'RULE_GAP' || record.resolutionState === 'ONTOLOGY_GAP')) return 'SEMANTIC_COMPLETE';
   return record.resolutionState as ResolutionState;
 }
@@ -201,7 +201,7 @@ async function main(): Promise<void> {
   console.log(JSON.stringify({ status: 'ok', decision: report.decision, registryHash: report.authority.registryHash, rulesHash: report.authority.rulesHash, ...report.counts, REAL_SEMANTIC_RESOLUTION_RATE: report.REAL_SEMANTIC_RESOLUTION_RATE, outputDir: args.outputDir }, null, 2));
 }
 
-main().catch((error: unknown) => {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch((error: unknown) => {
   console.error(JSON.stringify({ status: 'failed', error: error instanceof Error ? error.message : 'Unknown A00.6.6 error' }, null, 2));
   process.exitCode = 1;
 });

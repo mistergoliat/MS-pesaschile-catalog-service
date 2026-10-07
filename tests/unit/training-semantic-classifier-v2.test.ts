@@ -51,7 +51,7 @@ describe('Training Semantic Classifier V2', () => {
   it('completes the four known rule closures with reusable rules', () => {
     expect(codes(classifyTrainingSemanticProductV2(product('Par Push Ups 1.0 | FullFit', {
       categories: [{ categoryId: '430', name: 'Barras Paralelas', trustClass: 'SEMANTIC_STRONG' }, { categoryId: '319', name: 'Barras Pull Up & Push Up', trustClass: 'SEMANTIC_STRONG' }],
-    })))).toEqual(['DIP', 'PULL_UP']);
+    })))).toEqual(['DIP']);
     expect(codes(classifyTrainingSemanticProductV2(product('Curl de Femoral Acostado MO 2.0', { productFamily: 'SELECTORIZED_MACHINE' })))).toContain('LEG_CURL');
     expect(codes(classifyTrainingSemanticProductV2(product('T-Bar Row Beast', { productFamily: 'PLATE_LOADED_MACHINE' })))).toContain('ROW');
     expect(codes(classifyTrainingSemanticProductV2(product('3D Hip Thruster Beast', { productFamily: 'PLATE_LOADED_MACHINE' })))).toContain('HIP_THRUST');
@@ -68,10 +68,10 @@ describe('Training Semantic Classifier V2', () => {
   });
 
   it('classifies training functions separately and permits coexistence', () => {
-    const cable = classifyTrainingSemanticProductV2(product('Máquina Home Gym', { productFamily: 'CABLE_MACHINE' }));
+    const cable = classifyTrainingSemanticProductV2(product('Máquina Home Gym', { productFamily: 'CABLE_MACHINE', productFamilyEvidence: [{ axis: 'PRODUCT_FAMILY', code: 'CABLE_MACHINE', sourceType: 'STRUCTURED_FEATURE', rawValue: 'Relación de cable y polea 2:1' }] }));
     expect(functionCodes(cable)).toContain('CABLE_RESISTANCE');
     expect(cable.trainingFunctions[0]).toMatchObject({ relationType: 'FAMILY_DERIVED', productFamily: 'CABLE_MACHINE' });
-    const crossover = classifyTrainingSemanticProductV2(product('Wall Crossover', { productFamily: 'CABLE_MACHINE' }));
+    const crossover = classifyTrainingSemanticProductV2(product('Wall Crossover', { productFamily: 'CABLE_MACHINE', productFamilyEvidence: [{ axis: 'PRODUCT_FAMILY', code: 'CABLE_MACHINE', sourceType: 'NAME_TEXT', rawValue: 'Wall Crossover' }] }));
     expect(functionCodes(crossover)).toEqual(['CABLE_RESISTANCE', 'MULTI_DIRECTIONAL_RESISTANCE']);
     const rack = classifyTrainingSemanticProductV2(product('Atril de Sentadillas', { productFamily: 'RACK_CAGE' }));
     expect(functionCodes(rack)).toEqual(['BARBELL_SUPPORT']);

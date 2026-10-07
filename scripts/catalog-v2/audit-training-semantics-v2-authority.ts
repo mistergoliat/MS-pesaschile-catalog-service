@@ -5,13 +5,10 @@ import { ActivationService } from '../../src/domain/catalog/projection-activatio
 import { FileProjectionActivationStore } from '../../src/infra/catalog/file-projection-activation-store.js';
 import { trainingSemanticsV2ProjectionSchema } from '../../src/domain/catalog/training-semantics-v2-projection.js';
 import { contentHash } from '../../src/domain/catalog/projection-input/canonical.js';
-import { canonicalizeTrainingSnapshotJson, validateTrainingSemanticSnapshotV2, DefaultTrainingSemanticSnapshotV2Builder,
-  TRAINING_SEMANTIC_V1_SNAPSHOT_ID, ACTIVE_TRAINING_RELEVANT_BASELINE, RESOLVED_TRAINING_RELEVANT_BASELINE,
-  ACCEPTED_RESOLUTION_STATE_COUNTS, type TrainingSemanticSnapshotV2, type TrainingSemanticSnapshotV2Record } from '../../src/domain/training-semantic-snapshot/index.js';
+import { canonicalizeTrainingSnapshotJson, validateTrainingSemanticSnapshotV2, validateTrainingSemanticV2Source,
+  TRAINING_SEMANTIC_V1_SNAPSHOT_ID, type TrainingSemanticSnapshotV2, type TrainingSemanticSnapshotV2Record } from '../../src/domain/training-semantic-snapshot/index.js';
 import { FileTrainingSemanticSnapshotStore } from '../../src/infrastructure/training-semantic/fileTrainingSemanticSnapshotStore.js';
 import { FileTrainingSemanticSnapshotV2Store } from '../../src/infrastructure/training-semantic/fileTrainingSemanticSnapshotV2Store.js';
-import { classifyTrainingSemanticProductsV21 } from '../../src/domain/training-semantic-classification-v2-1/index.js';
-import { loadTrainingSemanticClassificationInputs } from '../training-semantic-classification/lib/load-input.js';
 import { resolveProductSemanticInputPaths } from '../product-semantic-classification/lib/fixture-paths.js';
 import { readAcceptedTrainingResolutionPolicy } from './build-training-semantics-v2.js';
 
@@ -66,23 +63,17 @@ export function compareTrainingV2(legacy: TrainingSemanticSnapshotV2, candidate:
       : legacyOnly.length ? 'LEGACY_SUPERSET' : candidateOnly.length ? 'CAT_V2_SUPERSET' : 'EQUIVALENT' };
 }
 
-export async function replayAcceptedTrainingV2(sourceV1Directory = 'data/training-semantic-snapshots/.test-v1') {
-  const [paths, policy, sourceV1] = await Promise.all([resolveProductSemanticInputPaths(), readAcceptedTrainingResolutionPolicy(),
-    new FileTrainingSemanticSnapshotStore(path.resolve(sourceV1Directory)).getById(TRAINING_SEMANTIC_V1_SNAPSHOT_ID)]);
+/** Frozen historical comparator. Current corrected rules cannot reproduce superseded semantics. */
+export async function readAcceptedTrainingV2Evidence(sourceV1Directory = 'data/training-semantic-snapshots/.test-v1') {
+  const [paths, policy, sourceV1, accepted] = await Promise.all([resolveProductSemanticInputPaths(), readAcceptedTrainingResolutionPolicy(),
+    new FileTrainingSemanticSnapshotStore(path.resolve(sourceV1Directory)).getById(TRAINING_SEMANTIC_V1_SNAPSHOT_ID),
+    new FileTrainingSemanticSnapshotV2Store('data/training-semantic-snapshots/v2').getById(acceptedTrainingV2SnapshotId)]);
   if (!sourceV1) throw new Error('ACCEPTED_TRAINING_V1_MISSING: run npm run test:bootstrap:training-v2');
-  const loaded = await loadTrainingSemanticClassificationInputs(paths);
-  if (loaded.warnings.length) throw new Error('ACCEPTED_TRAINING_INPUT_WARNINGS');
-  const results = classifyTrainingSemanticProductsV21(loaded.inputs, { sourceCatalogExport: path.basename(paths.catalogCsvPath) });
-  const build = () => new DefaultTrainingSemanticSnapshotV2Builder().build({ results, parameters: {
-    sourceProductCount: loaded.inputs.length, sourceV1SnapshotId: sourceV1.snapshotId, sourceV1Snapshot: sourceV1,
-    resolutionStates: policy.states, activeTrainingRelevant: ACTIVE_TRAINING_RELEVANT_BASELINE, activeTrainingRelevantProductIds: policy.productIds,
-    acceptedResolvedCount: RESOLVED_TRAINING_RELEVANT_BASELINE, acceptedResolutionStates: ACCEPTED_RESOLUTION_STATE_COUNTS,
-    generatedAt: '1970-01-01T00:00:00.000Z',
-  } });
-  const a = build(), b = build();
-  if (a.snapshotId !== acceptedTrainingV2SnapshotId || !same(a, b)) throw new Error('ACCEPTED_TRAINING_V2_REPLAY_DRIFT');
+  if (!accepted) throw new Error('ACCEPTED_TRAINING_V2_EVIDENCE_MISSING');
+  validateTrainingSemanticV2Source(accepted, sourceV1);
   const rawInputs = await Promise.all([paths.catalogCsvPath, paths.categoryTrustMapCsvPath, paths.featureTrustMapCsvPath].map((file) => readFile(file, 'utf8')));
-  return { snapshot: a, contentHash: contentHash(`${canonicalizeTrainingSnapshotJson(a)}\n`), resolutionPolicyHash: policy.hash,
+  const fixedTime = { ...accepted, generatedAt: '1970-01-01T00:00:00.000Z' };
+  return { snapshot: fixedTime, contentHash: contentHash(`${canonicalizeTrainingSnapshotJson(fixedTime)}\n`), resolutionPolicyHash: policy.hash,
     inputs: { catalog: contentHash(rawInputs[0]!), categoryTrustMap: contentHash(rawInputs[1]!), featureTrustMap: contentHash(rawInputs[2]!) } };
 }
 
@@ -101,14 +92,14 @@ async function main() {
   if (entry?.status !== 'present') throw new Error('TRAINING_V2_PROJECTION_UNAVAILABLE');
   const projection = trainingSemanticsV2ProjectionSchema.parse(JSON.parse(bundle.files[entry.artifact]!));
   const [legacy, replay] = await Promise.all([new FileTrainingSemanticSnapshotV2Store(path.resolve(options['legacy-dir'] ?? 'data/training-semantic-snapshots/v2')).getById(acceptedTrainingV2SnapshotId),
-    replayAcceptedTrainingV2(options['source-v1-dir'])]);
+    readAcceptedTrainingV2Evidence(options['source-v1-dir'])]);
   if (!legacy) throw new Error('ACCEPTED_TRAINING_V2_MISSING');
   const { generatedAt: _generated, activatedAt: _activated, ...legacyContent } = legacy;
   const { generatedAt: _replayed, ...replayedContent } = replay.snapshot;
   if (!same(legacyContent, replayedContent)) throw new Error('ACCEPTED_TRAINING_V2_CONTENT_DRIFT');
   const parity = compareTrainingV2(legacy, projection.snapshot);
   const report = { schemaVersion: '1', status: parity.metrics.materialDifferences || parity.populations.legacyOnly.length ? 'MIGRATION_BLOCKED' : 'PARITY_PASS',
-    inputs: { acceptedSnapshotId: legacy.snapshotId, reproducibleContentHash: replay.contentHash, resolutionPolicyHash: replay.resolutionPolicyHash,
+    inputs: { acceptedSnapshotId: legacy.snapshotId, historicalContentHash: replay.contentHash, resolutionPolicyHash: replay.resolutionPolicyHash,
       acceptedClassificationInputs: replay.inputs, candidateInputs: projection.inputs, codeRef: projection.codeRef,
       candidateBundleId: bundleId, candidateManifestHash: bundle.manifestHash, projectionId: entry.snapshotId,
       sourceExtractionId: projection.sourceExtractionId, sourceV1SnapshotId: projection.snapshot.sourceV1SnapshotId,

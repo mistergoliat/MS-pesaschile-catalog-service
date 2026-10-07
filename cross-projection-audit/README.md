@@ -35,3 +35,13 @@ Sin test report, los gates que dependen del runner quedan pendientes; la verific
 # P2.3B offline family applicability
 
 `node cross-projection-audit/audit.mjs --p2-3b` evaluates `semantic-obligations-v2` against the same verified source/bundle. It preserves prior outputs and compares every v1 product payload with `product-admission.json`. Run the complete suite directly through Vitest with `--reporter=json --outputFile=cross-projection-audit/test-results-P2.3B.json`, then run the audit twice for all 12 gates and full-output reproducibility. Do not use the snapshot-publishing npm pretest for this phase. Generated P2.3B artifacts remain ignored; `--output-dir` supports an independent v2 output directory. Methodology: [P2.3B contract documentation](../docs/catalog-v2/P2_3B_FAMILY_APPLICABILITY_AND_OBLIGATIONS.md).
+
+## P2.3C local Training candidate
+
+Historical instructions from before the content-review rejection. Do not rerun this builder under the corrected rules or overwrite `p2-3c/`; use the P2.3C-FIX workflow below.
+
+Run `node --import tsx cross-projection-audit/training-reconciliation-audit.mjs` after the full suite writes `p2-3c/test-results.json`. The script accepts the same `--source-dir` and `--bundle-dir` overrides, reads frozen baselines and confines every write to `p2-3c/`. It reproduces the historical snapshot and validates the original `historical-red.json` evidence when available; later runs do not fabricate that historical failure. The small [REPORT-P2.3C](p2-3c/REPORT-P2.3C.md) is explicitly eligible for Git; generated JSON, CSV, snapshots and the local candidate bundle remain ignored. [P2.3C methodology](../docs/catalog-v2/P2_3C_TRAINING_SEMANTIC_RECONCILIATION.md). No activation or deployment is performed.
+
+## P2.3C-FIX rule precision
+
+P2.3C was rejected by content review. Preserve `p2-3c/` as historical evidence and use `node --import tsx cross-projection-audit/training-rule-precision-audit.mjs` for the corrected source rebuild. The new audit writes only to `p2-3c-fix/`, runs the 18/26/1/6 regression gate and sweeps all 2048 records. [Methodology](../docs/catalog-v2/P2_3C_FIX_TRAINING_RULE_PRECISION.md) and [report](p2-3c-fix/REPORT-P2.3C-FIX.md). The report is eligible for Git; generated evidence and the candidate bundle remain ignored.

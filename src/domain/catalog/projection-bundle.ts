@@ -6,10 +6,34 @@ import { trainingSemanticSnapshotSchema, type TrainingSemanticSnapshot } from '.
 import { validateTrainingSemanticSnapshot } from '../training-semantic-snapshot/defaultSnapshotBuilder.js';
 import { validateTrainingSemanticSnapshotV2, validateTrainingSemanticV2Source } from '../training-semantic-snapshot/v2SnapshotBuilder.js';
 import { trainingSemanticsV2ProjectionSchema } from './training-semantics-v2-projection.js';
+import { validateTrainingSemanticInvariants } from '../training-semantic-snapshot/semanticInvariants.js';
+import { trainingResolutionPolicy } from '../training-semantic-snapshot/resolutionPolicy.js';
+import type { TrainingSemanticClassificationInput } from '../training-semantic-classification/contracts.js';
 
 const hash = z.string().regex(/^sha256:[a-f0-9]{64}$/u);
 const names = ['productSemantics', 'trainingSemantics', 'specs', 'relationships', 'capabilities', 'trustMaps'] as const;
 export type ProjectionName = typeof names[number] | 'trainingSemanticsV2';
+
+/** All new writes use this gate; validateBundle also supports reading protected historical bundles. */
+export function validateBundleForPublication(manifest: BundleManifest, files: Record<string, string>, source?: Parameters<typeof validateBundle>[2]) {
+  const report = validateBundle(manifest, files, source);
+  const entry = manifest.projections.trainingSemanticsV2;
+  if (entry?.status === 'present') {
+    const productEntry = manifest.projections.productSemantics;
+    const productRecords = productEntry.status === 'present' ? JSON.parse(files[productEntry.artifact]!).snapshot.records : [];
+    const products = new Map<string, { primaryProductFamily?: { code: string }; provenance: { evidence: NonNullable<TrainingSemanticClassificationInput['productFamilyEvidence']> } }>(productRecords.map((r: { productId: string }) => [String(r.productId), r]));
+    // These classes check evidence domains, not trust certification (validated by the source builder).
+    const sources: Map<number, TrainingSemanticClassificationInput> | undefined = source ? new Map(source.products.map(p => {
+      const product = products.get(String(p.productId));
+      return [p.productId, { productId: p.productId, name: p.name, productFamily: product?.primaryProductFamily?.code,
+        productFamilyEvidence: product?.provenance.evidence,
+        categories: (p.categoryIds ?? []).map(c => ({ categoryId: String(c.categoryId), name: c.name ?? '', trustClass: 'SEMANTIC_STRONG' as const })),
+        features: (p.features ?? []).map(f => ({ featureId: String(f.featureId), featureName: f.name, value: f.value ?? '', trustClass: 'SEMANTIC' as const })) }];
+    })) : undefined;
+    validateTrainingSemanticInvariants(JSON.parse(files[entry.artifact]!).snapshot, undefined, sources);
+  }
+  return report;
+}
 const present = z.object({ status: z.literal('present'), schemaVersion: z.literal('1'), snapshotId: hash,
   contentHash: hash, builderVersion: z.string().min(1), recordCount: z.number().int().nonnegative(),
   artifact: z.string().regex(/^[a-zA-Z0-9-]+\.json$/u) }).strict();
@@ -173,11 +197,16 @@ export function validateBundle(manifestValue: unknown, files: Readonly<Record<st
       const value = wrapper.data;
       if (value.sourceExtractionId !== manifest.source.sourceExtractionId || value.codeRef !== manifest.build.codeRef) fail('SOURCE_LINEAGE_INVALID', 'training V2 source/code');
       try { validateTrainingSemanticSnapshotV2(value.snapshot); } catch (error) { fail('INVALID_PROJECTION_SCHEMA', String(error)); }
+      if (value.inputs.resolutionPolicy.version) {
+        if (value.inputs.resolutionPolicy.version !== trainingResolutionPolicy.version || value.inputs.resolutionPolicy.hash !== trainingResolutionPolicy.contentHash
+          || value.inputs.resolutionPolicy.builderVersion !== trainingResolutionPolicy.builderVersion || !value.inputs.resolutionPolicy.previousPolicy) fail('SOURCE_LINEAGE_INVALID', 'training resolution policy identity');
+        try { validateTrainingSemanticInvariants(value.snapshot); } catch (error) { fail('INVALID_PROJECTION_SCHEMA', String(error)); }
+      }
       const v1 = manifest.projections.trainingSemantics;
       if (v1.status !== 'present') fail('SOURCE_LINEAGE_INVALID', 'training V2 requires native V1');
       const sourceV1 = JSON.parse(files[v1.artifact]!) as { snapshot: TrainingSemanticSnapshot };
       try { validateTrainingSemanticV2Source(value.snapshot, sourceV1.snapshot); } catch (error) { fail('SOURCE_LINEAGE_INVALID', String(error)); }
-      if (value.snapshot.records.length !== entry.recordCount || entry.builderVersion !== value.snapshot.classifierVersion) fail('INVALID_PROJECTION_SCHEMA', 'training V2 count/classifier');
+      if (value.snapshot.records.length !== entry.recordCount || entry.builderVersion !== (value.inputs.resolutionPolicy.builderVersion ?? value.snapshot.classifierVersion)) fail('INVALID_PROJECTION_SCHEMA', 'training V2 count/builder');
       const trust = manifest.projections.trustMaps;
       if (trust.status !== 'present') fail('SOURCE_LINEAGE_INVALID', 'training V2 requires trust maps');
       const maps = JSON.parse(files[trust.artifact]!) as { categoryHash: string; featureHash: string };

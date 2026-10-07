@@ -13,7 +13,7 @@ import {
   type TrainingSemanticClassificationV2Result,
   type TrainingSemanticV2ReviewCandidate,
 } from './contracts.js';
-import { computeTrainingSemanticClassifierV2RulesHash, evaluateTrainingSemanticV2Rules } from './rules.js';
+import { computeTrainingSemanticClassifierV2RulesHash, evaluateTrainingSemanticV2Rules, hasUnresolvedCableAccessory, isPassiveCableAttachment } from './rules.js';
 import { validateTrainingSemanticClassificationV2Result } from './validation.js';
 
 const registry = getTrainingSemanticRegistryV2();
@@ -122,9 +122,11 @@ export function classifyTrainingSemanticProductV2(
     ...evaluation.exerciseReviewCandidates.map(exerciseReviewCandidate),
     ...evaluation.functionReviewCandidates.map(functionReviewCandidate),
   ].sort((left, right) => left.semanticType.localeCompare(right.semanticType) || left.code.localeCompare(right.code));
-  const warnings = [...v1.warnings];
+  const warnings = [...v1.warnings, ...evaluation.suppressedRuleIds.map(ruleId => `TRAINING_EVIDENCE_DOMAIN_SUPPRESSED:${ruleId}`)];
   if (trainingFunctions.length > 0 && exerciseCapabilities.length === 0) warnings.push('Training Function assignment does not imply complete exercise semantic coverage.');
-  const coverageStatus = reviewCandidates.length > 0 || exerciseCapabilities.length > 6 ? 'NEEDS_REVIEW' : v1.coverageStatus;
+  const coverageStatus = reviewCandidates.length > 0 || exerciseCapabilities.length > 6 ? 'NEEDS_REVIEW'
+    : exerciseCapabilities.length + trainingFunctions.length === 0 && hasUnresolvedCableAccessory(input) ? 'INSUFFICIENT_EVIDENCE'
+    : exerciseCapabilities.length + trainingFunctions.length === 0 && isPassiveCableAttachment(input) ? 'NO_CAPABILITY_APPLICABLE' : v1.coverageStatus;
   const deferredFindings = v1.deferredFindings
     .filter((finding) => !v2ExerciseCodes.has(finding.candidateCode) || !exerciseCapabilities.some((assignment) => assignment.capabilityCode === finding.candidateCode))
     .map((finding) => ({ ...finding, productId: input.productId }));

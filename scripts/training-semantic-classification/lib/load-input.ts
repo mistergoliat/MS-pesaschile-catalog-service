@@ -27,6 +27,7 @@ export async function loadTrainingSemanticClassificationInputs(args: {
         productId: Number(input.productId),
         name: input.productName,
         productFamily: commercialClassification.primaryProductFamily?.code ?? null,
+        productFamilyEvidence: commercialClassification.evidence,
         activeStatus: input.activeStatus,
         catalogPresence: input.catalogPresence,
         revenue: revenueByProductId.get(input.productId) ?? null,

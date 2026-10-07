@@ -20,3 +20,12 @@ cross-projection-audit/*
 !cross-projection-audit/README.md
 !cross-projection-audit/invariants.md
 !cross-projection-audit/new-product-admission.md
+!cross-projection-audit/p2-3c/
+cross-projection-audit/p2-3c/*
+!cross-projection-audit/p2-3c/REPORT-P2.3C.md
+!cross-projection-audit/p2-3c-fix/
+cross-projection-audit/p2-3c-fix/*
+!cross-projection-audit/p2-3c-fix/REPORT-P2.3C-FIX.md
+!cross-projection-audit/p2-3c-fix2/
+cross-projection-audit/p2-3c-fix2/*
+!cross-projection-audit/p2-3c-fix2/REPORT-P2.3C-FIX2.md

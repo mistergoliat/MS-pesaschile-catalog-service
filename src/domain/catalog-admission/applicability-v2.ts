@@ -19,6 +19,7 @@ export function trainingSourceObligations(context: AdmissionContextV2): { exerci
   const unavailableSourceValue = categories.some((c, i) => canonical.categoryIds![i]!.name === null && ['SEMANTIC_STRONG', 'SEMANTIC_WEAK'].includes(c.trustClass!))
     || features.some((f, i) => canonical.features![i]!.value === null && f.trustClass === 'SEMANTIC');
   const input = { productId: canonical.productId, name: canonical.name, productFamily: admissionFamilyCode(context),
+    productFamilyEvidence: context.productSemantics?.provenance.evidence,
     catalogPresence: canonical.catalogPresence, categories: categories.map(c => ({ ...c, trustClass: c.trustClass! })), features: features.map(f => ({ ...f, trustClass: f.trustClass! })) };
   const v1 = evaluateTrainingSemanticRules(input), v2 = evaluateTrainingSemanticV2Rules(input), v21 = evaluateTrainingSemanticV21Enrichments(input);
   return { exercise: [...new Set([...v1.matches.map(m => m.capabilityCode), ...v2.exerciseMatches.map(m => m.code), ...v21.flatMap(m => m.exerciseCodes ?? [])])].sort(),

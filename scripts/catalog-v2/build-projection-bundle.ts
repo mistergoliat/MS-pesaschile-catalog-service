@@ -3,7 +3,7 @@ import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { canonicalContent, contentHash, recordCounts, validateManifest, type CanonicalExtraction } from '../../src/domain/catalog/projection-input/canonical.js';
 import { DefaultProductSemanticSnapshotBuilder, productSemanticClassifierVersion } from '../../src/domain/product-semantic-snapshot/index.js';
-import { buildSpecs, bundleId, BundleError, canonicalJson, semanticHash, validateBundle, type BundleManifest, type ProjectionName } from '../../src/domain/catalog/projection-bundle.js';
+import { buildSpecs, bundleId, BundleError, canonicalJson, semanticHash, validateBundle, validateBundleForPublication, type BundleManifest, type ProjectionName } from '../../src/domain/catalog/projection-bundle.js';
 import { runProductSemanticClassification } from '../product-semantic-classification/lib/classification-run.js';
 import { loadTrainingSemanticClassificationInputs } from '../training-semantic-classification/lib/load-input.js';
 import { classifyTrainingSemanticProducts } from '../../src/domain/training-semantic-classification/index.js';
@@ -55,7 +55,7 @@ async function publish(root: string, id: string, files: Record<string, string>, 
   const temp = await mkdtemp(path.join(root, '.tmp-'));
   try {
     for (const [name, value] of Object.entries(files)) await writeFile(path.join(temp, name), value, { flag: 'wx' });
-    validateBundle(JSON.parse(files['manifest.json']!), files, source);
+    validateBundleForPublication(JSON.parse(files['manifest.json']!), files, source);
     try { await stat(final); await samePublished(final, files, source); return { directory: final, reused: true }; }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
     try { await rename(temp, final); }
@@ -95,19 +95,24 @@ async function main() {
       builderVersion: name === 'productSemantics' ? productSemanticClassifierVersion : name === 'trainingSemantics' ? trainingSnapshot.classifierVersion : name === 'specs' ? 'spec-rules-v1' : 'source-trust-map-adapter-v1',
       recordCount: name === 'productSemantics' ? snapshot.recordCount : name === 'trainingSemantics' ? trainingSnapshot.records.length : name === 'specs' ? artifacts.specs.records.length : 2, artifact };
   }
-  const trainingV2 = await buildTrainingSemanticsV2Projection({ sourceDir: options.sourceDir, sourceExtractionId, codeRef, sourceV1: trainingSnapshot });
+  const trust = { categories: [...new Map(trainingInput.inputs.flatMap(i => i.categories.map(c => [c.categoryId, { categoryId: Number(c.categoryId), trustClass: c.trustClass }] as const))).values()],
+    features: [...new Map(trainingInput.inputs.flatMap(i => i.features.map(f => [f.featureId, { featureId: Number(f.featureId), trustClass: f.trustClass }] as const))).values()], sourceHashesVerified: true, consumedByCategorySelection: false };
+  const productFacts = new Map(snapshot.records.map(p => [Number(p.productId), p]));
+  const contexts = new Map(source.products.map(canonical => [canonical.productId, { canonical, productSemantics: productFacts.get(canonical.productId), trust,
+    lineage: { productVerified: true, trainingVerified: true, specsVerified: true } }]));
+  const trainingV2 = await buildTrainingSemanticsV2Projection({ sourceDir: options.sourceDir, sourceExtractionId, codeRef, sourceV1: trainingSnapshot, contexts });
   const trainingV2Raw = `${canonicalJson(trainingV2)}\n`;
   files['trainingSemanticsV2.json'] = trainingV2Raw;
   projections.trainingSemanticsV2 = { status: 'present', schemaVersion: '2', snapshotId: semanticHash(trainingV2), contentHash: contentHash(trainingV2Raw),
-    builderVersion: trainingV2.snapshot.classifierVersion, recordCount: trainingV2.snapshot.records.length, artifact: 'trainingSemanticsV2.json' };
+    builderVersion: trainingV2.inputs.resolutionPolicy.builderVersion!, recordCount: trainingV2.snapshot.records.length, artifact: 'trainingSemanticsV2.json' };
   for (const name of ['relationships', 'capabilities'] as const) projections[name] = { status: 'unavailable', reason: 'No sourceExtractionId-verified offline adapter in P1.3' };
   const draft: Omit<BundleManifest, 'projectionBundleId'> = { schemaVersion: '1', source: { sourceExtractionId, canonicalInputHash: extraction.artifacts.canonicalInput },
     build: { codeRef, builtAt, builderVersions: { productSemantics: productSemanticClassifierVersion, trainingSemantics: trainingSnapshot.classifierVersion,
-      trainingSemanticsV2: trainingV2.snapshot.classifierVersion, specs: 'spec-rules-v1', trustMaps: 'source-trust-map-adapter-v1' } },
+      trainingSemanticsV2: trainingV2.inputs.resolutionPolicy.builderVersion!, specs: 'spec-rules-v1', trustMaps: 'source-trust-map-adapter-v1' } },
     projections, validation: { status: 'TECHNICALLY_VALID', domainReview: 'PENDING' } };
   const bundle: BundleManifest = { ...draft, projectionBundleId: bundleId(draft) };
   const validationStart = performance.now();
-  const report = validateBundle(bundle, files, source);
+  const report = validateBundleForPublication(bundle, files, source);
   const validationMs = Math.round(performance.now() - validationStart);
   files['manifest.json'] = `${JSON.stringify(bundle, null, 2)}\n`;
   files['validation-report.json'] = `${JSON.stringify({ ...report, buildDurationMs: Math.round(performance.now() - started), validationDurationMs: validationMs,
