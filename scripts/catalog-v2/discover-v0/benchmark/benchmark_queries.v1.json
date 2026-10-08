@@ -1,0 +1,1843 @@
+{
+  "benchmarkVersion": "discover-v0-benchmark-v1",
+  "createdAt": "2026-10-08",
+  "limit": 8,
+  "source": {
+    "sourceExtractionId": "sha256:f505ea3f20740c6b5a64645a369d8c43953086ec7fa1aefd23daa2ccb98db4a9",
+    "aggregate": "sha256:2a5521b77e5b26e2d56104ab2ad29d85aaff82c2f06d522d7aa141f1e062bb26"
+  },
+  "policy": {
+    "ENGINEERING_FIXTURE": "Expectation derived mechanically from real identifiers/names (or from gold-v0 name regexes). Regression check only; never a commercial relevance label.",
+    "NOT_ADJUDICATED": "No independent relevance reference exists. Diagnostic comparison only; Precision/Recall/MRR/nDCG are NOT computed.",
+    "NOT_EVALUABLE_OFFLINE": "The frozen extraction lacks the field needed to answer (SKU/reference).",
+    "authorExpectations": "hardConstraints/softPreferences are the author expected interpretation, used only as an interpreter self-consistency check; they are not gold."
+  },
+  "classCounts": {
+    "EXACT_NAME_SKU": 30,
+    "SYNONYM_LEXICAL": 20,
+    "CONCEPTUAL": 25,
+    "STRUCTURED_UNITS": 20,
+    "ADVERSARIAL": 15,
+    "OUT_OF_SCOPE": 10
+  },
+  "queries": [
+    {
+      "queryId": "Q001",
+      "query": "Kettlebell Acero 20kg | HWM®",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P186"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P186 by its exact name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P186"
+        ]
+      }
+    },
+    {
+      "queryId": "Q002",
+      "query": "Barra Olímpica Hexagonal 20kg | HWM®",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P24"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P24 by its exact name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P24"
+        ]
+      }
+    },
+    {
+      "queryId": "Q003",
+      "query": "Banco Abdominal Ajustable V8 Series | Obelix",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P471"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P471 by its exact name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P471"
+        ]
+      }
+    },
+    {
+      "queryId": "Q004",
+      "query": "Power Rack Alpha | HWM®",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P1543"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P1543 by its exact name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P1543"
+        ]
+      }
+    },
+    {
+      "queryId": "Q005",
+      "query": "Rack Multifuncional Pull Up / Dip Bar | Rising",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P1856"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P1856 by its exact name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P1856"
+        ]
+      }
+    },
+    {
+      "queryId": "Q006",
+      "query": "Par Discos Preolímpicos 10kg | Barbell",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P145"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P145 by its exact name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P145"
+        ]
+      }
+    },
+    {
+      "queryId": "Q007",
+      "query": "Mancuerna Hexagonal 35kg (Unidad) | HWM®",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P236"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P236 by its exact name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P236"
+        ]
+      }
+    },
+    {
+      "queryId": "Q008",
+      "query": "Lat Pull Down | Accesorio Smith Machine ZR Series | PROmachine",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P1124"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P1124 by its exact name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P1124"
+        ]
+      }
+    },
+    {
+      "queryId": "Q009",
+      "query": "Bulgarian Squat (Accesorio Jaula Hell - MJHWM2) | HWM",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P930"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P930 by its exact name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P930"
+        ]
+      }
+    },
+    {
+      "queryId": "Q010",
+      "query": "Par Bumper Plates Competición 10kg | HWM®",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P323"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P323 by its exact name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P323"
+        ]
+      }
+    },
+    {
+      "queryId": "Q011",
+      "query": "Trotadora Curva AirRunner 1.0 | HWM®",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P1239"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P1239 by its exact name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P1239"
+        ]
+      }
+    },
+    {
+      "queryId": "Q012",
+      "query": "Remo Sentado MO 2.0 Obelix®",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P1268"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P1268 by its exact name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P1268"
+        ]
+      }
+    },
+    {
+      "queryId": "Q013",
+      "query": "Par J-Cups Accesorio Delta | HWM®",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P1807"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P1807 by its exact name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P1807"
+        ]
+      }
+    },
+    {
+      "queryId": "Q014",
+      "query": "Soga de Tríceps - Accesorio Polea | Obelix",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P437"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P437 by its exact name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P437"
+        ]
+      }
+    },
+    {
+      "queryId": "Q015",
+      "query": "Polea Crossover Accesorio Delta | HWM®",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P1811"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P1811 by its exact name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P1811"
+        ]
+      }
+    },
+    {
+      "queryId": "Q016",
+      "query": "kettlebell acero 20kg hwm",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P186"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P186, case/accent/punctuation-folded name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P186"
+        ]
+      }
+    },
+    {
+      "queryId": "Q017",
+      "query": "barra olimpica hexagonal 20kg hwm",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P24"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P24, case/accent/punctuation-folded name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P24"
+        ]
+      }
+    },
+    {
+      "queryId": "Q018",
+      "query": "power rack alpha hwm",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P1543"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P1543, case/accent/punctuation-folded name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P1543"
+        ]
+      }
+    },
+    {
+      "queryId": "Q019",
+      "query": "rack multifuncional pull up / dip bar rising",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P1856"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P1856, case/accent/punctuation-folded name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P1856"
+        ]
+      }
+    },
+    {
+      "queryId": "Q020",
+      "query": "remo sentado mo 2.0 obelix",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P1268"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "nominal lookup of P1268, case/accent/punctuation-folded name",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P1268"
+        ]
+      }
+    },
+    {
+      "queryId": "Q021",
+      "query": "P1543",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P1543"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "lookup by productKey P1543",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P1543"
+        ]
+      }
+    },
+    {
+      "queryId": "Q022",
+      "query": "P186",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P186"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "lookup by productKey P186",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P186"
+        ]
+      }
+    },
+    {
+      "queryId": "Q023",
+      "query": "P1124",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P1124"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "lookup by productKey P1124",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P1124"
+        ]
+      }
+    },
+    {
+      "queryId": "Q024",
+      "query": "P1856",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P1856"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "lookup by productKey P1856",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P1856"
+        ]
+      }
+    },
+    {
+      "queryId": "Q025",
+      "query": "P930",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P930"
+      ],
+      "goldSource": "MECHANICAL: productId whose frozen-source name/productKey the query copies (source sha256:f505ea3f...)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "lookup by productKey P930",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P930"
+        ]
+      }
+    },
+    {
+      "queryId": "Q026",
+      "query": "KH20",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P186"
+      ],
+      "goldSource": "contracts/catalog/eval/gold-v0.json exact_sku (production export 2026-08-29)",
+      "adjudicationStatus": "NOT_EVALUABLE_OFFLINE",
+      "expectedIntent": "SKU/reference lookup (KH20)",
+      "notEvaluableReason": "SKU/reference is not present in the frozen extraction 2a5521...; no variant can resolve it offline"
+    },
+    {
+      "queryId": "Q027",
+      "query": "DOB10",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P100"
+      ],
+      "goldSource": "contracts/catalog/eval/gold-v0.json exact_sku (production export 2026-08-29)",
+      "adjudicationStatus": "NOT_EVALUABLE_OFFLINE",
+      "expectedIntent": "SKU/reference lookup (DOB10)",
+      "notEvaluableReason": "SKU/reference is not present in the frozen extraction 2a5521...; no variant can resolve it offline"
+    },
+    {
+      "queryId": "Q028",
+      "query": "BOEH",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P21"
+      ],
+      "goldSource": "contracts/catalog/eval/gold-v0.json exact_sku (production export 2026-08-29)",
+      "adjudicationStatus": "NOT_EVALUABLE_OFFLINE",
+      "expectedIntent": "SKU/reference lookup (BOEH)",
+      "notEvaluableReason": "SKU/reference is not present in the frozen extraction 2a5521...; no variant can resolve it offline"
+    },
+    {
+      "queryId": "Q029",
+      "query": "V8-101",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P471"
+      ],
+      "goldSource": "contracts/catalog/eval/gold-v0.json exact_sku (production export 2026-08-29)",
+      "adjudicationStatus": "NOT_EVALUABLE_OFFLINE",
+      "expectedIntent": "SKU/reference lookup (V8-101)",
+      "notEvaluableReason": "SKU/reference is not present in the frozen extraction 2a5521...; no variant can resolve it offline"
+    },
+    {
+      "queryId": "Q030",
+      "query": "MH35",
+      "queryClass": "EXACT_NAME_SKU",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P236"
+      ],
+      "goldSource": "contracts/catalog/eval/gold-v0.json exact_sku (production export 2026-08-29)",
+      "adjudicationStatus": "NOT_EVALUABLE_OFFLINE",
+      "expectedIntent": "SKU/reference lookup (MH35)",
+      "notEvaluableReason": "SKU/reference is not present in the frozen extraction 2a5521...; no variant can resolve it offline"
+    },
+    {
+      "queryId": "Q031",
+      "query": "kettlebell 20 kilos",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:KETTLEBELL",
+        "SPEC:weight_kg EQ 20"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P186",
+        "P196"
+      ],
+      "goldSource": "contracts/catalog/eval/gold-v0.json (mechanical name-regex expectations over the 2026-08-29 export; nominal fixture, not relevance)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "kettlebells of 20 kg (unit spelling)",
+      "fixture": {
+        "kind": "MUST_INCLUDE",
+        "productKeys": [
+          "P186",
+          "P196"
+        ]
+      }
+    },
+    {
+      "queryId": "Q032",
+      "query": "bancos ajustables",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:BENCH"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P471",
+        "P981",
+        "P1280",
+        "P1281",
+        "P1706",
+        "P1852"
+      ],
+      "goldSource": "contracts/catalog/eval/gold-v0.json (mechanical name-regex expectations over the 2026-08-29 export; nominal fixture, not relevance)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "adjustable benches (plural)",
+      "fixture": {
+        "kind": "MUST_INCLUDE",
+        "productKeys": [
+          "P471",
+          "P981",
+          "P1280",
+          "P1281",
+          "P1706",
+          "P1852"
+        ]
+      }
+    },
+    {
+      "queryId": "Q033",
+      "query": "discos preolimpicos 10 kg",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:WEIGHT_PLATE",
+        "SPEC:weight_kg EQ 10"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P145"
+      ],
+      "goldSource": "contracts/catalog/eval/gold-v0.json (mechanical name-regex expectations over the 2026-08-29 export; nominal fixture, not relevance)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "pre-olympic plates 10 kg",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P145"
+        ]
+      }
+    },
+    {
+      "queryId": "Q034",
+      "query": "mancuerna hexagonal 35kgs",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:DUMBBELL",
+        "SPEC:weight_kg EQ 35"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P236"
+      ],
+      "goldSource": "contracts/catalog/eval/gold-v0.json (mechanical name-regex expectations over the 2026-08-29 export; nominal fixture, not relevance)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "hex dumbbell 35 kg",
+      "fixture": {
+        "kind": "TOP1",
+        "productKeys": [
+          "P236"
+        ]
+      }
+    },
+    {
+      "queryId": "Q035",
+      "query": "kettelbell 20 kg",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P186"
+      ],
+      "goldSource": "contracts/catalog/eval/gold-v0.json (mechanical name-regex expectations over the 2026-08-29 export; nominal fixture, not relevance)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "typo of kettlebell (measured, never gating)",
+      "fixture": {
+        "kind": "MUST_INCLUDE",
+        "productKeys": [
+          "P186"
+        ],
+        "measuredOnly": true
+      }
+    },
+    {
+      "queryId": "Q036",
+      "query": "banco ajustabel",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:BENCH"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [
+        "P471"
+      ],
+      "goldSource": "contracts/catalog/eval/gold-v0.json (mechanical name-regex expectations over the 2026-08-29 export; nominal fixture, not relevance)",
+      "adjudicationStatus": "ENGINEERING_FIXTURE",
+      "expectedIntent": "typo of ajustable (measured, never gating)",
+      "fixture": {
+        "kind": "MUST_INCLUDE",
+        "productKeys": [
+          "P471"
+        ],
+        "measuredOnly": true
+      }
+    },
+    {
+      "queryId": "Q037",
+      "query": "pesa rusa 16 kg",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:KETTLEBELL",
+        "SPEC:weight_kg EQ 16"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "kettlebell of 16 kg via Spanish synonym"
+    },
+    {
+      "queryId": "Q038",
+      "query": "pesas rusas",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:KETTLEBELL"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "kettlebells (Spanish synonym)"
+    },
+    {
+      "queryId": "Q039",
+      "query": "discos de goma 20 kg",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:WEIGHT_PLATE",
+        "SPEC:weight_kg EQ 20"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "rubber/bumper plates 20 kg (inherited synonym)"
+    },
+    {
+      "queryId": "Q040",
+      "query": "cinta de correr",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:CARDIO_MACHINE(subtype)"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "treadmill (synonym of trotadora)"
+    },
+    {
+      "queryId": "Q041",
+      "query": "rodillo de espuma",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:RECOVERY_TOOL(subtype)"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "foam roller (Spanish synonym)"
+    },
+    {
+      "queryId": "Q042",
+      "query": "colchoneta de yoga",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:YOGA_PILATES(subtype)"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "yoga mat (synonym of mat de yoga)"
+    },
+    {
+      "queryId": "Q043",
+      "query": "barra para sentadilla",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:BARBELL"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "olympic bar for squats (inherited synonym)"
+    },
+    {
+      "queryId": "Q044",
+      "query": "maquina femoral",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "EXERCISE:LEG_CURL"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "leg curl machine (inherited synonym)"
+    },
+    {
+      "queryId": "Q045",
+      "query": "maquina de cuadriceps",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "EXERCISE:LEG_EXTENSION"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "leg extension machine (inherited synonym)"
+    },
+    {
+      "queryId": "Q046",
+      "query": "collarines",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:MACHINE_ATTACHMENT(subtype)"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "barbell collars"
+    },
+    {
+      "queryId": "Q047",
+      "query": "ligas de resistencia",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:BAND_SUSPENSION(subtype)"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "resistance bands (synonym liga->banda)"
+    },
+    {
+      "queryId": "Q048",
+      "query": "barra de dominadas",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "EXERCISE:PULL_UP"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "pull-up bar"
+    },
+    {
+      "queryId": "Q049",
+      "query": "jalon al pecho",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "EXERCISE:LAT_PULLDOWN"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "lat pulldown (Spanish)"
+    },
+    {
+      "queryId": "Q050",
+      "query": "trotadoras",
+      "queryClass": "SYNONYM_LEXICAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:CARDIO_MACHINE(subtype)"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "treadmills (plural)"
+    },
+    {
+      "queryId": "Q051",
+      "query": "algo para entrenar espalda",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "ANATOMY:BACK"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "equipment training the back (registry-derived anatomy)"
+    },
+    {
+      "queryId": "Q052",
+      "query": "algo para hacer dominadas",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "EXERCISE:PULL_UP"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "pull-up capability"
+    },
+    {
+      "queryId": "Q053",
+      "query": "equipo para fondos",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "EXERCISE:DIP"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "dip capability"
+    },
+    {
+      "queryId": "Q054",
+      "query": "algo para entrenar piernas",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "ANATOMY:LOWER_BODY"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "lower-body equipment"
+    },
+    {
+      "queryId": "Q055",
+      "query": "ejercicios de pecho",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "ANATOMY:CHEST"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "chest training equipment"
+    },
+    {
+      "queryId": "Q056",
+      "query": "maquina para hip thrust",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "EXERCISE:HIP_THRUST"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "hip thrust capability"
+    },
+    {
+      "queryId": "Q057",
+      "query": "algo para trabajar gluteos",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "ANATOMY:GLUTES"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "glute training equipment"
+    },
+    {
+      "queryId": "Q058",
+      "query": "maquina de poleas",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:CABLE_MACHINE"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "cable machine stations (not passive grips)"
+    },
+    {
+      "queryId": "Q059",
+      "query": "rack para sentadillas",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:RACK_CAGE(subtype)"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "squat rack / stands"
+    },
+    {
+      "queryId": "Q060",
+      "query": "soporte de barra",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "TRAINING_FUNCTION:BARBELL_SUPPORT"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "barbell support function"
+    },
+    {
+      "queryId": "Q061",
+      "query": "equipo para crossfit",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [],
+      "softPreferences": [
+        "DISCIPLINE:CROSSFIT"
+      ],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "products tagged CROSSFIT"
+    },
+    {
+      "queryId": "Q062",
+      "query": "cosas para calistenia",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [],
+      "softPreferences": [
+        "DISCIPLINE:CALISTHENICS"
+      ],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "calisthenics equipment"
+    },
+    {
+      "queryId": "Q063",
+      "query": "equipamiento para gimnasio en casa",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [],
+      "softPreferences": [
+        "USE_CONTEXT:HOME_GYM"
+      ],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "home gym products"
+    },
+    {
+      "queryId": "Q064",
+      "query": "algo compacto para departamento",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [],
+      "softPreferences": [
+        "USE_CONTEXT:SMALL_SPACE"
+      ],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "small-space products"
+    },
+    {
+      "queryId": "Q065",
+      "query": "equipo de cardio",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:CARDIO_MACHINE"
+      ],
+      "softPreferences": [
+        "DISCIPLINE:CARDIO_ENDURANCE"
+      ],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "cardio machines"
+    },
+    {
+      "queryId": "Q066",
+      "query": "algo para entrenar hombros",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "ANATOMY:SHOULDERS"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "shoulder training"
+    },
+    {
+      "queryId": "Q067",
+      "query": "maquina de remo sentado",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "EXERCISE:ROW"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "seated row capability"
+    },
+    {
+      "queryId": "Q068",
+      "query": "algo para biceps",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "ANATOMY:BICEPS"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "biceps training"
+    },
+    {
+      "queryId": "Q069",
+      "query": "equipo para entrenar triceps",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "ANATOMY:TRICEPS"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "triceps training"
+    },
+    {
+      "queryId": "Q070",
+      "query": "prensa de piernas",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "EXERCISE:LEG_PRESS"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "leg press capability"
+    },
+    {
+      "queryId": "Q071",
+      "query": "maquina hack squat",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "EXERCISE:HACK_SQUAT"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "hack squat capability"
+    },
+    {
+      "queryId": "Q072",
+      "query": "equipo para powerlifting",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [],
+      "softPreferences": [
+        "DISCIPLINE:POWERLIFTING"
+      ],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "powerlifting-tagged products"
+    },
+    {
+      "queryId": "Q073",
+      "query": "almacenamiento para discos",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:STORAGE"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "plate storage"
+    },
+    {
+      "queryId": "Q074",
+      "query": "piso para gimnasio",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:FLOORING"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "gym flooring"
+    },
+    {
+      "queryId": "Q075",
+      "query": "entrenar con poleas en casa",
+      "queryClass": "CONCEPTUAL",
+      "hardConstraints": [
+        "TRAINING_FUNCTION:CABLE_RESISTANCE"
+      ],
+      "softPreferences": [
+        "USE_CONTEXT:HOME_GYM"
+      ],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "cable resistance at home"
+    },
+    {
+      "queryId": "Q076",
+      "query": "pesa rusa de 20 kg",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:KETTLEBELL",
+        "SPEC:weight_kg EQ 20"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "kettlebell weighing 20 kg"
+    },
+    {
+      "queryId": "Q077",
+      "query": "kettlebell de 12 kg",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:KETTLEBELL",
+        "SPEC:weight_kg EQ 12"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "kettlebell weighing 12 kg"
+    },
+    {
+      "queryId": "Q078",
+      "query": "mancuernas de 10 kg",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:DUMBBELL",
+        "SPEC:weight_kg EQ 10"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "dumbbells of 10 kg"
+    },
+    {
+      "queryId": "Q079",
+      "query": "mancuerna de 25 kg",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:DUMBBELL",
+        "SPEC:weight_kg EQ 25"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "dumbbell of 25 kg"
+    },
+    {
+      "queryId": "Q080",
+      "query": "disco olimpico de 20 kg",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:WEIGHT_PLATE(subtype)",
+        "SPEC:weight_kg EQ 20"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "olympic plate 20 kg"
+    },
+    {
+      "queryId": "Q081",
+      "query": "bumper 10 kg",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:WEIGHT_PLATE(subtype)",
+        "SPEC:weight_kg EQ 10"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "bumper plate 10 kg (per-disc qualifier risk)"
+    },
+    {
+      "queryId": "Q082",
+      "query": "barra olimpica de 20 kg",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:BARBELL(subtype)",
+        "SPEC:weight_kg EQ 20"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "olympic bar weighing 20 kg"
+    },
+    {
+      "queryId": "Q083",
+      "query": "banco para una persona de 150 kg",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:BENCH",
+        "SPEC:max_user_weight_kg GTE 150"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "bench rated for a 150 kg user"
+    },
+    {
+      "queryId": "Q084",
+      "query": "banco que soporte 300 kg",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:BENCH",
+        "SPEC:max_load_kg GTE 300"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "bench with max load >= 300 kg"
+    },
+    {
+      "queryId": "Q085",
+      "query": "trotadora para usuario de 140 kg",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:CARDIO_MACHINE(subtype)",
+        "SPEC:max_user_weight_kg GTE 140"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "treadmill rated >= 140 kg user"
+    },
+    {
+      "queryId": "Q086",
+      "query": "trotadora para persona de 100 kg",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:CARDIO_MACHINE(subtype)",
+        "SPEC:max_user_weight_kg GTE 100"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "treadmill rated >= 100 kg user"
+    },
+    {
+      "queryId": "Q087",
+      "query": "rack que soporte 400 kg",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:RACK_CAGE",
+        "SPEC:max_load_kg GTE 400"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "rack with max load >= 400 kg"
+    },
+    {
+      "queryId": "Q088",
+      "query": "barra de dominadas para usuario de 120 kg",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "EXERCISE:PULL_UP",
+        "SPEC:max_user_weight_kg GTE 120"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "pull-up bar rated >= 120 kg user"
+    },
+    {
+      "queryId": "Q089",
+      "query": "bicicleta de spinning para usuario de 120 kg",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:CARDIO_MACHINE(subtype)",
+        "SPEC:max_user_weight_kg GTE 120"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "spin bike rated >= 120 kg user"
+    },
+    {
+      "queryId": "Q090",
+      "query": "banco de menos de 130 cm de largo",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:BENCH",
+        "SPEC:assembled_length_cm LTE 130"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "bench with assembled length <= 130 cm"
+    },
+    {
+      "queryId": "Q091",
+      "query": "rack de menos de 220 cm de alto",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:RACK_CAGE",
+        "SPEC:assembled_height_cm LTE 220"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "rack with height <= 220 cm"
+    },
+    {
+      "queryId": "Q092",
+      "query": "jaula de mas de 200 cm de alto",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:RACK_CAGE",
+        "SPEC:assembled_height_cm GTE 200"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "cage taller than 200 cm"
+    },
+    {
+      "queryId": "Q093",
+      "query": "balon medicinal de 9 kg",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:BALL_BAG(subtype)",
+        "SPEC:weight_kg EQ 9"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "medicine ball of 9 kg"
+    },
+    {
+      "queryId": "Q094",
+      "query": "slam ball 40 lbs",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:BALL_BAG(subtype)",
+        "UNKNOWN:lb measure"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "slam ball of 40 lb (lb not converted in V0)"
+    },
+    {
+      "queryId": "Q095",
+      "query": "mancuernas de 2,5 kg",
+      "queryClass": "STRUCTURED_UNITS",
+      "hardConstraints": [
+        "PRODUCT_TYPE:DUMBBELL",
+        "SPEC:weight_kg EQ 2.5"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "dumbbells 2.5 kg (decimal comma)"
+    },
+    {
+      "queryId": "Q096",
+      "query": "agarre para polea",
+      "queryClass": "ADVERSARIAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:MACHINE_ATTACHMENT(subtype)"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "passive cable grip",
+      "adversarialFinding": "QA2-R1: passive accessories classified CABLE_MACHINE"
+    },
+    {
+      "queryId": "Q097",
+      "query": "soga de triceps",
+      "queryClass": "ADVERSARIAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:MACHINE_ATTACHMENT(subtype)"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "triceps rope attachment",
+      "adversarialFinding": "QA2-R1/R2: P437 CABLE_MACHINE without CABLE_RESISTANCE"
+    },
+    {
+      "queryId": "Q098",
+      "query": "lat pulldown",
+      "queryClass": "ADVERSARIAL",
+      "hardConstraints": [
+        "EXERCISE:LAT_PULLDOWN"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "lat pulldown capability (station or module with own mechanism)",
+      "adversarialFinding": "QA1-K: P1124 module with feature 65 vs passive bars"
+    },
+    {
+      "queryId": "Q099",
+      "query": "j cups",
+      "queryClass": "ADVERSARIAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:MACHINE_ATTACHMENT(subtype)"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "J-cups rack attachment",
+      "adversarialFinding": "QA2-R5: J-Cups CLASSIFIED but not admitted"
+    },
+    {
+      "queryId": "Q100",
+      "query": "pack de mancuernas con rack",
+      "queryClass": "ADVERSARIAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:DUMBBELL"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "dumbbell pack including rack",
+      "adversarialFinding": "QA2-R4: packs with inconsistent roles"
+    },
+    {
+      "queryId": "Q101",
+      "query": "pack de discos",
+      "queryClass": "ADVERSARIAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:WEIGHT_PLATE"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "plate packs",
+      "adversarialFinding": "QA2-R4: pack family policy"
+    },
+    {
+      "queryId": "Q102",
+      "query": "anillas para dominadas",
+      "queryClass": "ADVERSARIAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:BODYWEIGHT_GYMNASTICS(subtype)",
+        "EXERCISE:PULL_UP"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "rings for pull-ups",
+      "adversarialFinding": "QA2 group 3: rings with ABSENT negative"
+    },
+    {
+      "queryId": "Q103",
+      "query": "rueda abdominal",
+      "queryClass": "ADVERSARIAL",
+      "hardConstraints": [
+        "UNKNOWN"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "ab wheel",
+      "adversarialFinding": "QA2-R7: ABDOMINAL_CRUNCH orphan; product OTHER"
+    },
+    {
+      "queryId": "Q104",
+      "query": "safety squat bar",
+      "queryClass": "ADVERSARIAL",
+      "hardConstraints": [
+        "UNKNOWN"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "safety squat bar",
+      "adversarialFinding": "QA2 group 4: OTHER with probable family"
+    },
+    {
+      "queryId": "Q105",
+      "query": "par de discos de 20 kg",
+      "queryClass": "ADVERSARIAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:WEIGHT_PLATE",
+        "SPEC:weight_kg EQ 20"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "pair of 20 kg plates (per-disc qualifier)",
+      "adversarialFinding": "QA2-R6/B5: \"cada disco\" qualifier"
+    },
+    {
+      "queryId": "Q106",
+      "query": "rack multifuncional con dominadas y fondos",
+      "queryClass": "ADVERSARIAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:RACK_CAGE",
+        "EXERCISE:PULL_UP",
+        "EXERCISE:DIP"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "multi-station with pull-up and dip",
+      "adversarialFinding": "multi-condition; P1856 FIX2 lost BARBELL_SUPPORT"
+    },
+    {
+      "queryId": "Q107",
+      "query": "barra compatible con discos olimpicos",
+      "queryClass": "ADVERSARIAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:BARBELL",
+        "COMPATIBILITY"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "bar compatible with olympic plates",
+      "adversarialFinding": "relationships UNAVAILABLE"
+    },
+    {
+      "queryId": "Q108",
+      "query": "collarines para barra olimpica",
+      "queryClass": "ADVERSARIAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:MACHINE_ATTACHMENT(subtype)",
+        "COMPATIBILITY"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "collars for an olympic bar",
+      "adversarialFinding": "purpose = compatibility, UNAVAILABLE"
+    },
+    {
+      "queryId": "Q109",
+      "query": "pesas rusas de 20 kg menos de 50 mil",
+      "queryClass": "ADVERSARIAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:KETTLEBELL",
+        "SPEC:weight_kg EQ 20",
+        "COMMERCIAL_MAX_PRICE LTE 50000"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "kettlebell 20 kg under CLP 50.000",
+      "adversarialFinding": "commercial truth not observed offline"
+    },
+    {
+      "queryId": "Q110",
+      "query": "banco ajustable para crossfit en stock",
+      "queryClass": "ADVERSARIAL",
+      "hardConstraints": [
+        "PRODUCT_TYPE:BENCH",
+        "COMMERCIAL_AVAILABILITY"
+      ],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "adjustable bench, crossfit, in stock",
+      "adversarialFinding": "stock never fabricated"
+    },
+    {
+      "queryId": "Q111",
+      "query": "proteina whey",
+      "queryClass": "OUT_OF_SCOPE",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "supplement not in catalog",
+      "expectedOutcome": "NO_SAFE_ANSWER"
+    },
+    {
+      "queryId": "Q112",
+      "query": "zapatillas para correr",
+      "queryClass": "OUT_OF_SCOPE",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "footwear not in catalog",
+      "expectedOutcome": "NO_SAFE_ANSWER"
+    },
+    {
+      "queryId": "Q113",
+      "query": "bicicleta de ruta",
+      "queryClass": "OUT_OF_SCOPE",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "road bike (not a spin bike)",
+      "expectedOutcome": "NO_SAFE_ANSWER"
+    },
+    {
+      "queryId": "Q114",
+      "query": "creatina",
+      "queryClass": "OUT_OF_SCOPE",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "supplement not in catalog",
+      "expectedOutcome": "NO_SAFE_ANSWER"
+    },
+    {
+      "queryId": "Q115",
+      "query": "algo parecido al P1543 pero mas barato",
+      "queryClass": "OUT_OF_SCOPE",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "substitution + price (relations UNAVAILABLE, commercial not observed)",
+      "expectedOutcome": "NO_SAFE_ANSWER"
+    },
+    {
+      "queryId": "Q116",
+      "query": "lo mejor para bajar de peso",
+      "queryClass": "OUT_OF_SCOPE",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "goal outside ontology",
+      "expectedOutcome": "NO_SAFE_ANSWER"
+    },
+    {
+      "queryId": "Q117",
+      "query": "arma un gimnasio completo por 500 mil",
+      "queryClass": "OUT_OF_SCOPE",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "composition (catalog.compose, deferred)",
+      "expectedOutcome": "NO_SAFE_ANSWER"
+    },
+    {
+      "queryId": "Q118",
+      "query": "hacen despacho a regiones",
+      "queryClass": "OUT_OF_SCOPE",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "logistics question",
+      "expectedOutcome": "NO_SAFE_ANSWER"
+    },
+    {
+      "queryId": "Q119",
+      "query": "maquina de cafe",
+      "queryClass": "OUT_OF_SCOPE",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "unrelated product",
+      "expectedOutcome": "NO_SAFE_ANSWER"
+    },
+    {
+      "queryId": "Q120",
+      "query": "polera de mujer talla m",
+      "queryClass": "OUT_OF_SCOPE",
+      "hardConstraints": [],
+      "softPreferences": [],
+      "goldRelevantProductIds": [],
+      "goldSource": null,
+      "adjudicationStatus": "NOT_ADJUDICATED",
+      "expectedIntent": "apparel variant attributes not modeled",
+      "expectedOutcome": "NO_SAFE_ANSWER"
+    }
+  ]
+}

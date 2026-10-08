@@ -1,0 +1,42 @@
+{
+  "contractVersion": "discover-heldout-contract-v1",
+  "status": "INFRASTRUCTURE_ONLY_NO_QUERIES_COLLECTED",
+  "purpose": "Independent held-out query set for the OFFICIAL relevance comparison of catalog.discover versions. It must never be used to tune lexicon entries, rules or weights.",
+  "size": { "min": 80, "max": 100 },
+  "independence": [
+    "Queries are NOT written by the author of the interpreter/ranker and are NOT derived from discover-v0-benchmark-v1.",
+    "No normalized query may equal a query of discover-v0-benchmark-v1 (checked by heldout.ts).",
+    "The file is frozen (sha256 recorded) BEFORE any discover version is run on it; any later edit creates a new set version.",
+    "usedForTuning must be false; a version used to change rules or weights is retired as held-out and becomes a development set."
+  ],
+  "querySources": {
+    "allowed": [
+      "AUTHORIZED_ANONYMIZED_COMMERCIAL_LOG: real customer/sales queries exported with written authorization, PII removed (names, phones, emails, RUT, addresses, order ids), with a sampling rule declared before export",
+      "SALES_TEAM_ELICITATION: queries written by sales staff from real conversations, without seeing discover output"
+    ],
+    "forbidden": ["queries written by the discover author", "queries copied or paraphrased from the development benchmark", "LLM-generated queries presented as real"]
+  },
+  "queryRecord": {
+    "queryId": "H### (stable, never reused)",
+    "query": "verbatim text after anonymization",
+    "source": "AUTHORIZED_ANONYMIZED_COMMERCIAL_LOG | SALES_TEAM_ELICITATION",
+    "sourceRef": "export/batch identifier (no PII)",
+    "collectedAt": "ISO date",
+    "queryClass": "optional coarse class assigned by the collector, never by the system",
+    "adjudication": {
+      "status": "NOT_ADJUDICATED | ADJUDICATED",
+      "reviewers": "two independent reviewers (R1, R2) blind to system output",
+      "adjudicator": "a third person, distinct from R1 and R2, resolves disagreements",
+      "relevantProductKeys": "graded or binary relevance per productKey; empty until ADJUDICATED",
+      "notes": "free text"
+    }
+  },
+  "fileShape": {
+    "heldoutVersion": "string",
+    "frozenAt": "ISO datetime",
+    "usedForTuning": false,
+    "catalogObservation": "sourceExtractionId the products were adjudicated against",
+    "queries": "array of queryRecord"
+  },
+  "officialComparison": "Precision@3, Recall@8, MRR and nDCG@8 (already implemented in evaluation.ts) are computed ONLY over ADJUDICATED queries of a frozen held-out version, for every compared discover version on the same source and bundles."
+}
