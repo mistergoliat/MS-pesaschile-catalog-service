@@ -127,7 +127,7 @@ export async function runBenchmark(options: { runId?: string; queriesFile?: stri
       const index = variant === 'C' ? production : candidate;
       const verifier = new ConstraintVerifier(index);
       const response = runs[variant].discover!.response;
-      for (const item of response.candidates) {
+      for (const item of response.verified) {
         for (const constraint of response.interpretation.hardConstraints) {
           const result = verifier.verify(index.documents.get(item.productKey)!, constraint, true, 'HYBRID', item.commercial);
           if (result.state !== 'SATISFIED') selfCheck.push({ variant, productKey: item.productKey, constraintId: constraint.id, state: result.state, reason: result.reason });
@@ -136,15 +136,15 @@ export async function runBenchmark(options: { runId?: string; queriesFile?: stri
     }
     for (const variant of ['B', 'C', 'D'] as const) {
       const response = runs[variant].discover!.response;
-      const keys = [...response.candidates, ...response.unverifiedCandidates].map((item) => item.productKey);
+      const keys = [...response.verified, ...response.possible].map((item) => item.productKey);
       if (new Set(keys).size !== keys.length) contractChecks.push(`${variant}:DUPLICATE_PRODUCT_KEY`);
-      if (response.candidates.length > BENCHMARK_LIMIT || response.unverifiedCandidates.length > BENCHMARK_LIMIT) contractChecks.push(`${variant}:LIMIT_EXCEEDED`);
-      if ([...response.candidates, ...response.unverifiedCandidates].some((item) => item.commercial.status !== 'NOT_OBSERVED')) contractChecks.push(`${variant}:COMMERCIAL_OBSERVED_OFFLINE`);
-      if (response.candidates.some((item) => item.constraintResults.some((result) => result.hard && result.state !== 'SATISFIED'))) contractChecks.push(`${variant}:NON_SATISFIED_IN_ELIGIBLE`);
+      if (response.verified.length > BENCHMARK_LIMIT || response.possible.length > BENCHMARK_LIMIT) contractChecks.push(`${variant}:LIMIT_EXCEEDED`);
+      if ([...response.verified, ...response.possible].some((item) => item.commercial.status !== 'NOT_OBSERVED')) contractChecks.push(`${variant}:COMMERCIAL_OBSERVED_OFFLINE`);
+      if (response.verified.some((item) => item.constraintResults.some((result) => result.hard && result.state !== 'SATISFIED'))) contractChecks.push(`${variant}:NON_SATISFIED_IN_ELIGIBLE`);
       const expectedBundle = variant === 'C' ? PRODUCTION_BUNDLE_ID : CANDIDATE_BUNDLE_ID;
       if (response.lineage.bundleId !== expectedBundle || response.lineage.sourceExtractionId !== workspace.source.input.sourceExtractionId) contractChecks.push(`${variant}:LINEAGE_MISMATCH`);
       if (response.interpretation.hardConstraints.some((constraint) => constraint.kind === 'COMPATIBILITY')
-        && [...response.candidates, ...response.unverifiedCandidates].some((item) => item.constraintResults.some((result) => result.kind === 'COMPATIBILITY' && result.state !== 'UNSUPPORTED'))) {
+        && [...response.verified, ...response.possible].some((item) => item.constraintResults.some((result) => result.kind === 'COMPATIBILITY' && result.state !== 'UNSUPPORTED'))) {
         contractChecks.push(`${variant}:COMPATIBILITY_INFERRED`);
       }
     }
@@ -210,7 +210,7 @@ export async function runBenchmark(options: { runId?: string; queriesFile?: stri
       const reason = run.discover ? run.discover.response.completeness.noResultReason : run.search!.status === 'OK' ? (run.primary.length ? null : 'NO_NOMINAL_MATCH') : run.search!.status;
       if (reason) noResult[reason] = (noResult[reason] ?? 0) + 1;
     }
-    const unknownHard = runs.reduce((sum, run) => sum + (run.discover?.response.unverifiedCandidates.reduce((inner, item) => inner + item.constraintResults.filter((r) => r.hard && (r.state === 'UNKNOWN' || r.state === 'UNSUPPORTED')).length, 0) ?? 0), 0);
+    const unknownHard = runs.reduce((sum, run) => sum + (run.discover?.response.possible.reduce((inner, item) => inner + item.constraintResults.filter((r) => r.hard && (r.state === 'UNKNOWN' || r.state === 'UNSUPPORTED')).length, 0) ?? 0), 0);
     return [variant, {
       name: VARIANT_NAMES[variant],
       queriesWithPrimaryResults: withPrimary,
@@ -333,16 +333,16 @@ export async function runBenchmark(options: { runId?: string; queriesFile?: stri
     const run = record.runs[variant];
     const response = run.discover?.response;
     const top = run.retrieval.map((key, position) => `${position + 1}:${key}`).join(' ');
-    const matchedBy = response ? [...new Set([...response.candidates, ...response.unverifiedCandidates].flatMap((item) => item.matchedBy))].sort().join(' ') : (run.search!.matchTypes.join(' '));
-    const score = response ? [...response.candidates, ...response.unverifiedCandidates].slice(0, 8).map((item) => `${item.productKey}=${item.score}(x${item.scoreComponents.exactTier ?? '-'}/L${item.scoreComponents.lexical}/S${item.scoreComponents.structured}/P${item.scoreComponents.softPreferences})`).join(' ') : '';
-    const why = response ? [...response.candidates, ...response.unverifiedCandidates].slice(0, 3).map((item) => `${item.productKey}: ${item.whyMatched.slice(0, 2).join('; ')}`).join(' || ') : '';
-    const hardResults = response ? response.candidates.concat(response.unverifiedCandidates).flatMap((item) => item.constraintResults.filter((r) => r.hard).map((r) => r.state))
+    const matchedBy = response ? [...new Set([...response.verified, ...response.possible].flatMap((item) => item.matchedBy))].sort().join(' ') : (run.search!.matchTypes.join(' '));
+    const score = response ? [...response.verified, ...response.possible].slice(0, 8).map((item) => `${item.productKey}=${item.score}(x${item.scoreComponents.exactTier ?? '-'}/L${item.scoreComponents.lexical}/S${item.scoreComponents.structured}/P${item.scoreComponents.softPreferences})`).join(' ') : '';
+    const why = response ? [...response.verified, ...response.possible].slice(0, 3).map((item) => `${item.productKey}: ${item.whyMatched.slice(0, 2).join('; ')}`).join(' || ') : '';
+    const hardResults = response ? response.verified.concat(response.possible).flatMap((item) => item.constraintResults.filter((r) => r.hard).map((r) => r.state))
       .reduce((acc, state) => ({ ...acc, [state]: (acc[state] ?? 0) + 1 }), {} as Record<string, number>) : {};
     return {
       queryId: record.query.queryId, queryClass: record.query.queryClass, query: record.query.query, variant, variantName: VARIANT_NAMES[variant],
       top8Retrieval: top, primary: run.primary.join(' '), unverified: run.unverified.join(' '),
-      eligibleCount: response?.completeness.eligibleCount ?? (variant === 'A' ? run.primary.length : ''), unverifiedCount: response?.completeness.unverifiedCount ?? '',
-      excludedCount: response?.completeness.excludedCount ?? '', offTargetDropped: run.discover?.diagnostics.offTargetDropped ?? '',
+      eligibleCount: response?.completeness.verifiedCount ?? (variant === 'A' ? run.primary.length : ''), unverifiedCount: response?.completeness.possibleCount ?? '',
+      excludedCount: response?.completeness.rejectedCount ?? '', offTargetDropped: run.discover?.diagnostics.offTargetDropped ?? '',
       hardConstraints: response ? response.interpretation.hardConstraints.map(constraintLabel).join(' ; ') : '',
       recognized: response?.interpretation.recognizedConcepts.join(' ') ?? '', unrecognized: response?.interpretation.unrecognizedTerms.join(' ') ?? '',
       hardResultStates: hardResults, unknownConstraints: (hardResults.UNKNOWN ?? 0) + (hardResults.UNSUPPORTED ?? 0),
@@ -409,7 +409,7 @@ export async function runBenchmark(options: { runId?: string; queriesFile?: stri
       md.push(`| ${position + 1} | ${VARIANTS.map((variant) => cell(variant, position)).join(' | ')} |`);
     }
     if (VARIANTS.every((variant) => record.runs[variant].retrieval.length === 0)) md.push('| — | (sin resultados) | (sin resultados) | (sin resultados) | (sin resultados) |');
-    md.push('', `Elegibles C=${record.runs.C.discover!.response.completeness.eligibleCount} D=${record.runs.D.discover!.response.completeness.eligibleCount}; no verificables C=${record.runs.C.discover!.response.completeness.unverifiedCount} D=${record.runs.D.discover!.response.completeness.unverifiedCount}; motivo sin elegibles D=${record.runs.D.discover!.response.completeness.noResultReason ?? '—'}.`, '');
+    md.push('', `Elegibles C=${record.runs.C.discover!.response.completeness.verifiedCount} D=${record.runs.D.discover!.response.completeness.verifiedCount}; no verificables C=${record.runs.C.discover!.response.completeness.possibleCount} D=${record.runs.D.discover!.response.completeness.possibleCount}; motivo sin elegibles D=${record.runs.D.discover!.response.completeness.noResultReason ?? '—'}.`, '');
   }
   await write('representative_comparisons.md', `${md.join('\n')}\n`);
   const summary = {

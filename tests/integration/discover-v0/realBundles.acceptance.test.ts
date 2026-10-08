@@ -58,13 +58,20 @@ describe.skipIf(!available)('CAT-DISCOVER-V0 acceptance on frozen production inp
     expect(run.search?.response?.results.every((result) => result.priceSummary === null)).toBe(true);
   });
 
+  // V0.2 INTENTIONAL CHANGE (§5): V0 asserted the exact product at primary[0] because it demoted every
+  // constraint to a preference. V0.2 resolves the exact entity separately (always returned, rank 1 of the
+  // comparable retrieval list) and no longer forces it into VERIFIED_MATCH: in LEXICAL_PLUS nothing technical
+  // is verified, and an unadmitted entity (J-Cups P1807) keeps its UNKNOWN disposition.
   it('keeps exact name and productKey matches at rank 1 in every discover variant', async () => {
     for (const [need, key] of [['Kettlebell Acero 20kg | HWM®', 'P186'], ['Power Rack Alpha | HWM®', 'P1543'], ['P1124', 'P1124'], ['Par J-Cups Accesorio Delta | HWM®', 'P1807']] as const) {
       for (const variant of ['B', 'C', 'D'] as const) {
         const run = await runVariant(workspace, variant, need);
-        expect(run.primary[0], `${variant} ${need}`).toBe(key);
+        expect(run.exact, `${variant} ${need}`).toEqual([key]);
+        expect(run.retrieval[0], `${variant} ${need}`).toBe(key);
+        expect(run.discover!.agent.exactMatch?.productKey, `${variant} ${need}`).toBe(key);
       }
     }
+    expect((await runVariant(workspace, 'D', 'Par J-Cups Accesorio Delta | HWM®')).discover!.response.exactResolution.entities[0]!.disposition).toBe('POSSIBLE_MATCH');
   });
 
   it('never presents a candidate whose hard constraints are not all SATISFIED', async () => {
@@ -73,7 +80,7 @@ describe.skipIf(!available)('CAT-DISCOVER-V0 acceptance on frozen production inp
       const verifier = new ConstraintVerifier(workspace.indexes[bundle]);
       for (const need of needs) {
         const { response } = await hybrid(need, bundle);
-        for (const candidate of response.candidates) {
+        for (const candidate of response.verified) {
           for (const constraint of response.interpretation.hardConstraints) {
             expect(verifier.verify(workspace.indexes[bundle].documents.get(candidate.productKey)!, constraint, true, 'HYBRID', candidate.commercial).state, `${bundle} ${need} ${candidate.productKey}`).toBe('SATISFIED');
           }
@@ -86,23 +93,23 @@ describe.skipIf(!available)('CAT-DISCOVER-V0 acceptance on frozen production inp
 
   it('does not certify passive pulley accessories or unadmitted J-Cups (QA2-R1/R5)', async () => {
     const cable = await hybrid('maquina de poleas');
-    expect(cable.response.candidates.map((candidate) => candidate.productKey).filter((key) => CABLE_CONFLICT.includes(key))).toEqual([]);
+    expect(cable.response.verified.map((candidate) => candidate.productKey).filter((key) => CABLE_CONFLICT.includes(key))).toEqual([]);
     const jcups = await hybrid('j cups');
-    expect(jcups.response.candidates.map((candidate) => candidate.productKey)).not.toEqual(expect.arrayContaining(['P1807']));
-    expect(jcups.response.unverifiedCandidates.map((candidate) => candidate.productKey)).toEqual(expect.arrayContaining(['P1807', 'P1997']));
+    expect(jcups.response.verified.map((candidate) => candidate.productKey)).not.toEqual(expect.arrayContaining(['P1807']));
+    expect(jcups.response.possible.map((candidate) => candidate.productKey)).toEqual(expect.arrayContaining(['P1807', 'P1997']));
   });
 
   it('never infers compatibility and never fabricates commercial truth', async () => {
     for (const need of ['collarines compatibles con barra olimpica', 'barra compatible con discos olimpicos', 'pesas rusas de 20 kg menos de 50 mil']) {
       const { response } = await hybrid(need);
-      expect(response.candidates).toEqual([]);
-      expect(response.unverifiedCandidates.length).toBeGreaterThan(0);
+      expect(response.verified).toEqual([]);
+      expect(response.possible.length).toBeGreaterThan(0);
     }
   });
 
   it('attributes the pull-up module differences to FIX2 (C vs D)', async () => {
-    const old = (await hybrid('barra de dominadas', 'production')).response.candidates.map((candidate) => candidate.productKey);
-    const fix2 = (await hybrid('barra de dominadas', 'candidate')).response.candidates.map((candidate) => candidate.productKey);
+    const old = (await hybrid('barra de dominadas', 'production')).response.verified.map((candidate) => candidate.productKey);
+    const fix2 = (await hybrid('barra de dominadas', 'candidate')).response.verified.map((candidate) => candidate.productKey);
     expect(fix2).toEqual(expect.arrayContaining(['P2007', 'P1810', 'P2017']));
     expect(old).not.toContain('P2007');
   });
@@ -115,9 +122,12 @@ describe.skipIf(!available)('CAT-DISCOVER-V0 acceptance on frozen production inp
     expect(degraded.degraded).toContain('TRAINING_V2_UNAVAILABLE');
     const { response } = await discoverV0({ schemaVersion: 1, need: 'algo para hacer dominadas' }, { index: degraded, mode: 'HYBRID' });
     expect(response.completeness.degraded).toContain('TRAINING_V2_UNAVAILABLE');
-    expect(response.candidates).toEqual([]);
-    expect(response.unverifiedCandidates.length).toBeGreaterThan(0);
+    expect(response.verified).toEqual([]);
+    expect(response.possible.length).toBeGreaterThan(0);
+    // V0.2 INTENTIONAL CHANGE (§5): the exact lookup still resolves without Training V2, but its RACK_CAGE claim is
+    // no longer certified by demotion; it is returned through exactResolution with its own disposition.
     const lexicalStillWorks = await discoverV0({ schemaVersion: 1, need: 'Power Rack Alpha | HWM®' }, { index: degraded, mode: 'HYBRID' });
-    expect(lexicalStillWorks.response.candidates[0]?.productKey).toBe('P1543');
+    expect(lexicalStillWorks.response.exactResolution.entities[0]?.productKey).toBe('P1543');
+    expect(lexicalStillWorks.agent.exactMatch?.productKey).toBe('P1543');
   }, 60_000);
 });

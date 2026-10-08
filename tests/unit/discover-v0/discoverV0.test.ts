@@ -9,8 +9,8 @@ import { doc, SYNTHETIC_BUNDLE_ID, SYNTHETIC_SOURCE_ID, syntheticCatalog, synthe
 const index = syntheticIndex(syntheticCatalog());
 const run = (need: string, mode: 'HYBRID' | 'LEXICAL_PLUS' = 'HYBRID', extra: Partial<Parameters<typeof discoverV0>[1]> = {}) =>
   discoverV0({ schemaVersion: 1, need }, { index, mode, ...extra });
-const keys = (response: DiscoverV0Response) => response.candidates.map((candidate) => candidate.productKey);
-const unverified = (response: DiscoverV0Response) => response.unverifiedCandidates.map((candidate) => candidate.productKey);
+const keys = (response: DiscoverV0Response) => response.verified.map((candidate) => candidate.productKey);
+const unverified = (response: DiscoverV0Response) => response.possible.map((candidate) => candidate.productKey);
 
 describe('catalog.discoverV0 — contract invariants (synthetic)', () => {
   it('is deterministic for identical inputs', async () => {
@@ -24,54 +24,62 @@ describe('catalog.discoverV0 — contract invariants (synthetic)', () => {
   it('never returns more than eight candidates per list nor duplicate productKeys', async () => {
     const many = syntheticIndex(Array.from({ length: 30 }, (_value, offset) => doc({ id: 100 + offset, name: `Kettlebell Hierro ${offset + 1}kg`, family: 'KETTLEBELL' })));
     const { response } = await discoverV0({ schemaVersion: 1, need: 'kettlebell', limit: 50 }, { index: many, mode: 'HYBRID' });
-    expect(response.candidates.length).toBe(8);
+    expect(response.verified.length).toBe(8);
     expect(response.completeness.truncated).toBe(true);
     const all = [...keys(response), ...unverified(response)];
     expect(new Set(all).size).toBe(all.length);
   });
 
-  it('lets exact productKey and exact name matches dominate and demotes their constraints', async () => {
+  // V0.2 INTENTIONAL CHANGE (CAT-DISCOVER-V0.2 §5): V0 demoted every hard constraint to a preference on an
+  // exact name match. V0.2 resolves the exact entity separately and keeps the ORIGINAL constraints for
+  // related products. New expectation: exact entities still dominate rank 1, constraints stay hard.
+  it('lets exact productKey and exact name matches dominate without demoting their constraints', async () => {
     const byKey = await run('P2');
     expect(keys(byKey.response)[0]).toBe('P2');
     const byName = await run('Kettlebell Hierro 24kg');
-    expect(byName.diagnostics.nominalLookup).toBe(true);
+    expect(byName.diagnostics.exactResolution).toMatchObject({ status: 'RESOLVED', kind: 'NAME', productKeys: ['P2'] });
     expect(keys(byName.response)[0]).toBe('P2');
-    expect(byName.response.interpretation.hardConstraints).toEqual([]);
-    expect(byName.response.interpretation.softPreferences.every((constraint) => constraint.demotedFrom === 'HARD')).toBe(true);
+    expect(byName.response.interpretation.hardConstraints.map((constraint) => constraint.kind).sort()).toEqual(['PRODUCT_TYPE', 'SPEC']);
+    expect(byName.response.interpretation.softPreferences).toEqual([]);
   });
 
   it('only presents candidates whose every hard constraint is SATISFIED; UNKNOWN goes to unverified', async () => {
     const { response } = await run('pesa rusa de 20 kg');
     expect(keys(response)).toEqual(['P1']);
-    for (const candidate of response.candidates) expect(candidate.constraintResults.filter((result) => result.hard).every((result) => result.state === 'SATISFIED')).toBe(true);
+    for (const candidate of response.verified) expect(candidate.constraintResults.filter((result) => result.hard).every((result) => result.state === 'SATISFIED')).toBe(true);
     expect(unverified(response)).toEqual(expect.arrayContaining(['P3', 'P4', 'P5']));
-    const reasons = Object.fromEntries(response.unverifiedCandidates.map((candidate) => [candidate.productKey, candidate.constraintResults.find((result) => result.kind === 'SPEC')!.reason]));
+    const reasons = Object.fromEntries(response.possible.map((candidate) => [candidate.productKey, candidate.constraintResults.find((result) => result.kind === 'SPEC')!.reason]));
     expect(reasons.P3).toBe('SPEC_MISSING');
-    expect(reasons.P4).toMatch(/^SPEC_CONTEXTUAL_QUALIFIER/u);
+    // V0.2 INTENTIONAL CHANGE (§6): the qualifier is now typed. "Aprox. (No calibrada)" is an approximate
+    // value that never satisfies an exact (EQ) constraint, instead of a generic contextual qualifier.
+    expect(reasons.P4).toMatch(/^APPROXIMATE_VALUE/u);
     expect(reasons.P5).toMatch(/^SPEC_FILTERING_NOT_ADMITTED/u);
     expect([...keys(response), ...unverified(response)]).not.toContain('P2');
-    expect(response.completeness.excludedCount).toBeGreaterThan(0);
+    expect(response.completeness.rejectedCount).toBeGreaterThan(0);
   });
 
   it('never lets a name/text match certify a technical condition', async () => {
     const { response } = await run('pesa rusa de 20 kg');
-    const vinyl = response.unverifiedCandidates.find((candidate) => candidate.productKey === 'P3')!;
+    const vinyl = response.possible.find((candidate) => candidate.productKey === 'P3')!;
     expect(vinyl.matchedBy.some((signal) => signal.startsWith('LEXICAL:'))).toBe(true);
     expect(vinyl.constraintResults.find((result) => result.kind === 'SPEC')!.state).toBe('UNKNOWN');
   });
 
-  it('keeps "cada disco" qualified weights out of satisfied constraints', async () => {
+  // V0.2 INTENTIONAL CHANGE (§6, "Bumper de 10 kg"): V0 kept every qualified value UNKNOWN. A value the
+  // source states explicitly per disc ("20 kg. cada disco"), on a plate product whose name agrees, now
+  // satisfies a PER_UNIT weight constraint; the scope is reported with the result.
+  it('certifies an explicit per-disc weight for a per-unit query and reports its scope', async () => {
     const { response } = await run('disco de 20 kg');
-    expect(keys(response)).not.toContain('P7');
-    const plate = response.unverifiedCandidates.find((candidate) => candidate.productKey === 'P7');
-    expect(plate?.constraintResults.find((result) => result.kind === 'SPEC')?.reason).toContain('cada disco');
+    expect(keys(response)).toContain('P7');
+    const plate = response.verified.find((candidate) => candidate.productKey === 'P7')!;
+    expect(plate.constraintResults.find((result) => result.kind === 'SPEC')).toMatchObject({ state: 'SATISFIED', quantity: { scope: 'PER_UNIT', appliesTo: 'disco', derived: false } });
   });
 
   it('treats an ABSENT negative as UNKNOWN and a PRESENT negative as VIOLATED for a modeled exercise', async () => {
     const { response } = await run('algo para hacer dominadas');
     expect(keys(response)).toContain('P10');
     expect(keys(response)).not.toContain('P11');
-    const accessory = response.unverifiedCandidates.find((candidate) => candidate.productKey === 'P11');
+    const accessory = response.possible.find((candidate) => candidate.productKey === 'P11');
     expect(accessory?.constraintResults[0]!.reason).toMatch(/^ASSIGNED_BUT_NOT_ADMITTED/u);
     expect(keys(response)).not.toContain('P12');
   });
@@ -79,7 +87,7 @@ describe('catalog.discoverV0 — contract invariants (synthetic)', () => {
   it('does not certify a family whose own obligation contract is unmet (passive pulley accessory)', async () => {
     const { response } = await run('maquina de poleas');
     expect(keys(response)).toEqual(['P21']);
-    const grip = response.unverifiedCandidates.find((candidate) => candidate.productKey === 'P20');
+    const grip = response.possible.find((candidate) => candidate.productKey === 'P20');
     expect(grip?.constraintResults[0]!.reason).toBe('FAMILY_OBLIGATION_UNMET:TRAINING_FUNCTION');
   });
 
@@ -94,7 +102,7 @@ describe('catalog.discoverV0 — contract invariants (synthetic)', () => {
   it('never infers compatibility from names or families', async () => {
     const { response } = await run('collarines compatibles con barra olimpica');
     expect(keys(response)).toEqual([]);
-    for (const candidate of response.unverifiedCandidates) {
+    for (const candidate of response.possible) {
       expect(candidate.constraintResults.find((result) => result.kind === 'COMPATIBILITY')!.state).toBe('UNSUPPORTED');
     }
     expect(response.completeness.noResultReason).toBe('HARD_CONSTRAINT_UNSUPPORTED');
@@ -103,7 +111,7 @@ describe('catalog.discoverV0 — contract invariants (synthetic)', () => {
   it('never fabricates price or stock offline and leaves commercial constraints UNKNOWN', async () => {
     const { response } = await run('pesa rusa de 20 kg menos de 50 mil');
     expect(keys(response)).toEqual([]);
-    for (const candidate of [...response.candidates, ...response.unverifiedCandidates]) {
+    for (const candidate of [...response.verified, ...response.possible]) {
       expect(candidate.commercial).toEqual({ status: 'NOT_OBSERVED', reason: 'OFFLINE_RUN_NO_COMMERCIAL_TRUTH' });
       expect(JSON.stringify(candidate)).not.toMatch(/"finalGross|"price"|"stock"/u);
     }
@@ -116,7 +124,7 @@ describe('catalog.discoverV0 — contract invariants (synthetic)', () => {
       : { status: 'NOT_OBSERVED', reason: 'TEST' } as const])) };
     const { response } = await run('pesa rusa de 20 kg menos de 50 mil', 'HYBRID', { commercial: hydrator });
     expect(keys(response)).toEqual(['P1']);
-    expect(response.candidates[0]!.constraintResults.find((result) => result.kind === 'COMMERCIAL_MAX_PRICE')).toMatchObject({ state: 'SATISFIED', source: 'COMMERCIAL_TRUTH' });
+    expect(response.verified[0]!.constraintResults.find((result) => result.kind === 'COMMERCIAL_MAX_PRICE')).toMatchObject({ state: 'SATISFIED', source: 'COMMERCIAL_TRUTH' });
   });
 
   it('maps a real ProductContext response through the commercial truth hydrator without inventing values', async () => {
@@ -136,12 +144,13 @@ describe('catalog.discoverV0 — contract invariants (synthetic)', () => {
     expect(response.completeness.degraded).toContain('TRAINING_V2_UNAVAILABLE');
     expect(keys(response)).toEqual([]);
     expect(unverified(response).length).toBeGreaterThan(0);
-    expect(response.unverifiedCandidates[0]!.constraintResults[0]!.reason).toBe('TRAINING_V2_UNAVAILABLE');
+    expect(response.possible[0]!.constraintResults[0]!.reason).toBe('TRAINING_V2_UNAVAILABLE');
   });
 
   it('reports bundle and source lineage of the index it ran on', async () => {
     const { response } = await run('kettlebell');
-    expect(response.lineage).toMatchObject({ bundleId: SYNTHETIC_BUNDLE_ID, sourceExtractionId: SYNTHETIC_SOURCE_ID, retrievalVersion: 'catalog-discover-v0.1' });
+    // V0.2 INTENTIONAL CHANGE: retrieval version bumped to catalog-discover-v0.2 (lineage must name the code that ran).
+    expect(response.lineage).toMatchObject({ bundleId: SYNTHETIC_BUNDLE_ID, sourceExtractionId: SYNTHETIC_SOURCE_ID, retrievalVersion: 'catalog-discover-v0.2' });
     expect(response.lineage.indexFingerprint).toMatch(/^sha256:/u);
   });
 
@@ -154,7 +163,7 @@ describe('catalog.discoverV0 — contract invariants (synthetic)', () => {
     const { response } = await run('pesa rusa de 20 kg', 'LEXICAL_PLUS');
     expect(keys(response)).toEqual([]);
     expect(unverified(response)).toContain('P1');
-    expect(response.unverifiedCandidates.flatMap((candidate) => candidate.constraintResults).every((result) => result.reason === 'NOT_EVALUATED_IN_LEXICAL_MODE')).toBe(true);
+    expect(response.possible.flatMap((candidate) => candidate.constraintResults).every((result) => result.reason === 'NOT_EVALUATED_IN_LEXICAL_MODE')).toBe(true);
     expect(response.completeness.strategy).toEqual(['EXACT', 'LEXICAL']);
   });
 

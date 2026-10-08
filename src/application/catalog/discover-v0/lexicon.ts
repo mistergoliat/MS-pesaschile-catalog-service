@@ -1,5 +1,5 @@
 import { DEFAULT_PRODUCT_SEARCH_SYNONYMS } from '../product-intent/synonyms.js';
-import type { ConceptAxis } from './contracts.js';
+import type { ConceptAxis, SemanticRole } from './contracts.js';
 
 /*
  * CAT-DISCOVER-V0 governed query lexicon.
@@ -23,7 +23,7 @@ import type { ConceptAxis } from './contracts.js';
  * covers them (e.g. a generic "sentadilla"), so the interpreter never guesses.
  */
 
-export const DISCOVER_V0_LEXICON_VERSION = 'discover-v0-lexicon-v1';
+export const DISCOVER_V0_LEXICON_VERSION = 'discover-v0.2-lexicon-v1';
 
 export type LexiconProvenance =
   | { source: 'PRODUCT_INTENT_SYNONYMS'; file: string }
@@ -71,7 +71,41 @@ export type MarkerLexiconEntry = {
   reviewStatus: LexiconReviewStatus;
 };
 
-export type LexiconEntry = ConceptLexiconEntry | SynonymLexiconEntry | MarkerLexiconEntry;
+/**
+ * V0.2: a phrase with MORE THAN ONE plausible governed meaning. Each reading is an
+ * alternative (never a simultaneous hard constraint); the interpreter emits an
+ * AmbiguityGroup and the verifier only certifies what holds under EVERY reading.
+ */
+export type AmbiguousReadingSpec = {
+  readingId: string;
+  role: SemanticRole;
+  axis: ConceptAxis;
+  code: string;
+  label: string;
+  /** Text the product must mention for this reading to apply (relevance gate, never a certification). */
+  gateTerms?: string[];
+  provenance: LexiconProvenance;
+};
+
+export type AmbiguousLexiconEntry = {
+  id: string;
+  type: 'AMBIGUOUS';
+  terms: string[];
+  readings: AmbiguousReadingSpec[];
+  note: string;
+  provenance: LexiconProvenance;
+  reviewStatus: LexiconReviewStatus;
+};
+
+export type LexiconEntry = ConceptLexiconEntry | SynonymLexiconEntry | MarkerLexiconEntry | AmbiguousLexiconEntry;
+
+/**
+ * V0.2: documented alternative readings of specific governed compound terms. They
+ * do not create constraints; they record why a reading was not selected
+ * (CONSIDERED_REJECTED) or turn the compound's own wording into a non-gating
+ * relevance preference (RELEVANCE_ONLY). Keys are the normalized term.
+ */
+export type TermReadingNote = { role: SemanticRole; concept?: string; status: 'RELEVANCE_ONLY' | 'CONSIDERED_REJECTED'; reason: string };
 
 const T: LexiconProvenance = { source: 'DISCOVER_V0_TRANSLATION' };
 const P = 'PENDING_DOMAIN_REVIEW' as const;
@@ -108,8 +142,8 @@ const FAMILY: ConceptLexiconEntry[] = [
   concept('fam.rack_cage', 'PRODUCT_FAMILY', 'RACK_CAGE', ['rack', 'racks', 'power rack', 'squat rack', 'jaula', 'jaulas', 'atril', 'atriles', 'rack para sentadillas', 'rack de sentadillas'], rule('PF_RACK_CAGE_NAME_V1')),
   concept('fam.cable_machine', 'PRODUCT_FAMILY', 'CABLE_MACHINE', ['polea', 'poleas', 'maquina de poleas', 'polea cruzada', 'crossover', 'estacion de poleas'], rule('PF_CABLE_MACHINE_NAME_V1'),
     'Station-level wording. Passive pulley accessories are mapped to MACHINE_ATTACHMENT below (aligned with the QA2-B1 proposal, NOT adjudicated).'),
-  concept('fam.machine_attachment', 'PRODUCT_FAMILY', 'MACHINE_ATTACHMENT', ['accesorio de polea', 'accesorio para polea', 'accesorios de polea', 'accesorio polea', 'agarre', 'agarres', 'agarre de polea', 'agarre para polea', 'maneral', 'manilla', 'soga de triceps', 'collarin', 'collarines', 'j cups', 'jcups', 'j cup', 'landmine', 'ankle straps', 'spotter arms', 'soporte para barra'], rule('PF_MACHINE_ATTACHMENT_NAME_V1'),
-    'Registry definition lists collars, J-cups, spotter arms, ankle straps, mount hardware; cable grips added as a lexicon proposal only.'),
+  concept('fam.machine_attachment', 'PRODUCT_FAMILY', 'MACHINE_ATTACHMENT', ['accesorio de polea', 'accesorio para polea', 'accesorios de polea', 'accesorio polea', 'agarre', 'agarres', 'agarre de polea', 'agarre para polea', 'maneral', 'manilla', 'soga de triceps', 'collarin', 'collarines', 'j cups', 'jcups', 'j cup', 'landmine', 'ankle straps', 'spotter arms'], rule('PF_MACHINE_ATTACHMENT_NAME_V1'),
+    'Registry definition lists collars, J-cups, spotter arms, ankle straps, mount hardware; cable grips added as a lexicon proposal only. V0.2: "soporte para barra" moved to the ambiguous entry amb.barbell_holder.'),
   concept('fam.plate_loaded', 'PRODUCT_FAMILY', 'PLATE_LOADED_MACHINE', ['maquina de carga de discos', 'carga de discos', 'smith', 'maquina smith', 'multipower'], rule('PF_PLATE_LOADED_MACHINE_NAME_V1')),
   concept('fam.selectorized', 'PRODUCT_FAMILY', 'SELECTORIZED_MACHINE', ['selectorizada', 'maquina selectorizada', 'maquinas selectorizadas'], rule('PF_SELECTORIZED_MACHINE_NAME_V1')),
   concept('fam.cardio', 'PRODUCT_FAMILY', 'CARDIO_MACHINE', ['trotadora', 'trotadoras', 'cinta de correr', 'bicicleta de spinning', 'bicicleta estatica', 'spinning', 'eliptica', 'elipticas', 'remo de aire', 'remo ergometro', 'air bike', 'airbike', 'escaladora', 'maquina de cardio', 'maquinas de cardio'], rule('PF_CARDIO_MACHINE_NAME_V1')),
@@ -158,7 +192,8 @@ const FUNCTION: ConceptLexiconEntry[] = [
   concept('fn.cable', 'TRAINING_FUNCTION', 'CABLE_RESISTANCE', ['resistencia de cable', 'resistencia por cable', 'entrenar con poleas'], registry(TRAINING_V2)),
   concept('fn.multi_dir', 'TRAINING_FUNCTION', 'MULTI_DIRECTIONAL_RESISTANCE', ['resistencia multidireccional'], registry(TRAINING_V2)),
   concept('fn.bodyweight', 'TRAINING_FUNCTION', 'BODYWEIGHT_SUPPORT', ['peso corporal', 'soporte de peso corporal'], registry(TRAINING_V2)),
-  concept('fn.barbell_support', 'TRAINING_FUNCTION', 'BARBELL_SUPPORT', ['soporte de barra', 'apoyar la barra', 'sostener la barra'], registry(TRAINING_V2)),
+  concept('fn.barbell_support', 'TRAINING_FUNCTION', 'BARBELL_SUPPORT', ['apoyar la barra', 'sostener la barra'], registry(TRAINING_V2),
+    'V0.2: "soporte de barra" moved to the ambiguous entry amb.barbell_holder (accessory vs function).'),
   concept('fn.guided', 'TRAINING_FUNCTION', 'GUIDED_BARBELL_SUPPORT', ['barra guiada', 'guiada'], registry(TRAINING_V2)),
 ];
 
@@ -248,9 +283,65 @@ const MARKERS: MarkerLexiconEntry[] = [
   'Need/linking words with no retrieval value.'),
 ];
 
+const AMBIGUOUS: AmbiguousLexiconEntry[] = [
+  {
+    id: 'amb.barbell_holder', type: 'AMBIGUOUS',
+    terms: ['soporte de barra', 'soporte para barra', 'soportes de barra', 'soportes para barra', 'soporte barra'],
+    readings: [
+      { readingId: 'A', role: 'PRODUCT_ROLE', axis: 'PRODUCT_FAMILY', code: 'MACHINE_ATTACHMENT', label: 'accesorio físico «soporte de barra»',
+        gateTerms: ['soporte barra'], provenance: rule('PF_MACHINE_ATTACHMENT_NAME_V1') },
+      { readingId: 'B', role: 'TRAINING_FUNCTION', axis: 'TRAINING_FUNCTION', code: 'BARBELL_SUPPORT', label: 'función: sostener la barra durante el entrenamiento',
+        provenance: registry(TRAINING_V2) },
+    ],
+    note: 'V0 mapped "soporte de barra" to BARBELL_SUPPORT and "soporte para barra" to MACHINE_ATTACHMENT; both wordings name either a physical accessory or the function.',
+    provenance: T, reviewStatus: P,
+  },
+  {
+    id: 'amb.cardio_equipment', type: 'AMBIGUOUS',
+    terms: ['equipo de cardio', 'equipos de cardio', 'equipamiento de cardio', 'implementos de cardio', 'equipo cardio'],
+    readings: [
+      { readingId: 'A', role: 'PRODUCT_ROLE', axis: 'PRODUCT_FAMILY', code: 'CARDIO_MACHINE', label: 'máquina de cardio', provenance: rule('PF_CARDIO_MACHINE_NAME_V1') },
+      { readingId: 'B', role: 'USE_PURPOSE', axis: 'DISCIPLINE', code: 'CARDIO_ENDURANCE', label: 'cualquier equipo para entrenar cardio', provenance: T },
+    ],
+    note: 'Fills the V0 vocabulary gap (Q065) without forcing the machine reading; the discipline reading is a contractual tag, never a negative.',
+    provenance: T, reviewStatus: P,
+  },
+];
+
+const TERM_READINGS: Record<string, TermReadingNote[]> = {
+  'rack para sentadillas': [{ role: 'USE_PURPOSE', concept: 'EXERCISE:SQUAT(unmodeled)', status: 'CONSIDERED_REJECTED', reason: 'lexicalized product name (squat rack); generic squat is not a Training V2 code' }],
+  'rack de sentadillas': [{ role: 'USE_PURPOSE', concept: 'EXERCISE:SQUAT(unmodeled)', status: 'CONSIDERED_REJECTED', reason: 'lexicalized product name (squat rack); generic squat is not a Training V2 code' }],
+  'maquina de poleas': [{ role: 'TRAINING_FUNCTION', concept: 'TRAINING_FUNCTION:CABLE_RESISTANCE', status: 'CONSIDERED_REJECTED', reason: '"máquina de" names a product type; the function reading would admit other families' }],
+  'agarre para polea': [{ role: 'RELATIONSHIP', concept: 'PRODUCT_FAMILY:CABLE_MACHINE', status: 'CONSIDERED_REJECTED', reason: 'the target is part of the accessory identity; fit to a specific machine is not modeled and not claimed' }],
+  'agarre de polea': [{ role: 'RELATIONSHIP', concept: 'PRODUCT_FAMILY:CABLE_MACHINE', status: 'CONSIDERED_REJECTED', reason: 'the target is part of the accessory identity; fit to a specific machine is not modeled and not claimed' }],
+  'accesorio para polea': [{ role: 'RELATIONSHIP', concept: 'PRODUCT_FAMILY:CABLE_MACHINE', status: 'CONSIDERED_REJECTED', reason: 'the target is part of the accessory identity; fit to a specific machine is not modeled and not claimed' }],
+  'soga de triceps': [{ role: 'TRAINING_FUNCTION', concept: 'MUSCLE_GROUP:TRICEPS', status: 'CONSIDERED_REJECTED', reason: '"de tríceps" qualifies the accessory name inside a governed compound; not an anatomy target' }],
+  'barra de dominadas': [
+    { role: 'PRODUCT_IDENTITY', status: 'RELEVANCE_ONLY', reason: 'the compound also names a product (pull-up bar): its wording boosts relevance, never certifies' },
+    { role: 'PRODUCT_ROLE', concept: 'PRODUCT_FAMILY:BARBELL', status: 'CONSIDERED_REJECTED', reason: '"barra" inside "barra de dominadas" is a pull-up bar, not a barbell' },
+  ],
+  'barra para dominadas': [
+    { role: 'PRODUCT_IDENTITY', status: 'RELEVANCE_ONLY', reason: 'the compound also names a product (pull-up bar): its wording boosts relevance, never certifies' },
+    { role: 'PRODUCT_ROLE', concept: 'PRODUCT_FAMILY:BARBELL', status: 'CONSIDERED_REJECTED', reason: '"barra" inside "barra para dominadas" is a pull-up bar, not a barbell' },
+  ],
+  'barra pull up': [{ role: 'PRODUCT_IDENTITY', status: 'RELEVANCE_ONLY', reason: 'the compound also names a product (pull-up bar): its wording boosts relevance, never certifies' }],
+  'soporte para fondos': [{ role: 'PRODUCT_IDENTITY', status: 'RELEVANCE_ONLY', reason: 'the compound also names a product (dip station/attachment): its wording boosts relevance, never certifies' }],
+};
+
 export const DISCOVER_V0_LEXICON: readonly LexiconEntry[] = Object.freeze([
-  ...FAMILY.map((entry) => ({ ...entry, familyLevelTerms: FAMILY_LEVEL_TERMS[entry.code] ?? [] })), ...EXERCISE, ...FUNCTION, ...ANATOMY, ...DISCIPLINE, ...USE_CONTEXT, ...INHERITED_SYNONYMS, ...PROPOSED_SYNONYMS, ...MARKERS,
+  ...FAMILY.map((entry) => ({ ...entry, familyLevelTerms: FAMILY_LEVEL_TERMS[entry.code] ?? [] })), ...EXERCISE, ...FUNCTION, ...ANATOMY, ...DISCIPLINE, ...USE_CONTEXT, ...AMBIGUOUS, ...INHERITED_SYNONYMS, ...PROPOSED_SYNONYMS, ...MARKERS,
 ]);
+
+/** Governed reading notes for compound terms (keyed by the term as written in the lexicon). */
+export const DISCOVER_V0_TERM_READINGS: Readonly<Record<string, readonly TermReadingNote[]>> = Object.freeze(TERM_READINGS);
+
+/**
+ * Head families whose "<family> para <family>" names the object they serve (a use
+ * purpose), not a physical compatibility: "almacenamiento para discos". The target
+ * becomes a gating relevance requirement on the product's own text; it is never
+ * certified. Every other "<family> para <family>" stays COMPATIBILITY (UNSUPPORTED).
+ */
+export const PURPOSE_HEAD_FAMILIES: ReadonlySet<string> = new Set(['STORAGE']);
 
 /** Families whose own weight is a meaningful product-level spec ("pesa rusa de 20 kg" → weight_kg). */
 export const LOAD_FAMILIES_FOR_WEIGHT_SPEC: ReadonlySet<string> = new Set(['KETTLEBELL', 'DUMBBELL', 'WEIGHT_PLATE', 'BARBELL', 'BALL_BAG']);

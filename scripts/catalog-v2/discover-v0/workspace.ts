@@ -78,15 +78,19 @@ export async function loadWorkspace(paths = DISCOVER_V0_PATHS): Promise<Workspac
 
 export type VariantRun = {
   variant: Variant;
-  /** The list a consumer is shown: A results; B/C/D eligible candidates. */
+  /** The list a consumer is shown: A results; B/C/D VERIFIED_MATCH candidates. */
   primary: string[];
   unverified: string[];
-  /** Top-8 of the ranked retrieval pool before eligibility (excluded removed): comparable across all variants. */
+  /** EXACT_ENTITY_RESOLUTION (B/C/D): exact productKey/name lookups, whatever their disposition. */
+  exact: string[];
+  /** Top-8 comparable across variants: exact entities first, then the ranked pool with REJECTED removed. */
   retrieval: string[];
   search?: CurrentSearchOutcome;
   discover?: DiscoverV0Result;
   timings: DiscoverStageTimings;
   bytes: number;
+  /** Serialized DiscoverAgentResponse (B/C/D only). */
+  agentBytes?: number;
 };
 
 export async function runVariant(workspace: Workspace, variant: Variant, query: string): Promise<VariantRun> {
@@ -94,19 +98,23 @@ export async function runVariant(workspace: Workspace, variant: Variant, query: 
     const started = performance.now();
     const search = await workspace.baseline.search(query, BENCHMARK_LIMIT);
     const total = performance.now() - started;
-    return { variant, primary: search.productKeys, unverified: [], retrieval: search.productKeys, search, timings: { total },
+    return { variant, primary: search.productKeys, unverified: [], exact: [], retrieval: search.productKeys, search, timings: { total },
       bytes: Buffer.byteLength(JSON.stringify(search.response ?? { status: search.status })) };
   }
   const index = variant === 'C' ? workspace.indexes.production : workspace.indexes.candidate;
   const discover = await discoverV0({ schemaVersion: 1, need: query, limit: BENCHMARK_LIMIT }, { index, mode: variant === 'B' ? 'LEXICAL_PLUS' : 'HYBRID' });
+  const exact = discover.response.exactResolution.productKeys;
   return {
     variant,
-    primary: discover.response.candidates.map((candidate) => candidate.productKey),
-    unverified: discover.response.unverifiedCandidates.map((candidate) => candidate.productKey),
-    retrieval: discover.diagnostics.pool.filter((item) => item.eligibility !== 'EXCLUDED').slice(0, BENCHMARK_LIMIT).map((item) => item.productKey),
+    primary: discover.response.verified.map((candidate) => candidate.productKey),
+    unverified: discover.response.possible.map((candidate) => candidate.productKey),
+    exact,
+    retrieval: [...exact, ...discover.diagnostics.pool.filter((item) => item.disposition !== 'REJECTED' && !exact.includes(item.productKey)).map((item) => item.productKey)]
+      .slice(0, BENCHMARK_LIMIT),
     discover,
     timings: discover.timings,
     bytes: Buffer.byteLength(JSON.stringify(discover.response)),
+    agentBytes: Buffer.byteLength(JSON.stringify(discover.agent)),
   };
 }
 

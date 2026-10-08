@@ -31,8 +31,10 @@ export function commercialTruthHydrator(owner: { getProductContext(input: { prod
             status: 'OBSERVED',
             authority: 'catalog-commercial-truth-v2',
             asOf: context.freshness.asOf,
+            validUntil: context.freshness.validUntil ?? null,
             finalGrossClp: context.derived.priceSummary?.finalGross.amount ?? null,
             sellability: context.derived.availability.sellability,
+            ...(context.derived.availability.reason ? { availabilityReason: context.derived.availability.reason } : {}),
           }];
         } catch {
           return [productKey, { status: 'NOT_OBSERVED', reason: 'COMMERCIAL_TRUTH_UNAVAILABLE' }];

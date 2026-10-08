@@ -1,5 +1,5 @@
 import { matchNominal, type NominalMatchTier } from '../../../domain/catalog/v2/nominalSearch.js';
-import type { DiscoverConstraint, GeneratedCandidate, QueryInterpretation, RetrievalSignal } from './contracts.js';
+import type { DiscoverConstraint, GeneratedCandidate, QueryInterpretation, RelevanceRequirement, RetrievalSignal } from './contracts.js';
 import type { DiscoverIndex, ProductRetrievalDocument } from './retrievalDocument.js';
 import { discoverTokens, isMeasureToken, stemToken } from './text.js';
 
@@ -101,8 +101,13 @@ function nominalQueries(interpretation: QueryInterpretation): { text: string; vi
 
 export class LexicalCandidateGenerator {
   generate(index: DiscoverIndex, interpretation: QueryInterpretation): GeneratedCandidate[] {
+    return this.generateDetailed(index, interpretation).candidates;
+  }
+
+  /** Same candidates plus how many qualified before the pool limit (truncation is reported, never hidden). */
+  generateDetailed(index: DiscoverIndex, interpretation: QueryInterpretation): { candidates: GeneratedCandidate[]; qualified: number; truncated: boolean } {
     const terms = queryTerms(index, interpretation);
-    if (terms.length === 0) return [];
+    if (terms.length === 0) return { candidates: [], qualified: 0, truncated: false };
     const total = index.universe.length;
     const scores = new Map<string, { bm25: number; covered: Set<number>; contentCovered: boolean; matched: Set<string>; fields: Set<string>; synonym: boolean; prefix: boolean }>();
     for (const term of terms) {
@@ -136,14 +141,15 @@ export class LexicalCandidateGenerator {
       const tier = nominalTier(document, queries);
       const lexical = entry.bm25 * (0.25 + 0.75 * coverage);
       const signals: RetrievalSignal[] = [{ generator: 'LEXICAL', kind: 'BM25', score: lexical, source: entry.fields.has('NAME') ? 'SOURCE_NAME' : entry.fields.has('BRAND') ? 'SOURCE_BRAND' : entry.fields.has('CATEGORY') ? 'SOURCE_CATEGORY' : 'SOURCE_FEATURE',
-        evidence: `terms=${[...entry.matched].sort().join(',')}; fields=${[...entry.fields].sort().join(',')}; coverage=${coverage.toFixed(2)}` }];
+        evidence: `terms=${[...entry.matched].sort().join(',')}; fields=${[...entry.fields].sort().join(',')}; coverage=${coverage.toFixed(2)}`, coverage }];
       if (tier) signals.push({ generator: 'LEXICAL', kind: `NOMINAL_${tier.tier.toUpperCase()}`, score: tier.score, source: 'SOURCE_NAME', ...(tier.viaSynonym ? { evidence: 'via governed synonym' } : {}) });
       if (entry.synonym) signals.push({ generator: 'LEXICAL', kind: 'GOVERNED_SYNONYM', score: 0, source: 'SOURCE_NAME' });
       if (entry.prefix) signals.push({ generator: 'LEXICAL', kind: 'PREFIX_EXPANSION', score: 0, source: 'SOURCE_NAME' });
       candidates.push({ productKey, signals, order: [-(tier?.score ?? 0), -lexical, discoverTokens(document.name).length, document.productId] });
     }
     candidates.sort((left, right) => left.order[0] - right.order[0] || left.order[1] - right.order[1] || left.order[2] - right.order[2] || left.order[3] - right.order[3]);
-    return candidates.slice(0, LEXICAL_POOL_LIMIT).map(({ productKey, signals }) => ({ productKey, signals }));
+    return { candidates: candidates.slice(0, LEXICAL_POOL_LIMIT).map(({ productKey, signals }) => ({ productKey, signals })), qualified: candidates.length,
+      truncated: candidates.length > LEXICAL_POOL_LIMIT };
   }
 }
 
@@ -219,6 +225,17 @@ export class StructuredCandidateGenerator {
 /** True when every stem appears in the product's indexed source text (name, brand, trusted categories/features). */
 export function hasIndexedText(index: DiscoverIndex, productKey: string, stems: readonly string[]): boolean {
   return stems.every((stem) => index.lexical.postings.get(stem)?.has(productKey) ?? false);
+}
+
+/** True when every stem appears in the product NAME (not brand, categories or features). */
+export function hasNameText(index: DiscoverIndex, productKey: string, stems: readonly string[]): boolean {
+  return stems.every((stem) => index.lexical.postings.get(stem)?.get(productKey)?.fields.includes('NAME') ?? false);
+}
+
+/** Whether a relevance requirement holds for a product (any alternative, in the requirement's field scope). */
+export function requirementHolds(index: DiscoverIndex, productKey: string, requirement: RelevanceRequirement): boolean {
+  const check = requirement.field === 'NAME' ? hasNameText : hasIndexedText;
+  return requirement.alternatives.some((stems) => check(index, productKey, stems));
 }
 
 /** CandidateFusion: union by productKey (the only identity), signals concatenated in generator order. */

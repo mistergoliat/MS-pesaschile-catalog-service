@@ -59,14 +59,14 @@ function render(workspace: Workspace, run: VariantRun, query: string): string {
   const interpretation = response.interpretation;
   out.push(`  recognized: ${interpretation.recognizedConcepts.join(', ') || '-'}   unrecognized: ${interpretation.unrecognizedTerms.join(', ') || '-'}`);
   out.push(`  hard: ${interpretation.hardConstraints.map((constraint) => `${constraint.kind}${constraint.codes ? `[${constraint.codes.join('|')}]` : ''}${constraint.specKey ? `[${constraint.specKey} ${constraint.operator} ${constraint.value}]` : ''}${constraint.target ? `[target ${constraint.target}]` : ''}${constraint.value !== undefined && !constraint.specKey ? `[${constraint.value}]` : ''}`).join(', ') || '-'}`);
-  out.push(`  soft: ${interpretation.softPreferences.map((constraint) => `${constraint.kind}${constraint.codes ? `[${constraint.codes.join('|')}]` : ''}${constraint.demotedFrom ? '(demoted)' : ''}`).join(', ') || '-'}`);
+  out.push(`  soft: ${interpretation.softPreferences.map((constraint) => `${constraint.kind}${constraint.codes ? `[${constraint.codes.join('|')}]` : ''}`).join(', ') || '-'}`);
   for (const entry of interpretation.entries.filter((item) => item.state === 'UNKNOWN')) out.push(`  UNKNOWN "${entry.text}": ${entry.note ?? ''}`);
   const completeness = response.completeness;
-  out.push(`  completeness: pool=${completeness.candidateCount} eligible=${completeness.eligibleCount} unverified=${completeness.unverifiedCount} excluded=${completeness.excludedCount} returned=${completeness.returnedCount} truncated=${completeness.truncated} degraded=[${completeness.degraded.join(',')}] noResult=${completeness.noResultReason ?? '-'}`);
+  out.push(`  completeness: pool=${completeness.candidateCount} eligible=${completeness.verifiedCount} unverified=${completeness.possibleCount} excluded=${completeness.rejectedCount} returned=${completeness.returnedCount} truncated=${completeness.truncated} degraded=[${completeness.degraded.join(',')}] noResult=${completeness.noResultReason ?? '-'}`);
   out.push('  CANDIDATES (all hard constraints SATISFIED):');
-  out.push(...(response.candidates.length ? response.candidates.flatMap(line) : ['    (none)']));
+  out.push(...(response.verified.length ? response.verified.flatMap(line) : ['    (none)']));
   out.push('  UNVERIFIED (potentially relevant; some hard constraint UNKNOWN/UNSUPPORTED — not conforming recommendations):');
-  out.push(...(response.unverifiedCandidates.length ? response.unverifiedCandidates.flatMap(line) : ['    (none)']));
+  out.push(...(response.possible.length ? response.possible.flatMap(line) : ['    (none)']));
   out.push(`  lineage: bundle=${response.lineage.bundleId} source=${response.lineage.sourceExtractionId} retrieval=${response.lineage.retrievalVersion} lexicon=${response.lineage.lexiconVersion}`);
   return out.join('\n');
 }
@@ -96,7 +96,7 @@ async function main(): Promise<void> {
       const label = (keys: string[]) => keys.map((key) => `${key}:${nameOf(workspace, key).slice(0, 38)}`).join(' | ') || '-';
       const c = run.discover?.response.completeness;
       console.log(`  ${run.variant} primary   ${label(run.primary)}`);
-      if (run.variant !== 'A') console.log(`  ${run.variant} unverified ${label(run.unverified)}  [elig=${c?.eligibleCount} unv=${c?.unverifiedCount} excl=${c?.excludedCount} noResult=${c?.noResultReason ?? '-'}]`);
+      if (run.variant !== 'A') console.log(`  ${run.variant} unverified ${label(run.unverified)}  [elig=${c?.verifiedCount} unv=${c?.possibleCount} excl=${c?.rejectedCount} noResult=${c?.noResultReason ?? '-'}]`);
     }
     return;
   }
